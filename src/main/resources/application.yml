@@ -21,6 +21,7 @@ app:
     max-attempts: 5
     resend-after: 60s
     max-per-hour: 5
+    max-per-ip-per-hour: 20
     channels: whatsapp,sms         # try in this order; "log" in dev
     hash-secret: ${APP_OTP_SECRET}
   bootstrap:
@@ -37,8 +38,13 @@ spring:
       on-profile: dev
 
 app:
+  jwt:
+    # DEV ONLY. Not secret. prod has no default and needs APP_JWT_SECRET.
+    secret: ${APP_JWT_SECRET:dev-only-jwt-secret-not-for-production-0001}
   otp:
     channels: log
+    # DEV ONLY. Not secret. prod has no default and needs APP_OTP_SECRET.
+    hash-secret: ${APP_OTP_SECRET:dev-only-otp-secret-not-for-production-0001}
 
 ---
 # test: ./gradlew test. PostgreSQL comes from Testcontainers.
@@ -48,8 +54,13 @@ spring:
       on-profile: test
 
 app:
+  jwt:
+    # TEST ONLY. Not secret. prod has no default and needs APP_JWT_SECRET.
+    secret: ${APP_JWT_SECRET:dev-only-jwt-secret-not-for-production-0001}
   otp:
     channels: log
+    # TEST ONLY. Not secret. prod has no default and needs APP_OTP_SECRET.
+    hash-secret: ${APP_OTP_SECRET:dev-only-otp-secret-not-for-production-0001}
 
 ---
 # prod: the server.
