@@ -64,7 +64,7 @@ Note: `app_user.staff_id` is a plain `bigint` now. Its foreign key comes in Phas
 - [x] 1.8 `OtpService.request(phone, ip)`: normalize, limits, find user, create and send code, same answer always.
 - [x] 1.9 `JwtService`: `issue(AppUser)` and the two beans `JwtEncoder`, `JwtDecoder` (HS256, shared secret).
 - [x] 1.10 `OtpService.verify(phone, code)`: all the checks, mark consumed, return token and user.
-- [ ] 1.11 `SecurityConfig` (replaces the temporary one): stateless, open URLs, resource server with our converter, `@EnableMethodSecurity`.
+- [x] 1.11 `SecurityConfig` (replaces the temporary one): stateless, open URLs, resource server with our converter, `@EnableMethodSecurity`.
 - [ ] 1.12 `UserJwtConverter`: load the user, check `active` and `token_version`, set authorities.
 - [ ] 1.13 `CurrentUser` helper and `AuthController` (the four auth URLs).
 - [ ] 1.14 `UserService` and `UserController` with rules 1, 2, 6, 7, 8.
