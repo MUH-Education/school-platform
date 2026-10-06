@@ -15,6 +15,11 @@ public interface OtpCodeRepository extends JpaRepository<OtpCode, Long> {
 	/** The newest code of a phone that is not used yet. Only this one can log in. */
 	Optional<OtpCode> findFirstByPhoneAndConsumedAtIsNullOrderByCreatedAtDescIdDesc(String phone);
 
+	/** The oldest code of a phone after a time. For "when can this phone ask again". */
+	Optional<OtpCode> findFirstByPhoneAndCreatedAtAfterOrderByCreatedAtAsc(String phone, Instant since);
+
+	Optional<OtpCode> findFirstByRequestIpAndCreatedAtAfterOrderByCreatedAtAsc(String requestIp, Instant since);
+
 	long countByPhoneAndCreatedAtAfter(String phone, Instant since);
 
 	long countByRequestIpAndCreatedAtAfter(String requestIp, Instant since);

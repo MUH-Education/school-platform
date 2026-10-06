@@ -3,7 +3,12 @@ package com.muhjain.school;
 import java.time.Instant;
 import java.time.ZoneId;
 
+import com.muhjain.school.auth.LogOtpSender;
+import com.muhjain.school.user.AppUser;
+import com.muhjain.school.user.AppUserRepository;
+import com.muhjain.school.user.Role;
 import org.junit.jupiter.api.BeforeEach;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -14,8 +19,14 @@ import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.postgresql.PostgreSQLContainer;
+
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.verify;
 
 /**
  * Base class for tests that need the whole app and a real database.
@@ -45,9 +56,33 @@ public abstract class AbstractIntegrationTest {
 	@Autowired
 	protected JdbcTemplate jdbc;
 
+	@Autowired
+	protected AppUserRepository userRepository;
+
+	// A spy: the real LogOtpSender runs, and tests can read which code it was given.
+	@MockitoSpyBean
+	protected LogOtpSender logOtpSender;
+
+	/** Adds a user straight into the database. Example: {@code addUser("+919812340002", Role.OFFICE_ADMIN)} */
+	protected AppUser addUser(String phone, Role role) {
+		AppUser user = new AppUser(phone, role);
+		if (role == Role.ATTENDANT) {
+			user.setStaffId(14L);
+		}
+		return userRepository.saveAndFlush(user);
+	}
+
+	/** The last code LogOtpSender was asked to send to this phone. */
+	protected String lastCodeSentTo(String phone) {
+		ArgumentCaptor<String> code = ArgumentCaptor.forClass(String.class);
+		verify(logOtpSender, atLeastOnce()).send(eq(phone), code.capture());
+		return code.getValue();
+	}
+
 	@BeforeEach
 	void resetClockAndTables() {
 		clock.setInstant(Instant.now());
+		clearInvocations(logOtpSender);
 		jdbc.update("update app_setting set updated_by = null");
 		jdbc.update("delete from audit_log");
 		jdbc.update("delete from otp_code");

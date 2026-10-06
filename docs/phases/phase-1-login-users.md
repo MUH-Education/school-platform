@@ -61,7 +61,7 @@ Note: `app_user.staff_id` is a plain `bigint` now. Its foreign key comes in Phas
 - [x] 1.5 `auth` package: `OtpProperties`, `JwtProperties` (`@ConfigurationProperties`). Fail at start if the JWT secret is shorter than 32 bytes.
 - [x] 1.6 `OtpCode` entity and repository. `OtpHasher` (HMAC-SHA256 with `app.otp.hash-secret`).
 - [x] 1.7 `OtpSender` interface, `LogOtpSender`, `OtpDeliveryService` (tries channels in order).
-- [ ] 1.8 `OtpService.request(phone, ip)`: normalize, limits, find user, create and send code, same answer always.
+- [x] 1.8 `OtpService.request(phone, ip)`: normalize, limits, find user, create and send code, same answer always.
 - [ ] 1.9 `JwtService`: `issue(AppUser)` and the two beans `JwtEncoder`, `JwtDecoder` (HS256, shared secret).
 - [ ] 1.10 `OtpService.verify(phone, code)`: all the checks, mark consumed, return token and user.
 - [ ] 1.11 `SecurityConfig` (replaces the temporary one): stateless, open URLs, resource server with our converter, `@EnableMethodSecurity`.
