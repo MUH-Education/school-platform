@@ -1,6 +1,7 @@
 package com.muhjain.school;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.time.ZoneId;
 
 import com.muhjain.school.auth.LogOtpSender;
@@ -81,7 +82,7 @@ public abstract class AbstractIntegrationTest {
 
 	@BeforeEach
 	void resetClockAndTables() {
-		clock.setInstant(Instant.now());
+		clock.setInstant(Instant.now().truncatedTo(ChronoUnit.MILLIS));
 		clearInvocations(logOtpSender);
 		jdbc.update("update app_setting set updated_by = null");
 		jdbc.update("delete from audit_log");

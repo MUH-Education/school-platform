@@ -2,6 +2,7 @@ package com.muhjain.school.common;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
 import org.springframework.context.annotation.Bean;
@@ -19,7 +20,8 @@ public class JpaAuditingConfig {
 
 	@Bean
 	DateTimeProvider auditingDateTimeProvider(Clock clock) {
-		return () -> Optional.of(Instant.now(clock));
+		// PostgreSQL keeps microseconds. Cut here, so the saved time and the time in Java are the same.
+		return () -> Optional.of(Instant.now(clock).truncatedTo(ChronoUnit.MICROS));
 	}
 
 }
