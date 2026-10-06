@@ -61,20 +61,20 @@ Why start.spring.io and not a hand-written build file? Spring Boot 4 renamed sev
 
 ## Tasks
 
-- [ ] 0.1 Create the project as described above. Run `./gradlew build`. It must pass before you change anything.
-- [ ] 0.2 Create a Git repository. Add a `.gitignore` (the generated one, plus `data/`, `.env`, `CLAUDE.local.md`). First commit.
-- [ ] 0.3 Edit the generated `compose.yaml` so it has: one `postgres` service, image `postgres:17`, database `school`, user `school`, password `school`, port 5432, and a named volume so data survives a restart.
-- [ ] 0.4 Write `application.yml` with profiles `dev` (default), `test`, `prod` and the `app.*` block from `docs/02-architecture.md`. Set `spring.jpa.hibernate.ddl-auto=validate` and `spring.jpa.open-in-view=false`.
-- [ ] 0.5 Add `src/main/resources/db/migration/V0__baseline.sql` with one harmless line: `select 1;`. Start the app. Flyway must report 1 migration applied.
-- [ ] 0.6 Create package `common` with:
+- [x] 0.1 Create the project as described above. Run `./gradlew build`. It must pass before you change anything.
+- [x] 0.2 Create a Git repository. Add a `.gitignore` (the generated one, plus `data/`, `.env`, `CLAUDE.local.md`). First commit.
+- [x] 0.3 Edit the generated `compose.yaml` so it has: one `postgres` service, image `postgres:17`, database `school`, user `school`, password `school`, port 5432, and a named volume so data survives a restart.
+- [x] 0.4 Write `application.yml` with profiles `dev` (default), `test`, `prod` and the `app.*` block from `docs/02-architecture.md`. Set `spring.jpa.hibernate.ddl-auto=validate` and `spring.jpa.open-in-view=false`.
+- [x] 0.5 Add `src/main/resources/db/migration/V0__baseline.sql` with one harmless line: `select 1;`. Start the app. Flyway must report 1 migration applied.
+- [x] 0.6 Create package `common` with:
   - `ApiException` and `GlobalExceptionHandler` (the error format from `docs/02-architecture.md`)
   - `ClockConfig` (a `Clock` bean in zone `Asia/Kolkata`)
   - `PhoneNumbers.normalize(String)` → `+91XXXXXXXXXX` or throws
   - `PageResponse<T>` record for paged lists
-- [ ] 0.7 Add a temporary `SecurityConfig` that allows `/actuator/health` and blocks everything else with 401. Phase 1 replaces it.
-- [ ] 0.8 Create `AbstractIntegrationTest`: starts one PostgreSQL Testcontainer for all tests, `@SpringBootTest`, `@AutoConfigureMockMvc`, profile `test`.
-- [ ] 0.9 Write the tests listed below.
-- [ ] 0.10 Write `README.md`: how to run, how to test, in 10 lines.
+- [x] 0.7 Add a temporary `SecurityConfig` that allows `/actuator/health` and blocks everything else with 401. Phase 1 replaces it.
+- [x] 0.8 Create `AbstractIntegrationTest`: starts one PostgreSQL Testcontainer for all tests, `@SpringBootTest`, `@AutoConfigureMockMvc`, profile `test`.
+- [x] 0.9 Write the tests listed below.
+- [x] 0.10 Write `README.md`: how to run, how to test, in 10 lines.
 - [ ] 0.11 Outside the code: choose the SMS and WhatsApp company and start DLT registration (question C1). It takes one to two weeks and Phase 5 needs it.
 
 ## Tests that must pass

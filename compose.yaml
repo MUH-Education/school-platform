@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: 'postgres:17'
+    environment:
+      - 'POSTGRES_DB=school'
+      - 'POSTGRES_USER=school'
+      - 'POSTGRES_PASSWORD=school'
+    ports:
+      - '5432:5432'
+    volumes:
+      - 'school-pgdata:/var/lib/postgresql/data'
+
+volumes:
+  school-pgdata:

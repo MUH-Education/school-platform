@@ -8,8 +8,8 @@ Change the Status column as you go: **Not started** → **In progress** → **Do
 
 | Phase | Name | What works at the end | Size | Status |
 |---|---|---|---|---|
-| 0 | [Project setup](phase-0-setup.md) | Empty app starts, connects to PostgreSQL, tests run | S | Not started |
-| 1 | [Login, users, roles](phase-1-login-users.md) | Log in with phone and OTP. Owner adds users. | M | Not started |
+| 0 | [Project setup](phase-0-setup.md) | Empty app starts, connects to PostgreSQL, tests run | S | Done |
+| 1 | [Login, users, roles](phase-1-login-users.md) | Log in with phone and OTP. Owner adds users. | M | In progress |
 | 2 | [Vehicles, staff, routes](phase-2-vehicles-staff-routes.md) | Add vehicles, drivers, attendants. Change who is assigned. Routes and stops. | M | Not started |
 | 3 | [Students and admission](phase-3-students-admission.md) | Admit a student, edit later, add phone numbers, photo, start or change bus | L | Not started |
 | 4 | [Trips and bus status](phase-4-trips-bus-status.md) | Attendant taps children. Office sees every bus. | L | Not started |

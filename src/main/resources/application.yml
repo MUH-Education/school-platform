@@ -1,0 +1,62 @@
+# Safe defaults for every profile. Profiles below change only what differs.
+# Secrets never live in this file. They come from environment variables.
+spring:
+  application:
+    name: school-admin
+  profiles:
+    default: dev
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+
+app:
+  zone: Asia/Kolkata
+  jwt:
+    secret: ${APP_JWT_SECRET}      # at least 32 bytes
+    ttl: 30d
+  otp:
+    length: 6
+    ttl: 5m
+    max-attempts: 5
+    resend-after: 60s
+    max-per-hour: 5
+    channels: whatsapp,sms         # try in this order; "log" in dev
+    hash-secret: ${APP_OTP_SECRET}
+  bootstrap:
+    owner-phone: ${APP_OWNER_PHONE:}   # first OWNER, created only if no user exists
+  messaging:
+    sms-provider: log              # log | msg91 | ...
+    whatsapp-provider: log
+
+---
+# dev: your laptop. PostgreSQL starts from compose.yaml by itself.
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+app:
+  otp:
+    channels: log
+
+---
+# test: ./gradlew test. PostgreSQL comes from Testcontainers.
+spring:
+  config:
+    activate:
+      on-profile: test
+
+app:
+  otp:
+    channels: log
+
+---
+# prod: the server.
+# Database: set SPRING_DATASOURCE_URL, SPRING_DATASOURCE_USERNAME and
+# SPRING_DATASOURCE_PASSWORD. Spring Boot reads them by itself.
+# Messages: Phase 5 sets the real SMS and WhatsApp provider (question C1).
+spring:
+  config:
+    activate:
+      on-profile: prod

@@ -66,7 +66,10 @@ Add a line each time code needed a choice the docs did not cover.
 
 | Date | Phase | Decision | Why |
 |---|---|---|---|
-| | | | |
+| 6 Oct 2026 | 0 | start.spring.io was blocked in the build environment, so the Gradle files were written by hand: Spring Boot 4.1.1, Gradle 9.8.0, same starters as start.spring.io. | Newest stable versions on that day. |
+| 6 Oct 2026 | 0 | An error the docs do not name uses the HTTP status name as its code. Example: a crash → 500 `INTERNAL_SERVER_ERROR`, PUT on a GET-only URL → 405 `METHOD_NOT_ALLOWED`. The real error goes only to the log. | Owner's answer. One simple rule, the React app can still switch on `error`. |
+| 6 Oct 2026 | 0 | Keep Spring Boot's health answer `{"groups":["liveness","readiness"],"status":"UP"}`. It counts as `{"status":"UP"}` for Phase 0. | Owner's answer. `/actuator/health/liveness` and `/readiness` help the server in Phase 9. |
+| 6 Oct 2026 | 0 | The root `README.md` (a copy of `docs/phases/README.md`) is replaced by the short "how to run, how to test" README. | Owner's answer. The phase list still lives in `docs/phases/README.md`. |
 
 ## E. What changed from the first plan document
 
