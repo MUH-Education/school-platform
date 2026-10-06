@@ -129,6 +129,12 @@ public class OtpService {
 				AuthUserResponse.of(user));
 	}
 
+	/** Deletes codes made before {@code now - age}. Example: age 7 days on 14 Oct → codes before 7 Oct. */
+	@Transactional
+	public int deleteOlderThan(Duration age) {
+		return codes.deleteCreatedBefore(now().minus(age));
+	}
+
 	private static ApiException invalid() {
 		return new ApiException(HttpStatus.UNAUTHORIZED, INVALID, "The code is wrong or too old.");
 	}
