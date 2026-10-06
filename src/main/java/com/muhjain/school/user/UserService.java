@@ -2,6 +2,7 @@ package com.muhjain.school.user;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +42,14 @@ public class UserService {
 	@Transactional(readOnly = true)
 	public List<UserResponse> list() {
 		return users.findAllByOrderByIdAsc().stream().map(this::toResponse).toList();
+	}
+
+	/** The fixed table from {@link Role}. Roles are not stored in the database. */
+	public RolesResponse roles() {
+		List<RolesResponse.RoleRow> rows = Arrays.stream(Role.values())
+			.map(role -> new RolesResponse.RoleRow(role, List.copyOf(role.permissions())))
+			.toList();
+		return new RolesResponse(List.of(Permission.values()), rows);
 	}
 
 	/**
