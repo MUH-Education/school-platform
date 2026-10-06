@@ -64,7 +64,7 @@ Why start.spring.io and not a hand-written build file? Spring Boot 4 renamed sev
 - [x] 0.1 Create the project as described above. Run `./gradlew build`. It must pass before you change anything.
 - [x] 0.2 Create a Git repository. Add a `.gitignore` (the generated one, plus `data/`, `.env`, `CLAUDE.local.md`). First commit.
 - [x] 0.3 Edit the generated `compose.yaml` so it has: one `postgres` service, image `postgres:17`, database `school`, user `school`, password `school`, port 5432, and a named volume so data survives a restart.
-- [ ] 0.4 Write `application.yml` with profiles `dev` (default), `test`, `prod` and the `app.*` block from `docs/02-architecture.md`. Set `spring.jpa.hibernate.ddl-auto=validate` and `spring.jpa.open-in-view=false`.
+- [x] 0.4 Write `application.yml` with profiles `dev` (default), `test`, `prod` and the `app.*` block from `docs/02-architecture.md`. Set `spring.jpa.hibernate.ddl-auto=validate` and `spring.jpa.open-in-view=false`.
 - [ ] 0.5 Add `src/main/resources/db/migration/V0__baseline.sql` with one harmless line: `select 1;`. Start the app. Flyway must report 1 migration applied.
 - [ ] 0.6 Create package `common` with:
   - `ApiException` and `GlobalExceptionHandler` (the error format from `docs/02-architecture.md`)
