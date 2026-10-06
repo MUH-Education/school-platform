@@ -46,6 +46,17 @@ public final class PhoneNumbers {
 		return "+91" + digits;
 	}
 
+	/**
+	 * For logs: hides all but the last 4 digits. Example: "+919812344321" → "+91XXXXXX4321".
+	 * Anything that is not a stored phone becomes "+91XXXXXXXXXX", so a typo is never logged in full.
+	 */
+	public static String mask(String phone) {
+		if (phone == null || !phone.startsWith("+91") || phone.length() != 13) {
+			return "+91XXXXXXXXXX";
+		}
+		return "+91XXXXXX" + phone.substring(9);
+	}
+
 	private static ApiException invalid() {
 		return new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION",
 				"Enter a 10 digit Indian mobile number, like 98123 45678.");
