@@ -1,9 +1,14 @@
 services:
   postgres:
-    image: 'postgres:latest'
+    image: 'postgres:17'
     environment:
-      - 'POSTGRES_DB=mydatabase'
-      - 'POSTGRES_PASSWORD=secret'
-      - 'POSTGRES_USER=myuser'
+      - 'POSTGRES_DB=school'
+      - 'POSTGRES_USER=school'
+      - 'POSTGRES_PASSWORD=school'
     ports:
-      - '5432'
+      - '5432:5432'
+    volumes:
+      - 'school-pgdata:/var/lib/postgresql/data'
+
+volumes:
+  school-pgdata:
