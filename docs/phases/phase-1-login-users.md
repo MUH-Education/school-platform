@@ -70,7 +70,7 @@ Note: `app_user.staff_id` is a plain `bigint` now. Its foreign key comes in Phas
 - [x] 1.14 `UserService` and `UserController` with rules 1, 2, 6, 7, 8.
 - [x] 1.15 `RolesController` (`GET /roles` returns the matrix).
 - [x] 1.16 `SettingService` and `SettingsController`.
-- [ ] 1.17 `OwnerBootstrap` (rule 9).
+- [x] 1.17 `OwnerBootstrap` (rule 9).
 - [ ] 1.18 A nightly job that deletes `otp_code` rows older than 7 days.
 - [ ] 1.19 All tests below are green.
 

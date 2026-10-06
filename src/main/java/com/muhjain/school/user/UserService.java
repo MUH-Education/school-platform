@@ -127,6 +127,24 @@ public class UserService {
 	}
 
 	/**
+	 * Rule 9: the very first user. Only when the table is empty.
+	 * Example: APP_OWNER_PHONE=9812340001 and no users → OWNER +919812340001.
+	 *
+	 * @return the new owner, or empty if users already exist
+	 */
+	@Transactional
+	public Optional<AppUser> createFirstOwnerIfNoUsers(String rawPhone) {
+		String phone = PhoneNumbers.normalize(rawPhone);
+		if (users.count() > 0) {
+			return Optional.empty();
+		}
+		AppUser owner = users.saveAndFlush(new AppUser(phone, Role.OWNER));
+		auditService.record(ENTITY, owner.getId(), AuditAction.CREATED, "First owner " + phone + " created at start",
+				null, null);
+		return Optional.of(owner);
+	}
+
+	/**
 	 * Logout: every token of this user, on every device, stops working.
 	 * Example: Neelam logs out on the office computer → her phone is logged out too.
 	 */
