@@ -4,19 +4,23 @@ import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
+import com.muhjain.school.audit.AuditAction;
+import com.muhjain.school.audit.AuditService;
 import com.muhjain.school.common.ApiException;
 import com.muhjain.school.common.PhoneNumbers;
 import com.muhjain.school.user.AppUser;
 import com.muhjain.school.user.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Login codes: ask for one ({@link #request}) and check one ({@code verify}, task 1.10).
+ * Login codes: ask for one ({@link #request}) and check one ({@link #verify}).
  * See docs/04-login-otp-jwt.md.
  */
 @Service
@@ -25,6 +29,10 @@ public class OtpService {
 	private static final Logger log = LoggerFactory.getLogger(OtpService.class);
 
 	static final String TOO_MANY = "OTP_TOO_MANY_REQUESTS";
+
+	static final String INVALID = "OTP_INVALID";
+
+	static final String LOCKED = "OTP_LOCKED";
 
 	private static final Duration ONE_HOUR = Duration.ofHours(1);
 
@@ -38,17 +46,24 @@ public class OtpService {
 
 	private final UserService userService;
 
+	private final JwtService jwtService;
+
+	private final AuditService auditService;
+
 	private final Clock clock;
 
 	private final SecureRandom random = new SecureRandom();
 
 	public OtpService(OtpCodeRepository codes, OtpHasher hasher, OtpDeliveryService delivery,
-			OtpProperties properties, UserService userService, Clock clock) {
+			OtpProperties properties, UserService userService, JwtService jwtService, AuditService auditService,
+			Clock clock) {
 		this.codes = codes;
 		this.hasher = hasher;
 		this.delivery = delivery;
 		this.properties = properties;
 		this.userService = userService;
+		this.jwtService = jwtService;
+		this.auditService = auditService;
 		this.clock = clock;
 	}
 
@@ -61,7 +76,7 @@ public class OtpService {
 	@Transactional
 	public OtpRequestResponse request(String rawPhone, String ip) {
 		String phone = PhoneNumbers.normalize(rawPhone);
-		Instant now = Instant.now(clock);
+		Instant now = now();
 		checkLimits(phone, ip, now);
 
 		Optional<AppUser> user = userService.findActiveByPhone(phone);
@@ -78,6 +93,49 @@ public class OtpService {
 		}
 		return new OtpRequestResponse("If this number is registered, a code has been sent.",
 				properties.ttl().toSeconds(), properties.resendAfter().toSeconds());
+	}
+
+	/**
+	 * Step C of the login. Example: "98123 40002" + "482913" → a token for Neelam.
+	 * Wrong code, old code, no code, unknown or turned-off user: all give the same 401 OTP_INVALID.
+	 * <p>
+	 * Does not roll back on ApiException: a wrong try must still save {@code attempts + 1}.
+	 *
+	 * @throws ApiException 401 OTP_INVALID, 429 OTP_LOCKED after 5 wrong tries
+	 */
+	@Transactional(noRollbackFor = ApiException.class)
+	public LoginResponse verify(String rawPhone, String code) {
+		String phone = PhoneNumbers.normalize(rawPhone);
+		Instant now = now();
+		OtpCode otp = codes.findFirstWithLockByPhoneAndConsumedAtIsNullOrderByCreatedAtDescIdDesc(phone)
+			.filter(row -> !row.isExpired(now))
+			.orElseThrow(OtpService::invalid);
+		AppUser user = userService.findActiveByPhone(phone).orElseThrow(OtpService::invalid);
+		if (otp.getAttempts() >= properties.maxAttempts()) {
+			throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, LOCKED,
+					"Too many wrong tries. Please ask for a new code.");
+		}
+		if (code == null || !hasher.matches(phone, code, otp.getCodeHash())) {
+			otp.addWrongAttempt();
+			throw invalid();
+		}
+
+		otp.consume(now);
+		user = userService.recordLogin(user.getId(), now);
+		auditService.record("USER", user.getId(), AuditAction.LOGIN, "Logged in by OTP (" + otp.getChannel() + ")",
+				null, user.getId());
+		IssuedToken token = jwtService.issue(user);
+		return new LoginResponse(token.token(), token.expiresAt().atZone(clock.getZone()).toOffsetDateTime(),
+				AuthUserResponse.of(user));
+	}
+
+	private static ApiException invalid() {
+		return new ApiException(HttpStatus.UNAUTHORIZED, INVALID, "The code is wrong or too old.");
+	}
+
+	// PostgreSQL keeps microseconds, so "now" is cut to microseconds too.
+	private Instant now() {
+		return Instant.now(clock).truncatedTo(ChronoUnit.MICROS);
 	}
 
 	// Limits are counted from otp_code rows: 60 seconds between codes, 5 per phone and 20 per IP in one hour.

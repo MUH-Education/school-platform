@@ -1,5 +1,6 @@
 package com.muhjain.school.user;
 
+import java.time.Instant;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -18,6 +19,14 @@ public class UserService {
 	}
 
 	/** Example: "+919812340002" → Neelam, if she is active. A turned-off user is not found. */
+	/** Sets "last login" to now. Called after a right OTP. */
+	@Transactional
+	public AppUser recordLogin(Long userId, Instant now) {
+		AppUser user = users.findById(userId).orElseThrow();
+		user.setLastLoginAt(now);
+		return user;
+	}
+
 	@Transactional(readOnly = true)
 	public Optional<AppUser> findActiveByPhone(String phone) {
 		return users.findByPhoneAndActiveTrue(phone);

@@ -3,7 +3,9 @@ package com.muhjain.school.auth;
 import java.time.Instant;
 import java.util.Optional;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
@@ -14,6 +16,13 @@ public interface OtpCodeRepository extends JpaRepository<OtpCode, Long> {
 
 	/** The newest code of a phone that is not used yet. Only this one can log in. */
 	Optional<OtpCode> findFirstByPhoneAndConsumedAtIsNullOrderByCreatedAtDescIdDesc(String phone);
+
+	/**
+	 * Same, with a row lock until the transaction ends.
+	 * So two requests with the same right code at the same moment cannot both log in.
+	 */
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	Optional<OtpCode> findFirstWithLockByPhoneAndConsumedAtIsNullOrderByCreatedAtDescIdDesc(String phone);
 
 	/** The oldest code of a phone after a time. For "when can this phone ask again". */
 	Optional<OtpCode> findFirstByPhoneAndCreatedAtAfterOrderByCreatedAtAsc(String phone, Instant since);
