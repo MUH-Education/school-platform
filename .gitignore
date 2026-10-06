@@ -35,3 +35,8 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### This project ###
+data/
+.env
+CLAUDE.local.md
