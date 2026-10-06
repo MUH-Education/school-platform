@@ -19,6 +19,12 @@ public class UserService {
 	}
 
 	/** Example: "+919812340002" → Neelam, if she is active. A turned-off user is not found. */
+	/** Example: 2 → Neelam's row, active or not. */
+	@Transactional(readOnly = true)
+	public Optional<AppUser> findById(Long id) {
+		return users.findById(id);
+	}
+
 	/** Sets "last login" to now. Called after a right OTP. */
 	@Transactional
 	public AppUser recordLogin(Long userId, Instant now) {

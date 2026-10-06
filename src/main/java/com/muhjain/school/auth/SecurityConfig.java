@@ -12,7 +12,6 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
@@ -31,8 +30,8 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 public class SecurityConfig {
 
 	@Bean
-	SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationEntryPoint unauthenticated,
-			AccessDeniedHandler forbidden) {
+	SecurityFilterChain securityFilterChain(HttpSecurity http, UserJwtConverter userJwtConverter,
+			AuthenticationEntryPoint unauthenticated, AccessDeniedHandler forbidden) {
 		http.csrf(AbstractHttpConfigurer::disable)
 			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			.authorizeHttpRequests(auth -> auth.requestMatchers("/api/v1/auth/otp/**")
@@ -41,7 +40,7 @@ public class SecurityConfig {
 				.permitAll()
 				.anyRequest()
 				.authenticated())
-			.oauth2ResourceServer(server -> server.jwt(jwt -> jwt.jwtAuthenticationConverter(new JwtAuthenticationConverter()))
+			.oauth2ResourceServer(server -> server.jwt(jwt -> jwt.jwtAuthenticationConverter(userJwtConverter))
 				.authenticationEntryPoint(unauthenticated)
 				.accessDeniedHandler(forbidden))
 			.exceptionHandling(errors -> errors.authenticationEntryPoint(unauthenticated).accessDeniedHandler(forbidden));
