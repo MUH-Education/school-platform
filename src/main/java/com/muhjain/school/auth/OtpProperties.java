@@ -17,8 +17,9 @@ public record OtpProperties(int length, Duration ttl, int maxAttempts, Duration 
 	public static final int MIN_SECRET_BYTES = 32;
 
 	public OtpProperties {
-		if (hashSecret == null || hashSecret.isBlank()) {
-			throw new IllegalStateException("app.otp.hash-secret is empty. Set the APP_OTP_SECRET environment variable.");
+		// A missing environment variable stays as the text "${APP_...}".
+		if (hashSecret == null || hashSecret.isBlank() || hashSecret.startsWith("${")) {
+			throw new IllegalStateException("app.otp.hash-secret is not set. Set the APP_OTP_SECRET environment variable.");
 		}
 		if (hashSecret.getBytes(StandardCharsets.UTF_8).length < MIN_SECRET_BYTES) {
 			throw new IllegalStateException("app.otp.hash-secret is too short. APP_OTP_SECRET needs at least "

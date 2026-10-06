@@ -45,6 +45,8 @@ class AuthPropertiesTest extends AbstractIntegrationTest {
 		assertThatThrownBy(() -> new JwtProperties(null, Duration.ofDays(30))).hasMessageContaining("APP_JWT_SECRET");
 		assertThatThrownBy(() -> otp(" ")).hasMessageContaining("APP_OTP_SECRET");
 		assertThatThrownBy(() -> otp("short")).hasMessageContaining("at least 32 bytes");
+		assertThatThrownBy(() -> new JwtProperties("${APP_JWT_SECRET}", Duration.ofDays(30)))
+			.hasMessageContaining("not set");
 	}
 
 	@Test

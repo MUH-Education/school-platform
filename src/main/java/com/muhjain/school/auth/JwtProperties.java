@@ -15,8 +15,9 @@ public record JwtProperties(String secret, Duration ttl) {
 	public static final int MIN_SECRET_BYTES = 32;
 
 	public JwtProperties {
-		if (secret == null || secret.isBlank()) {
-			throw new IllegalStateException("app.jwt.secret is empty. Set the APP_JWT_SECRET environment variable.");
+		// A missing environment variable stays as the text "${APP_...}".
+		if (secret == null || secret.isBlank() || secret.startsWith("${")) {
+			throw new IllegalStateException("app.jwt.secret is not set. Set the APP_JWT_SECRET environment variable.");
 		}
 		if (secret.getBytes(StandardCharsets.UTF_8).length < MIN_SECRET_BYTES) {
 			throw new IllegalStateException("app.jwt.secret is too short. APP_JWT_SECRET needs at least "

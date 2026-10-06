@@ -2,6 +2,7 @@ package com.muhjain.school.auth;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 import com.muhjain.school.user.AppUser;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
@@ -35,7 +36,8 @@ public class JwtService {
 	}
 
 	public IssuedToken issue(AppUser user) {
-		Instant now = Instant.now(clock);
+		// A token keeps whole seconds, so the answer says the same time as the token.
+		Instant now = Instant.now(clock).truncatedTo(ChronoUnit.SECONDS);
 		Instant expiresAt = now.plus(properties.ttl());
 		JwtClaimsSet claims = JwtClaimsSet.builder()
 			.subject(String.valueOf(user.getId()))

@@ -25,7 +25,7 @@ class JwtServiceTest extends AbstractIntegrationTest {
 
 	@Test
 	void tokenHoldsUserIdRoleAndVersionForThirtyDays() {
-		Instant now = Instant.parse("2026-10-07T03:45:00Z");
+		Instant now = Instant.parse("2026-10-07T03:45:00.123456Z");
 		clock.setInstant(now);
 		AppUser user = addUser("+919812340002", Role.OFFICE_ADMIN);
 
@@ -35,8 +35,9 @@ class JwtServiceTest extends AbstractIntegrationTest {
 		assertThat(jwt.getSubject()).isEqualTo(String.valueOf(user.getId()));
 		assertThat(jwt.getClaimAsString("role")).isEqualTo("OFFICE_ADMIN");
 		assertThat(((Number) jwt.getClaim("ver")).intValue()).isZero();
-		assertThat(jwt.getIssuedAt()).isEqualTo(now);
-		assertThat(jwt.getExpiresAt()).isEqualTo(now.plus(Duration.ofDays(30))).isEqualTo(issued.expiresAt());
+		Instant wholeSecond = Instant.parse("2026-10-07T03:45:00Z");
+		assertThat(jwt.getIssuedAt()).isEqualTo(wholeSecond);
+		assertThat(jwt.getExpiresAt()).isEqualTo(wholeSecond.plus(Duration.ofDays(30))).isEqualTo(issued.expiresAt());
 		assertThat(jwt.getHeaders()).containsEntry("alg", "HS256");
 	}
 
