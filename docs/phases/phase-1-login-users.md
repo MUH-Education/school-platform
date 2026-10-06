@@ -67,7 +67,7 @@ Note: `app_user.staff_id` is a plain `bigint` now. Its foreign key comes in Phas
 - [x] 1.11 `SecurityConfig` (replaces the temporary one): stateless, open URLs, resource server with our converter, `@EnableMethodSecurity`.
 - [x] 1.12 `UserJwtConverter`: load the user, check `active` and `token_version`, set authorities.
 - [x] 1.13 `CurrentUser` helper and `AuthController` (the four auth URLs).
-- [ ] 1.14 `UserService` and `UserController` with rules 1, 2, 6, 7, 8.
+- [x] 1.14 `UserService` and `UserController` with rules 1, 2, 6, 7, 8.
 - [ ] 1.15 `RolesController` (`GET /roles` returns the matrix).
 - [ ] 1.16 `SettingService` and `SettingsController`.
 - [ ] 1.17 `OwnerBootstrap` (rule 9).

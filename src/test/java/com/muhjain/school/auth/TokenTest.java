@@ -6,9 +6,11 @@ import com.muhjain.school.AbstractIntegrationTest;
 import com.muhjain.school.user.AppUser;
 import com.muhjain.school.user.Role;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -49,6 +51,27 @@ class TokenTest extends AbstractIntegrationTest {
 		me(laptopToken).andExpect(status().isUnauthorized()).andExpect(jsonPath("$.error").value("UNAUTHENTICATED"));
 		me(phoneToken).andExpect(status().isUnauthorized());
 		me(login(PHONE)).andExpect(status().isOk());
+	}
+
+	@Test
+	void roleChangeTakesEffectOnNextRequest() throws Exception {
+		AppUser owner = addUser("+919812340001", Role.OWNER);
+		AppUser neelam = addUser(PHONE, Role.ADMISSIONS_DESK);
+		String oldToken = login(PHONE);
+		mockMvc.perform(get("/api/v1/users").header("Authorization", bearer(oldToken)))
+			.andExpect(status().isForbidden());
+
+		mockMvc
+			.perform(put("/api/v1/users/" + neelam.getId()).header("Authorization", bearer(tokenFor(owner)))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"phone\":\"" + PHONE + "\",\"role\":\"OWNER\",\"active\":true}"))
+			.andExpect(status().isOk());
+
+		// Rule 6: the old token stops at once. After a new login the new role works.
+		mockMvc.perform(get("/api/v1/users").header("Authorization", bearer(oldToken)))
+			.andExpect(status().isUnauthorized());
+		mockMvc.perform(get("/api/v1/users").header("Authorization", bearer(login(PHONE))))
+			.andExpect(status().isOk());
 	}
 
 	@Test
