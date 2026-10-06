@@ -1,9 +1,12 @@
 package com.muhjain.school;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.time.ZoneId;
 
+import com.jayway.jsonpath.JsonPath;
+import com.muhjain.school.auth.JwtService;
 import com.muhjain.school.auth.LogOtpSender;
 import com.muhjain.school.user.AppUser;
 import com.muhjain.school.user.AppUserRepository;
@@ -18,6 +21,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
+import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
@@ -28,6 +32,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Base class for tests that need the whole app and a real database.
@@ -60,6 +66,9 @@ public abstract class AbstractIntegrationTest {
 	@Autowired
 	protected AppUserRepository userRepository;
 
+	@Autowired
+	protected JwtService jwtService;
+
 	// A spy: the real LogOtpSender runs, and tests can read which code it was given.
 	@MockitoSpyBean
 	protected LogOtpSender logOtpSender;
@@ -78,6 +87,31 @@ public abstract class AbstractIntegrationTest {
 		ArgumentCaptor<String> code = ArgumentCaptor.forClass(String.class);
 		verify(logOtpSender, atLeastOnce()).send(eq(phone), code.capture());
 		return code.getValue();
+	}
+
+	/** A valid token for this user, made directly. */
+	protected String tokenFor(AppUser user) {
+		return jwtService.issue(user).token();
+	}
+
+	/** Real login over HTTP: ask for a code, read it from LogOtpSender, verify. Returns the token. */
+	protected String login(String phone) throws Exception {
+		mockMvc.perform(post("/api/v1/auth/otp/request").contentType(MediaType.APPLICATION_JSON)
+			.content("{\"phone\":\"" + phone + "\"}")).andExpect(status().isOk());
+		String body = mockMvc
+			.perform(post("/api/v1/auth/otp/verify").contentType(MediaType.APPLICATION_JSON)
+				.content("{\"phone\":\"" + phone + "\",\"otp\":\"" + lastCodeSentTo(phone) + "\"}"))
+			.andExpect(status().isOk())
+			.andReturn()
+			.getResponse()
+			.getContentAsString();
+		// The next login of the same phone may not wait 60 seconds.
+		clock.advance(Duration.ofMinutes(1));
+		return JsonPath.read(body, "$.token");
+	}
+
+	protected static String bearer(String token) {
+		return "Bearer " + token;
 	}
 
 	@BeforeEach
