@@ -55,7 +55,7 @@ Note: `app_user.staff_id` is a plain `bigint` now. Its foreign key comes in Phas
 ## Tasks
 
 - [x] 1.1 `V1__auth_users.sql` with the four tables, checks and indexes from `docs/03-data-model.md`.
-- [ ] 1.2 `user` package: enums `Role` and `Permission` with the map from `docs/05-roles-permissions.md`. Write `RolePermissionMatrixTest` first.
+- [x] 1.2 `user` package: enums `Role` and `Permission` with the map from `docs/05-roles-permissions.md`. Write `RolePermissionMatrixTest` first.
 - [ ] 1.3 `AppUser` entity, `AppUserRepository`.
 - [ ] 1.4 `audit` package: `AuditLog` entity, `AuditService.record(entityType, entityId, action, summary, details)`.
 - [ ] 1.5 `auth` package: `OtpProperties`, `JwtProperties` (`@ConfigurationProperties`). Fail at start if the JWT secret is shorter than 32 bytes.
