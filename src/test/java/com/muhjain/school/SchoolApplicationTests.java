@@ -1,12 +1,8 @@
 package com.muhjain.school;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 
-@Import(TestcontainersConfiguration.class)
-@SpringBootTest
-class SchoolApplicationTests {
+class SchoolApplicationTests extends AbstractIntegrationTest {
 
 	@Test
 	void contextLoads() {

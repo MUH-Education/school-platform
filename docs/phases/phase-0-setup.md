@@ -72,7 +72,7 @@ Why start.spring.io and not a hand-written build file? Spring Boot 4 renamed sev
   - `PhoneNumbers.normalize(String)` → `+91XXXXXXXXXX` or throws
   - `PageResponse<T>` record for paged lists
 - [x] 0.7 Add a temporary `SecurityConfig` that allows `/actuator/health` and blocks everything else with 401. Phase 1 replaces it.
-- [ ] 0.8 Create `AbstractIntegrationTest`: starts one PostgreSQL Testcontainer for all tests, `@SpringBootTest`, `@AutoConfigureMockMvc`, profile `test`.
+- [x] 0.8 Create `AbstractIntegrationTest`: starts one PostgreSQL Testcontainer for all tests, `@SpringBootTest`, `@AutoConfigureMockMvc`, profile `test`.
 - [ ] 0.9 Write the tests listed below.
 - [ ] 0.10 Write `README.md`: how to run, how to test, in 10 lines.
 - [ ] 0.11 Outside the code: choose the SMS and WhatsApp company and start DLT registration (question C1). It takes one to two weeks and Phase 5 needs it.
