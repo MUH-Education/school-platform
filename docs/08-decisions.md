@@ -173,6 +173,7 @@ Add a line each time code needed a choice the docs did not cover.
 | 7 Oct 2026 | 6 | Audit entity type `ENQUIRY` for create, status change, follow-up and admission. Phones in the history are masked. The edit of details (`PUT`) is not written (not in task 6.10). | Task 6.10. |
 | 7 Oct 2026 | 6 | The dev data adds 29 enquiries (7 NEW, 6 CONTACTED, 5 VISITED, 3 APPLIED, 4 ADMITTED linked to real students, 4 LOST; 5 overdue) once, when there are none. Running the dev data found a real bug: a follow-up with no user crashed the detail screen (fixed). | Task 6.11. |
 | 7 Oct 2026 | 7 | Owner's answer to C2: the office types every payment in this system. It is the only fee record (B15 stays). Nobody answered C5 and C7, so the defaults of part C hold: the bus fee for a child who starts mid-year is typed by the office, and a fee is "delayed" after 10 days late and "defaulted" after 60 (the settings `fees.grace_days` and `fees.defaulted_after_days`). | C2 asked. C5 and C7 not answered. |
+| 7 Oct 2026 | 7 | A due is rounded **down** to whole rupees, and the last due takes the rest. Example: ₹10,000 monthly → 11 × ₹833 and the last ₹837. A due that would be ₹0 is left out (the database wants amount above 0). Standard due dates are counted from the session start date (`starts_on`), so a session that starts on another day still gets its own 4 quarters. | The doc says "round"; rounding half up can push the last due below 0 (₹7 over 12 months). Rounding down never does. |
 
 ## E. What changed from the first plan document
 
