@@ -48,7 +48,7 @@ This phase needs only Phase 1. You can build it any time after Phase 1. The link
 ## Tasks
 
 - [x] 6.1 `V6__enquiries.sql`.
-- [ ] 6.2 `enquiry` package: entities, enums `EnquirySource`, `EnquiryStatus`, repositories.
+- [x] 6.2 `enquiry` package: entities, enums `EnquirySource`, `EnquiryStatus`, repositories.
 - [ ] 6.3 `EnquiryService.create` and `update` (rules 1, 2, 6, 7).
 - [ ] 6.4 `EnquiryService.changeStatus` (rule 3). Unit test the allowed moves as a table.
 - [ ] 6.5 Follow-ups (rule 4).
