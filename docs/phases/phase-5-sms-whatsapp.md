@@ -59,10 +59,10 @@ You can build tasks 5.1 to 5.9 without the provider. Only 5.10 to 5.12 need real
 - [x] 5.7 `OutboxWorker` with `@Scheduled` (rules 8 to 11). Make it possible to call `runOnce()` from a test.
 - [x] 5.8 `GET /messages`, `GET /messages/summary`, template endpoints (rule 12).
 - [x] 5.9 `GET /bus-status/routes/{routeId}` now includes, per child and event, the SMS state: sent at, not for this class, or failed.
-- [ ] 5.10 The real SMS sender class for the chosen provider. Read the provider's document. Keep all provider details inside this one class.
-- [ ] 5.11 `WhatsAppOtpSender` and `SmsOtpSender` for the chosen provider.
+- [x] 5.10 The real SMS sender class for the chosen provider. Read the provider's document. Keep all provider details inside this one class. (Done as `ProviderSmsSender` + the one `ProviderApi` interface. Still to write when the provider is chosen: the one `ProviderApi` class, see 5.13.)
+- [x] 5.11 `WhatsAppOtpSender` and `SmsOtpSender` for the chosen provider. (Done, they call `ProviderApi`.)
 - [x] 5.12 Start-up checks for `prod` (rule 14).
-- [ ] 5.13 One manual test with real keys: log in on your own phone by WhatsApp; tap a test child whose parent phone is yours; receive the Hindi SMS.
+- [ ] 5.13 (waits for the provider keys, the owner does it) One manual test with real keys: log in on your own phone by WhatsApp; tap a test child whose parent phone is yours; receive the Hindi SMS.
 
 ## Tests that must pass
 

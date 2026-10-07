@@ -1,5 +1,6 @@
 package com.muhjain.school.messaging;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
@@ -13,11 +14,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class ProdMessagingCheck {
 
-	public ProdMessagingCheck(Environment environment,
-			@Value("${app.messaging.sms-provider:log}") String smsProvider) {
+	public ProdMessagingCheck(Environment environment, @Value("${app.messaging.sms-provider:log}") String smsProvider,
+			ObjectProvider<ProviderApi> providerApi) {
 		if (environment.matchesProfiles("prod") && "log".equalsIgnoreCase(smsProvider.trim())) {
 			throw new IllegalStateException("In prod app.messaging.sms-provider cannot be 'log'. "
 					+ "Parents would never get an SMS. Set it to the real provider.");
+		}
+		if (environment.matchesProfiles("prod") && providerApi.getIfAvailable() == null) {
+			throw new IllegalStateException("In prod there must be one ProviderApi class for the SMS and WhatsApp "
+					+ "company (see ProviderApi). Without it no code or SMS can be sent.");
 		}
 	}
 

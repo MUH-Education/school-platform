@@ -35,6 +35,13 @@ app:
   messaging:
     sms-provider: log              # log | msg91 | ...
     whatsapp-provider: log
+    provider:                      # used by the one ProviderApi class (see messaging/ProviderApi.java)
+      base-url: ${APP_PROVIDER_BASE_URL:}
+      auth-key: ${APP_PROVIDER_AUTH_KEY:}              # secret, environment variable only
+      sender-id: ${APP_PROVIDER_SENDER_ID:}            # DLT sender id (header)
+      otp-sms-template-id: ${APP_PROVIDER_OTP_SMS_TEMPLATE_ID:}
+      whatsapp-otp-template: ${APP_PROVIDER_WHATSAPP_OTP_TEMPLATE:}
+      timeout: 5s
     worker-enabled: true           # the OutboxWorker runs every 5 seconds. Tests turn it off and call runOnce().
   photos:
     storage: local                 # local = a folder on this machine. prod: S3PhotoStorage comes in Phase 9.
