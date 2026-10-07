@@ -16,11 +16,11 @@ import org.springframework.transaction.annotation.Transactional;
  * to_date >= D)}) and the child is ACTIVE.
  * Example: Ishaan starts Route 9 on 2 Nov. {@code onRoute(9, 1 Nov)} does not list him. {@code onRoute(9, 2 Nov)} does.
  * <p>
- * It also gives the counts that routes ask for (task 3.15 connects them), so routes need not know
+ * It also gives the counts that {@link com.muhjain.school.route.StudentCounts} asks for, so routes need not know
  * about students.
  */
 @Service
-public class StudentQueryService {
+public class StudentQueryService implements com.muhjain.school.route.StudentCounts {
 
 	private final TransportEnrolmentRepository enrolments;
 
@@ -35,12 +35,14 @@ public class StudentQueryService {
 	}
 
 	/** Example: Route 4 on 7 Oct → 19. */
+	@Override
 	@Transactional(readOnly = true)
 	public int childrenOnRoute(Long routeId, LocalDate date) {
 		return (int) enrolments.countOnRoute(routeId, date);
 	}
 
 	/** Children per stop on that day. A stop with no children is not in the map. */
+	@Override
 	@Transactional(readOnly = true)
 	public Map<Long, Integer> childrenByStop(Long routeId, LocalDate date) {
 		Map<Long, Integer> counts = new HashMap<>();

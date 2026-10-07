@@ -49,8 +49,11 @@ public class TransportEnrolmentService {
 
 	private final AuditService auditService;
 
+	private final StudentQueryService queries;
+
 	public TransportEnrolmentService(StudentRepository students, TransportEnrolmentRepository enrolments,
-			RouteService routeService, AuditService auditService) {
+			RouteService routeService, AuditService auditService, StudentQueryService queries) {
+		this.queries = queries;
 		this.students = students;
 		this.enrolments = enrolments;
 		this.routeService = routeService;
@@ -243,7 +246,7 @@ public class TransportEnrolmentService {
 		if (route.seats() == null) {
 			return null;
 		}
-		long children = enrolments.countOnRoute(route.id(), day);
+		int children = queries.childrenOnRoute(route.id(), day);
 		if (children <= route.seats()) {
 			return null;
 		}

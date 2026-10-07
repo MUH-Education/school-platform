@@ -131,6 +131,7 @@ Add a line each time code needed a choice the docs did not cover.
 | 7 Oct 2026 | 3 | A child leaves with `PUT /students/{id}/status` `{ "status": "LEFT", "leftOn": ... }` (STUDENTS_EDIT). `leftOn` defaults to today, cannot be in the future or before `joined_on`. The open bus row ends on `leftOn`. `{ "status": "ACTIVE" }` brings a child back (no bus is restored). There is no `DELETE`. | Task 3.13: the URL is not in docs/06-api.md. |
 | 7 Oct 2026 | 3 | `GET /students`: `size` is 1 to 100 (default 25), `sort` can be `name`, `admissionNo`, `className`, `village` or `joinedOn`. `q` searches name, admission number and, when it has 4 or more digits, any phone of the child. `bus` and `routeId` mean "on the bus today". | The doc names the filters only. |
 | 7 Oct 2026 | 3 | `GET /students/{id}/history` shows `changedBy` as the user's name, or a masked phone if the user has no name. Times are `OffsetDateTime` in the school zone. New helper `UserService.displayNames(ids)`. | "Who and when" for the Change history box. |
+| 7 Oct 2026 | 3 | `StudentQueryService` is the one place for "children on route R on day D". It also implements the Phase 2 interface `StudentCounts`, so `ZeroStudentCounts` is deleted and routes, the load board, `ROUTE_HAS_STUDENTS` and `STOP_HAS_STUDENTS` now count real children (ACTIVE only). `RouteChild` (id, name, admission no, gender, class, section, stop id) is what `onRoute` returns for Phase 4. | Tasks 3.14 and 3.15. One query, written once. |
 
 ## E. What changed from the first plan document
 
