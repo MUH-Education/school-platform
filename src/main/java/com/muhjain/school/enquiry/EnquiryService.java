@@ -201,6 +201,33 @@ public class EnquiryService {
 			.map(e -> EnquiryResponse.of(e, today, clock.getZone(), List.of())));
 	}
 
+	/**
+	 * Count per stage, total, overdue, admitted percent and count per village (rule 9).
+	 * Example: 29 enquiries, 4 admitted → 14%.
+	 */
+	@Transactional(readOnly = true)
+	public EnquirySummaryResponse summary() {
+		Map<EnquiryStatus, Long> byStatus = new java.util.EnumMap<>(EnquiryStatus.class);
+		for (EnquiryStatus status : EnquiryStatus.values()) {
+			byStatus.put(status, 0L);
+		}
+		for (Object[] row : enquiries.countByStatus()) {
+			byStatus.put((EnquiryStatus) row[0], ((Number) row[1]).longValue());
+		}
+		long total = byStatus.values().stream().mapToLong(Long::longValue).sum();
+		long admitted = byStatus.get(EnquiryStatus.ADMITTED);
+		int percent = (total == 0) ? 0
+				: java.math.BigDecimal.valueOf(admitted * 100L)
+					.divide(java.math.BigDecimal.valueOf(total), 0, java.math.RoundingMode.HALF_UP)
+					.intValue();
+		List<EnquirySummaryResponse.VillageCount> villages = enquiries.countByVillage()
+			.stream()
+			.map(row -> new EnquirySummaryResponse.VillageCount((String) row[0], ((Number) row[1]).longValue()))
+			.toList();
+		return new EnquirySummaryResponse(total, byStatus, enquiries.countOverdue(today()), admitted, percent,
+				villages);
+	}
+
 	// ---- helpers shared with the other enquiry services in this package ----
 
 	Enquiry find(Long id) {

@@ -41,8 +41,9 @@ public interface EnquiryRepository extends JpaRepository<Enquiry, Long> {
 	@Query("select e.status, count(e) from Enquiry e group by e.status")
 	List<Object[]> countByStatus();
 
-	/** Each row is {village, count}, the biggest first. */
-	@Query("select e.village, count(e) from Enquiry e group by e.village order by count(e) desc, e.village")
+	/** Each row is {village, count}, the biggest first. "Kanheri" and "kanheri" are one village. */
+	@Query("select min(e.village), count(e) from Enquiry e group by lower(e.village) "
+			+ "order by count(e) desc, min(e.village)")
 	List<Object[]> countByVillage();
 
 	@Query("select count(e) from Enquiry e where e.nextFollowUpOn < :today and e.status not in "

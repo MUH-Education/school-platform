@@ -45,6 +45,13 @@ public class EnquiryController {
 		return enquiryService.list(status, village, source, overdue, q, page, size);
 	}
 
+	/** Count per stage, overdue, admitted percent and count per village. */
+	@GetMapping("/summary")
+	@PreAuthorize("hasAuthority('ENQUIRIES_VIEW')")
+	public EnquirySummaryResponse summary() {
+		return enquiryService.summary();
+	}
+
 	/** Add an enquiry. 409 ENQUIRY_EXISTS (with {@code fields.enquiryId}) if the phone and class are open already. */
 	@PostMapping
 	@PreAuthorize("hasAuthority('ENQUIRIES_EDIT')")
