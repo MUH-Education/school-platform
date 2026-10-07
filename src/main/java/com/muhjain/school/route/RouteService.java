@@ -13,6 +13,9 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.muhjain.school.audit.AuditAction;
+import com.muhjain.school.audit.AuditChanges;
+import com.muhjain.school.audit.AuditService;
 import com.muhjain.school.common.ApiException;
 import com.muhjain.school.common.NameKeys;
 import com.muhjain.school.vehicle.VehicleService;
@@ -31,6 +34,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class RouteService {
 
+	static final String ENTITY = "ROUTE";
+
 	private final RouteRepository routes;
 
 	private final RouteStopRepository stops;
@@ -39,14 +44,17 @@ public class RouteService {
 
 	private final StudentCounts studentCounts;
 
+	private final AuditService auditService;
+
 	private final Clock clock;
 
 	public RouteService(RouteRepository routes, RouteStopRepository stops, VehicleService vehicleService,
-			StudentCounts studentCounts, Clock clock) {
+			StudentCounts studentCounts, AuditService auditService, Clock clock) {
 		this.routes = routes;
 		this.stops = stops;
 		this.vehicleService = vehicleService;
 		this.studentCounts = studentCounts;
+		this.auditService = auditService;
 		this.clock = clock;
 	}
 
@@ -83,8 +91,10 @@ public class RouteService {
 	public RouteResponse create(CreateRouteRequest request) {
 		String name = NameKeys.tidy(request.name());
 		checkName(name, 0L);
-		checkVehicle(request.vehicleId(), true, 0L);
+		VehicleSummary vehicle = checkVehicle(request.vehicleId(), true, 0L);
 		Route route = save(new Route(name, request.vehicleId()));
+		auditService.record(ENTITY, route.getId(), AuditAction.CREATED,
+				name + " added" + ((vehicle != null) ? " on " + vehicle.name() : " with no vehicle"), null);
 		return response(route);
 	}
 
@@ -104,11 +114,21 @@ public class RouteService {
 		if (route.isActive() && !active) {
 			checkNoChildren(route);
 		}
-		checkVehicle(request.vehicleId(), active, id);
+		VehicleSummary newVehicle = checkVehicle(request.vehicleId(), active, id);
+		VehicleSummary oldVehicle = (route.getVehicleId() == null) ? null
+				: vehicleService.summaries(List.of(route.getVehicleId())).get(route.getVehicleId());
+		AuditChanges changes = new AuditChanges().field("Name", "name", route.getName(), name)
+			.field("Vehicle", "vehicle", (oldVehicle != null) ? oldVehicle.name() : null,
+					(newVehicle != null) ? newVehicle.name() : null)
+			.active(route.isActive(), active);
 		route.setName(name);
 		route.setVehicleId(request.vehicleId());
 		route.setActive(active);
-		return response(save(route));
+		route = save(route);
+		if (!changes.isEmpty()) {
+			auditService.record(ENTITY, id, AuditAction.UPDATED, changes.summary(), changes.details());
+		}
+		return response(route);
 	}
 
 	/**
@@ -122,6 +142,8 @@ public class RouteService {
 		if (route.isActive()) {
 			checkNoChildren(route);
 			route.setActive(false);
+			AuditChanges changes = new AuditChanges().active(true, false);
+			auditService.record(ENTITY, id, AuditAction.UPDATED, changes.summary(), changes.details());
 		}
 	}
 
@@ -171,7 +193,31 @@ public class RouteService {
 		}
 		stops.saveAll(toSave);
 		stops.flush();
+		auditStops(route, existing.values(), toSave);
 		return response(route);
+	}
+
+	// Task 2.15. Only a real change is written. Example: "Stops changed. Now 3: Sadhanwas, Jakhal, Kanheri."
+	private void auditStops(Route route, Collection<RouteStop> before, List<RouteStop> after) {
+		List<Map<String, Object>> oldList = before.stream().map(RouteService::stopDetail).toList();
+		List<Map<String, Object>> newList = after.stream().map(RouteService::stopDetail).toList();
+		if (oldList.equals(newList)) {
+			return;
+		}
+		Map<String, Object> details = new LinkedHashMap<>();
+		details.put("before", oldList);
+		details.put("after", newList);
+		String names = after.stream().map(RouteStop::getName).collect(Collectors.joining(", "));
+		auditService.record(ENTITY, route.getId(), AuditAction.UPDATED,
+				"Stops changed. Now " + after.size() + (after.isEmpty() ? "." : ": " + names + "."), details);
+	}
+
+	private static Map<String, Object> stopDetail(RouteStop stop) {
+		Map<String, Object> detail = new LinkedHashMap<>();
+		detail.put("name", stop.getName());
+		detail.put("morningTime", (stop.getMorningTime() != null) ? stop.getMorningTime().toString() : null);
+		detail.put("eveningTime", (stop.getEveningTime() != null) ? stop.getEveningTime().toString() : null);
+		return detail;
 	}
 
 	/** The active route of a vehicle, if any. Example: Van 4 → Route 4. */
@@ -220,16 +266,16 @@ public class RouteService {
 	}
 
 	// The vehicle must exist. A route that is on must have a vehicle that is on, and no other route on it (rule 13).
-	private void checkVehicle(Long vehicleId, boolean routeIsActive, Long exceptRouteId) {
+	private VehicleSummary checkVehicle(Long vehicleId, boolean routeIsActive, Long exceptRouteId) {
 		if (vehicleId == null) {
-			return;
+			return null;
 		}
 		VehicleSummary vehicle = vehicleService.summaries(List.of(vehicleId)).get(vehicleId);
 		if (vehicle == null) {
 			throw ApiException.validation("vehicleId", "does not exist");
 		}
 		if (!routeIsActive) {
-			return;
+			return vehicle;
 		}
 		if (!vehicle.active()) {
 			throw new ApiException(HttpStatus.CONFLICT, "VEHICLE_INACTIVE",
@@ -241,6 +287,7 @@ public class RouteService {
 				throw new ApiException(HttpStatus.CONFLICT, "VEHICLE_HAS_ROUTE",
 						vehicle.name() + " already runs " + other.getName() + ".");
 			});
+		return vehicle;
 	}
 
 	private void checkNoChildren(Route route) {

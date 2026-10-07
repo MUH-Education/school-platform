@@ -4,12 +4,16 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.muhjain.school.audit.AuditAction;
+import com.muhjain.school.audit.AuditService;
 import com.muhjain.school.common.ApiException;
 import com.muhjain.school.common.DayText;
 import com.muhjain.school.vehicle.VehicleResponse;
@@ -35,13 +39,16 @@ public class AssignmentService {
 
 	private final VehicleService vehicleService;
 
+	private final AuditService auditService;
+
 	private final Clock clock;
 
 	public AssignmentService(VehicleAssignmentRepository assignments, StaffRepository staff,
-			VehicleService vehicleService, Clock clock) {
+			VehicleService vehicleService, AuditService auditService, Clock clock) {
 		this.assignments = assignments;
 		this.staff = staff;
 		this.vehicleService = vehicleService;
+		this.auditService = auditService;
 		this.clock = clock;
 	}
 
@@ -163,14 +170,40 @@ public class AssignmentService {
 
 		VehicleAssignment row = new VehicleAssignment(vehicleId, person.getId(), duty, from, temporary ? to : null,
 				temporary, request.reason(), actorId);
+		// "Who was on the duty before?" Needed for the change history.
+		Optional<VehicleAssignment> previous;
 		if (temporary) {
 			checkNoOtherTemporary(vehicle.name(), vehicleId, duty, from, to);
+			previous = AssignmentRules.pick(assignments.coveringDay(vehicleId, from), duty, from);
 		}
 		else {
-			closeOldPermanentRow(vehicle.name(), vehicleId, duty, from);
+			previous = closeOldPermanentRow(vehicle.name(), vehicleId, duty, from);
 		}
 		row = assignments.saveAndFlush(row);
+		audit(row, person, previous);
 		return AssignmentResponse.of(row, person.getName(), clock.getZone());
+	}
+
+	// Task 2.15. Example: "Driver changed from Jagdish to Surender, 12 to 16 Oct" (temporary)
+	// or "Driver changed from Jagdish to Surender from 1 Nov 2026" (permanent).
+	private void audit(VehicleAssignment row, Staff person, Optional<VehicleAssignment> previous) {
+		String oldName = previous.map(p -> staff.findById(p.getStaffId()).orElseThrow().getName()).orElse(null);
+		String duty = row.getDuty().name().charAt(0) + row.getDuty().name().substring(1).toLowerCase(Locale.ROOT);
+		String when = row.isTemporary() ? ", " + DayText.range(row.getFromDate(), row.getToDate())
+				: " from " + DayText.on(row.getFromDate());
+		String summary = (oldName == null) ? duty + " set to " + person.getName() + when
+				: duty + " changed from " + oldName + " to " + person.getName() + when;
+		Map<String, Object> details = new LinkedHashMap<>();
+		details.put("duty", row.getDuty().name());
+		details.put("staffId", person.getId());
+		details.put("staffName", person.getName());
+		details.put("previousStaffId", previous.map(VehicleAssignment::getStaffId).orElse(null));
+		details.put("previousStaffName", oldName);
+		details.put("fromDate", row.getFromDate().toString());
+		details.put("toDate", (row.getToDate() != null) ? row.getToDate().toString() : null);
+		details.put("temporary", row.isTemporary());
+		details.put("reason", (row.getReason() != null) ? row.getReason().name() : null);
+		auditService.record("VEHICLE", row.getVehicleId(), AuditAction.UPDATED, summary, details);
 	}
 
 	// Rule 6. A temporary change needs an end day. A permanent change has none.
@@ -234,11 +267,13 @@ public class AssignmentService {
 	}
 
 	// Rule 7. The new person starts on `from`. The person before ends on the day before.
-	private void closeOldPermanentRow(String vehicleName, Long vehicleId, Duty duty, LocalDate from) {
+	// Returns the row that was closed, or empty if nobody was on the duty.
+	private Optional<VehicleAssignment> closeOldPermanentRow(String vehicleName, Long vehicleId, Duty duty,
+			LocalDate from) {
 		List<VehicleAssignment> permanent = assignments
 			.findByVehicleIdAndDutyAndTemporaryFalseOrderByFromDateAscIdAsc(vehicleId, duty);
 		if (permanent.isEmpty()) {
-			return;
+			return Optional.empty();
 		}
 		VehicleAssignment latest = permanent.getLast();
 		if (!latest.getFromDate().isBefore(from)) {
@@ -246,10 +281,11 @@ public class AssignmentService {
 					+ " since " + DayText.on(latest.getFromDate()) + ". Choose a day after that.");
 		}
 		// Every row now starts before `from`, and rows of one duty do not overlap. So at most one covers `from`.
-		permanent.stream()
+		Optional<VehicleAssignment> closing = permanent.stream()
 			.filter(row -> row.getToDate() == null || !row.getToDate().isBefore(from))
-			.findFirst()
-			.ifPresent(row -> row.setToDate(from.minusDays(1)));
+			.findFirst();
+		closing.ifPresent(row -> row.setToDate(from.minusDays(1)));
+		return closing;
 	}
 
 	/** The school day, in the school zone. */

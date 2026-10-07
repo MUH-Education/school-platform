@@ -6,6 +6,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import com.muhjain.school.audit.AuditAction;
+import com.muhjain.school.audit.AuditChanges;
+import com.muhjain.school.audit.AuditService;
 import com.muhjain.school.common.ApiException;
 import com.muhjain.school.common.NameKeys;
 import com.muhjain.school.common.PhoneNumbers;
@@ -23,6 +26,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class StaffService {
 
+	static final String ENTITY = "STAFF";
+
 	private final StaffRepository staff;
 
 	private final VehicleAssignmentRepository assignments;
@@ -31,14 +36,18 @@ public class StaffService {
 
 	private final AssignmentService assignmentService;
 
+	private final AuditService auditService;
+
 	private final Clock clock;
 
 	public StaffService(StaffRepository staff, VehicleAssignmentRepository assignments,
-			VehicleService vehicleService, AssignmentService assignmentService, Clock clock) {
+			VehicleService vehicleService, AssignmentService assignmentService, AuditService auditService,
+			Clock clock) {
 		this.staff = staff;
 		this.assignments = assignments;
 		this.vehicleService = vehicleService;
 		this.assignmentService = assignmentService;
+		this.auditService = auditService;
 		this.clock = clock;
 	}
 
@@ -88,7 +97,10 @@ public class StaffService {
 		Staff person = new Staff(NameKeys.tidy(request.name()), PhoneNumbers.normalize(request.phone()),
 				request.staffType());
 		applyLicence(person, request.licenceNo(), request.licenceValidTill());
-		return toResponse(staff.saveAndFlush(person));
+		person = staff.saveAndFlush(person);
+		auditService.record(ENTITY, person.getId(), AuditAction.CREATED,
+				"Staff " + person.getName() + " added as " + person.getStaffType(), null);
+		return toResponse(person);
 	}
 
 	/**
@@ -107,12 +119,27 @@ public class StaffService {
 			throw new ApiException(HttpStatus.CONFLICT, "STAFF_TYPE_IN_USE", person.getName() + " has worked as "
 					+ person.getStaffType() + " on a vehicle. The type cannot change.");
 		}
-		person.setName(NameKeys.tidy(request.name()));
-		person.setPhone(PhoneNumbers.normalize(request.phone()));
+		AuditChanges changes = new AuditChanges();
+		String name = NameKeys.tidy(request.name());
+		String phone = PhoneNumbers.normalize(request.phone());
+		changes.field("Name", "name", person.getName(), name)
+			.maskedField("Phone", "phone", person.getPhone(), phone, PhoneNumbers::mask)
+			.field("Type", "staffType", person.getStaffType(), request.staffType());
+		String oldLicenceNo = person.getLicenceNo();
+		LocalDate oldLicenceTill = person.getLicenceValidTill();
+		person.setName(name);
+		person.setPhone(phone);
 		person.setStaffType(request.staffType());
 		applyLicence(person, request.licenceNo(), request.licenceValidTill());
+		changes.field("Licence number", "licenceNo", oldLicenceNo, person.getLicenceNo())
+			.field("Licence valid till", "licenceValidTill", oldLicenceTill, person.getLicenceValidTill())
+			.active(person.isActive(), request.active());
 		person.setActive(request.active());
-		return toResponse(staff.saveAndFlush(person));
+		person = staff.saveAndFlush(person);
+		if (!changes.isEmpty()) {
+			auditService.record(ENTITY, id, AuditAction.UPDATED, changes.summary(), changes.details());
+		}
+		return toResponse(person);
 	}
 
 	/**
@@ -127,6 +154,8 @@ public class StaffService {
 		if (person.isActive()) {
 			checkNotOnAVehicle(person);
 			person.setActive(false);
+			AuditChanges changes = new AuditChanges().active(true, false);
+			auditService.record(ENTITY, id, AuditAction.UPDATED, changes.summary(), changes.details());
 		}
 	}
 

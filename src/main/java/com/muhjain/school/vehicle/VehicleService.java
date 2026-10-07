@@ -1,14 +1,19 @@
 package com.muhjain.school.vehicle;
 
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.muhjain.school.audit.AuditAction;
+import com.muhjain.school.audit.AuditChanges;
+import com.muhjain.school.audit.AuditService;
 import com.muhjain.school.common.ApiException;
 import com.muhjain.school.common.NameKeys;
 import org.springframework.core.NestedExceptionUtils;
@@ -25,15 +30,21 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class VehicleService {
 
+	static final String ENTITY = "VEHICLE";
+
 	private final VehicleRepository vehicles;
 
 	private final VehicleDocumentRepository documents;
 
+	private final AuditService auditService;
+
 	private final Clock clock;
 
-	public VehicleService(VehicleRepository vehicles, VehicleDocumentRepository documents, Clock clock) {
+	public VehicleService(VehicleRepository vehicles, VehicleDocumentRepository documents,
+			AuditService auditService, Clock clock) {
 		this.vehicles = vehicles;
 		this.documents = documents;
+		this.auditService = auditService;
 		this.clock = clock;
 	}
 
@@ -68,6 +79,8 @@ public class VehicleService {
 		Vehicle vehicle = new Vehicle(name, registrationNo, request.vehicleType(), request.seats(),
 				request.monthlyCost().setScale(2), request.ownedBy());
 		vehicle = save(vehicle);
+		auditService.record(ENTITY, vehicle.getId(), AuditAction.CREATED,
+				"Vehicle " + name + " (" + registrationNo + ") added", null);
 		return toResponse(vehicle, List.of(), today());
 	}
 
@@ -82,14 +95,25 @@ public class VehicleService {
 		String name = NameKeys.tidy(request.name());
 		String registrationNo = NameKeys.tidy(request.registrationNo());
 		checkUnique(name, registrationNo, id);
+		BigDecimal monthlyCost = request.monthlyCost().setScale(2);
+		AuditChanges changes = new AuditChanges().field("Name", "name", vehicle.getName(), name)
+			.field("Registration number", "registrationNo", vehicle.getRegistrationNo(), registrationNo)
+			.field("Type", "vehicleType", vehicle.getVehicleType(), request.vehicleType())
+			.field("Seats", "seats", vehicle.getSeats(), request.seats())
+			.field("Monthly cost", "monthlyCost", vehicle.getMonthlyCost(), monthlyCost)
+			.field("Owned by", "ownedBy", vehicle.getOwnedBy(), request.ownedBy())
+			.active(vehicle.isActive(), request.active());
 		vehicle.setName(name);
 		vehicle.setRegistrationNo(registrationNo);
 		vehicle.setVehicleType(request.vehicleType());
 		vehicle.setSeats(request.seats());
-		vehicle.setMonthlyCost(request.monthlyCost().setScale(2));
+		vehicle.setMonthlyCost(monthlyCost);
 		vehicle.setOwnedBy(request.ownedBy());
 		vehicle.setActive(request.active());
 		vehicle = save(vehicle);
+		if (!changes.isEmpty()) {
+			auditService.record(ENTITY, id, AuditAction.UPDATED, changes.summary(), changes.details());
+		}
 		return toResponse(vehicle, documents.findByVehicleId(id), today());
 	}
 
@@ -97,7 +121,11 @@ public class VehicleService {
 	@Transactional
 	public void turnOff(Long id) {
 		Vehicle vehicle = find(id);
-		vehicle.setActive(false);
+		if (vehicle.isActive()) {
+			vehicle.setActive(false);
+			AuditChanges changes = new AuditChanges().active(true, false);
+			auditService.record(ENTITY, id, AuditAction.UPDATED, changes.summary(), changes.details());
+		}
 	}
 
 	/**
@@ -110,9 +138,12 @@ public class VehicleService {
 		Map<DocType, VehicleDocument> existing = new EnumMap<>(DocType.class);
 		documents.findByVehicleId(id).forEach(d -> existing.put(d.getDocType(), d));
 		List<VehicleDocument> now = new ArrayList<>();
+		AuditChanges changes = new AuditChanges();
 		for (DocType type : DocType.values()) {
 			LocalDate date = request.dateOf(type);
 			VehicleDocument row = existing.get(type);
+			changes.field(label(type) + " valid till", type.name().toLowerCase(Locale.ROOT),
+					(row != null) ? row.getValidTill() : null, date);
 			if (date == null && row != null) {
 				documents.delete(row);
 			}
@@ -125,6 +156,9 @@ public class VehicleService {
 			}
 		}
 		documents.flush();
+		if (!changes.isEmpty()) {
+			auditService.record(ENTITY, id, AuditAction.UPDATED, changes.summary(), changes.details());
+		}
 		return toResponse(vehicle, now, today());
 	}
 
@@ -224,6 +258,11 @@ public class VehicleService {
 			}
 			throw ex;
 		}
+	}
+
+	// "FITNESS" → "Fitness", "PUC" → "PUC". The short ones are written in capitals.
+	private static String label(DocType type) {
+		return (type == DocType.PUC) ? "PUC" : type.name().charAt(0) + type.name().substring(1).toLowerCase(Locale.ROOT);
 	}
 
 	private static ApiException nameUsed() {
