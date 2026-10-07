@@ -5,14 +5,17 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.Locale;
 
 import com.muhjain.school.audit.AuditAction;
 import com.muhjain.school.audit.AuditChanges;
+import com.muhjain.school.audit.AuditLog;
 import com.muhjain.school.audit.AuditService;
 import com.muhjain.school.common.ApiException;
 import com.muhjain.school.common.NameKeys;
 import com.muhjain.school.common.PageResponse;
+import com.muhjain.school.user.UserService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -39,10 +42,14 @@ public class StudentService {
 
 	private final AuditService auditService;
 
+	private final UserService userService;
+
 	private final Clock clock;
 
 	public StudentService(StudentRepository students, GuardianService guardianService,
-			TransportEnrolmentService transportService, AuditService auditService, Clock clock) {
+			TransportEnrolmentService transportService, AuditService auditService, UserService userService,
+			Clock clock) {
+		this.userService = userService;
 		this.students = students;
 		this.guardianService = guardianService;
 		this.transportService = transportService;
@@ -110,6 +117,25 @@ public class StudentService {
 	@Transactional(readOnly = true)
 	public StudentResponse get(Long id) {
 		return toResponse(find(id));
+	}
+
+	/**
+	 * The change history of one student, newest first, from the audit log.
+	 * Example: "Bus started: Route 9, Model Town, from 2 Nov 2026" by Neelam.
+	 *
+	 * @throws ApiException 404 NOT_FOUND
+	 */
+	@Transactional(readOnly = true)
+	public List<HistoryItem> history(Long id) {
+		find(id);
+		List<AuditLog> rows = auditService.history(ENTITY, id);
+		Map<Long, String> names = userService.displayNames(
+				rows.stream().map(AuditLog::getChangedBy).filter(java.util.Objects::nonNull).collect(Collectors.toSet()));
+		return rows.stream()
+			.map(r -> new HistoryItem(r.getSummary(), r.getAction().name(),
+					(r.getChangedBy() != null) ? names.get(r.getChangedBy()) : null,
+					r.getChangedAt().atZone(clock.getZone()).toOffsetDateTime()))
+			.toList();
 	}
 
 	/**

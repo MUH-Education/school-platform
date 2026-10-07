@@ -66,6 +66,20 @@ public class StudentController {
 		return studentService.list(new StudentFilter(q, className, village, routeId, bus, status), page, size, sort);
 	}
 
+	/** The full profile: details, parents, bus now, photo flag. */
+	@GetMapping("/{id}")
+	@PreAuthorize("hasAuthority('STUDENTS_VIEW')")
+	public StudentResponse get(@PathVariable Long id) {
+		return studentService.get(id);
+	}
+
+	/** The change history, newest first: what changed, who did it, when. */
+	@GetMapping("/{id}/history")
+	@PreAuthorize("hasAuthority('STUDENTS_VIEW')")
+	public List<HistoryItem> history(@PathVariable Long id) {
+		return studentService.history(id);
+	}
+
 	@PutMapping("/{id}")
 	@PreAuthorize("hasAuthority('STUDENTS_EDIT')")
 	public StudentResponse update(@PathVariable Long id, @Valid @RequestBody UpdateStudentRequest request) {
