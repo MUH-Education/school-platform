@@ -26,4 +26,17 @@ class PhoneNumbersTest {
 		});
 	}
 
+	@ParameterizedTest
+	@ValueSource(strings = { "+919812344321" })
+	void maskShowsOnlyTheLastFourDigits(String phone) {
+		assertThat(PhoneNumbers.mask(phone)).isEqualTo("+91XXXXXX4321");
+	}
+
+	@ParameterizedTest
+	@NullAndEmptySource
+	@ValueSource(strings = { "9812344321", "+91981234432" })
+	void maskOfSomethingElseHidesEverything(String phone) {
+		assertThat(PhoneNumbers.mask(phone)).isEqualTo("+91XXXXXXXXXX");
+	}
+
 }

@@ -1,0 +1,54 @@
+package com.muhjain.school.auth;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+
+import com.muhjain.school.user.AppUser;
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.JwsHeader;
+import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
+import org.springframework.stereotype.Service;
+
+/**
+ * Makes the login token. It holds only: sub (user id), role (for information), ver (token version), iat, exp.
+ * Example for Neelam: sub "2", role "OFFICE_ADMIN", ver 0, valid 30 days.
+ */
+@Service
+public class JwtService {
+
+	public static final String CLAIM_ROLE = "role";
+
+	public static final String CLAIM_VERSION = "ver";
+
+	private final JwtEncoder encoder;
+
+	private final JwtProperties properties;
+
+	private final Clock clock;
+
+	public JwtService(JwtEncoder encoder, JwtProperties properties, Clock clock) {
+		this.encoder = encoder;
+		this.properties = properties;
+		this.clock = clock;
+	}
+
+	public IssuedToken issue(AppUser user) {
+		// A token keeps whole seconds, so the answer says the same time as the token.
+		Instant now = Instant.now(clock).truncatedTo(ChronoUnit.SECONDS);
+		Instant expiresAt = now.plus(properties.ttl());
+		JwtClaimsSet claims = JwtClaimsSet.builder()
+			.subject(String.valueOf(user.getId()))
+			.claim(CLAIM_ROLE, user.getRole().name())
+			.claim(CLAIM_VERSION, user.getTokenVersion())
+			.issuedAt(now)
+			.expiresAt(expiresAt)
+			.build();
+		JwsHeader header = JwsHeader.with(MacAlgorithm.HS256).build();
+		String token = encoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
+		return new IssuedToken(token, expiresAt);
+	}
+
+}

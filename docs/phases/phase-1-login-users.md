@@ -54,25 +54,25 @@ Note: `app_user.staff_id` is a plain `bigint` now. Its foreign key comes in Phas
 
 ## Tasks
 
-- [ ] 1.1 `V1__auth_users.sql` with the four tables, checks and indexes from `docs/03-data-model.md`.
-- [ ] 1.2 `user` package: enums `Role` and `Permission` with the map from `docs/05-roles-permissions.md`. Write `RolePermissionMatrixTest` first.
-- [ ] 1.3 `AppUser` entity, `AppUserRepository`.
-- [ ] 1.4 `audit` package: `AuditLog` entity, `AuditService.record(entityType, entityId, action, summary, details)`.
-- [ ] 1.5 `auth` package: `OtpProperties`, `JwtProperties` (`@ConfigurationProperties`). Fail at start if the JWT secret is shorter than 32 bytes.
-- [ ] 1.6 `OtpCode` entity and repository. `OtpHasher` (HMAC-SHA256 with `app.otp.hash-secret`).
-- [ ] 1.7 `OtpSender` interface, `LogOtpSender`, `OtpDeliveryService` (tries channels in order).
-- [ ] 1.8 `OtpService.request(phone, ip)`: normalize, limits, find user, create and send code, same answer always.
-- [ ] 1.9 `JwtService`: `issue(AppUser)` and the two beans `JwtEncoder`, `JwtDecoder` (HS256, shared secret).
-- [ ] 1.10 `OtpService.verify(phone, code)`: all the checks, mark consumed, return token and user.
-- [ ] 1.11 `SecurityConfig` (replaces the temporary one): stateless, open URLs, resource server with our converter, `@EnableMethodSecurity`.
-- [ ] 1.12 `UserJwtConverter`: load the user, check `active` and `token_version`, set authorities.
-- [ ] 1.13 `CurrentUser` helper and `AuthController` (the four auth URLs).
-- [ ] 1.14 `UserService` and `UserController` with rules 1, 2, 6, 7, 8.
-- [ ] 1.15 `RolesController` (`GET /roles` returns the matrix).
-- [ ] 1.16 `SettingService` and `SettingsController`.
-- [ ] 1.17 `OwnerBootstrap` (rule 9).
-- [ ] 1.18 A nightly job that deletes `otp_code` rows older than 7 days.
-- [ ] 1.19 All tests below are green.
+- [x] 1.1 `V1__auth_users.sql` with the four tables, checks and indexes from `docs/03-data-model.md`.
+- [x] 1.2 `user` package: enums `Role` and `Permission` with the map from `docs/05-roles-permissions.md`. Write `RolePermissionMatrixTest` first.
+- [x] 1.3 `AppUser` entity, `AppUserRepository`.
+- [x] 1.4 `audit` package: `AuditLog` entity, `AuditService.record(entityType, entityId, action, summary, details)`.
+- [x] 1.5 `auth` package: `OtpProperties`, `JwtProperties` (`@ConfigurationProperties`). Fail at start if the JWT secret is shorter than 32 bytes.
+- [x] 1.6 `OtpCode` entity and repository. `OtpHasher` (HMAC-SHA256 with `app.otp.hash-secret`).
+- [x] 1.7 `OtpSender` interface, `LogOtpSender`, `OtpDeliveryService` (tries channels in order).
+- [x] 1.8 `OtpService.request(phone, ip)`: normalize, limits, find user, create and send code, same answer always.
+- [x] 1.9 `JwtService`: `issue(AppUser)` and the two beans `JwtEncoder`, `JwtDecoder` (HS256, shared secret).
+- [x] 1.10 `OtpService.verify(phone, code)`: all the checks, mark consumed, return token and user.
+- [x] 1.11 `SecurityConfig` (replaces the temporary one): stateless, open URLs, resource server with our converter, `@EnableMethodSecurity`.
+- [x] 1.12 `UserJwtConverter`: load the user, check `active` and `token_version`, set authorities.
+- [x] 1.13 `CurrentUser` helper and `AuthController` (the four auth URLs).
+- [x] 1.14 `UserService` and `UserController` with rules 1, 2, 6, 7, 8.
+- [x] 1.15 `RolesController` (`GET /roles` returns the matrix).
+- [x] 1.16 `SettingService` and `SettingsController`.
+- [x] 1.17 `OwnerBootstrap` (rule 9).
+- [x] 1.18 A nightly job that deletes `otp_code` rows older than 7 days.
+- [x] 1.19 All tests below are green.
 
 ## Tests that must pass
 

@@ -70,6 +70,23 @@ Add a line each time code needed a choice the docs did not cover.
 | 6 Oct 2026 | 0 | An error the docs do not name uses the HTTP status name as its code. Example: a crash → 500 `INTERNAL_SERVER_ERROR`, PUT on a GET-only URL → 405 `METHOD_NOT_ALLOWED`. The real error goes only to the log. | Owner's answer. One simple rule, the React app can still switch on `error`. |
 | 6 Oct 2026 | 0 | Keep Spring Boot's health answer `{"groups":["liveness","readiness"],"status":"UP"}`. It counts as `{"status":"UP"}` for Phase 0. | Owner's answer. `/actuator/health/liveness` and `/readiness` help the server in Phase 9. |
 | 6 Oct 2026 | 0 | The root `README.md` (a copy of `docs/phases/README.md`) is replaced by the short "how to run, how to test" README. | Owner's answer. The phase list still lives in `docs/phases/README.md`. |
+| 6 Oct 2026 | 1 | Java 25 comes from the cloud environment's setup script (option A). The build file is not changed. In the Phase 1 session it was installed by hand with `apt-get install openjdk-25-jdk-headless`. | Owner's answer. |
+| 6 Oct 2026 | 1 | `.claude/rules/security.md` was missing. Claude wrote it from the security rules in `CLAUDE.md`, `docs/04` and `docs/05`. No new rules. | Owner said "do what you want". |
+| 6 Oct 2026 | 1 | `dev` and `test` get fixed "dev only" values for `APP_JWT_SECRET` and `APP_OTP_SECRET` in `application.yml` (the env var still wins). `prod` has no default, so the app does not start without them. | Owner said "do what you want". `./gradlew bootRun` and `./gradlew test` work with no setup. |
+| 6 Oct 2026 | 1 | `APP_OTP_SECRET` also needs at least 32 bytes, like the JWT secret. | Same strength for both keys. One rule to remember. |
+| 6 Oct 2026 | 1 | The "20 codes per IP per hour" limit is the setting `app.otp.max-per-ip-per-hour: 20`. | The doc gave the number but no setting name. |
+| 6 Oct 2026 | 1 | `retryAfterSeconds` of a 429 is sent as the standard `Retry-After` header. Example: `Retry-After: 42`. The error body keeps its 3 fields. | One error shape for the React app. |
+| 6 Oct 2026 | 1 | If every OTP channel fails, the answer is still the same 200, no `otp_code` row is saved, and the error is logged with a masked phone. | A different answer would tell a stranger the number is registered. |
+| 6 Oct 2026 | 1 | Known limit: the per-phone and per-IP limits count only `otp_code` rows, and an unknown phone makes no row. So an unknown phone never gets 429. | The doc says "count from otp_code rows, no extra table". An unknown phone costs nothing, because no message is sent. |
+| 6 Oct 2026 | 1 | `created_at` and `updated_at` are filled by Spring Data JPA auditing with the app `Clock`, cut to microseconds like PostgreSQL. | Tests with a fixed clock get fixed times. No `Instant.now()` without the clock. |
+| 6 Oct 2026 | 1 | `staffId` is required for ATTENDANT and refused for other roles (400 `VALIDATION`). The database also checks it. Phase 2 adds the foreign key and checks the staff type. | Phase 1 rule "Only for ATTENDANT". |
+| 6 Oct 2026 | 1 | `PUT /users/{id}` gets the whole user (`phone`, `role`, `active` required; `name`, `staffId` optional). Example: `{"phone":"9812340002","role":"OFFICE_ADMIN","active":false}`. | Matches an edit form. No "missing means unchanged" guessing. |
+| 6 Oct 2026 | 1 | Logout writes an `audit_log` row (UPDATED, "Logged out on all devices"). | It changes `token_version` on the user row. |
+| 6 Oct 2026 | 1 | Settings live in a new package `com.muhjain.school.setting`. | Not in the CLAUDE.md feature list. It is not part of user or common. |
+| 6 Oct 2026 | 1 | `PUT /settings` body: `{"values": {"transport.bus_fee_per_year": "9000"}}`. Only existing keys. `school.name` is text up to 300 characters. Every other key is a whole number 0 or more. `transport.collection_pct` is at most 100. One bad value → 400 and nothing is saved. | The doc did not give the body or value rules. |
+| 6 Oct 2026 | 1 | A settings change is audited as entity_type `SETTING`, entity_id `0`, with the key in `details`. | `audit_log.entity_id` is a number, and a setting's id is its text key. |
+| 6 Oct 2026 | 1 | The OTP clean-up job runs every night at 02:30 school time. | The doc said "nightly" only. |
+| 6 Oct 2026 | 1 | `prod` cannot start in Phase 1: its channels are `whatsapp,sms`, and those senders come in Phase 5. The app stops with a clear message. | A missing channel must stop the app, not silently send nothing. |
 
 ## E. What changed from the first plan document
 
