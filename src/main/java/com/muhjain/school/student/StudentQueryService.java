@@ -104,6 +104,26 @@ public class StudentQueryService {
 		});
 	}
 
+	/** The facts fees need about one child. Empty if the child does not exist. */
+	@Transactional(readOnly = true)
+	public java.util.Optional<StudentBasics> basics(Long studentId) {
+		return students.findById(studentId)
+			.map(s -> new StudentBasics(s.getId(), s.getName(), s.getClassName(), s.getJoinedOn(), s.getStatus()));
+	}
+
+	/**
+	 * The first day of the child's bus inside a date range, or empty if no bus row touches it.
+	 * Used to start the bus dues of a fee plan. Example: bus from 2 Nov, range 1 Apr to 31 Mar → 2 Nov.
+	 */
+	@Transactional(readOnly = true)
+	public java.util.Optional<LocalDate> firstBusDay(Long studentId, LocalDate rangeStart, LocalDate rangeEnd) {
+		return enrolments.findByStudentId(studentId)
+			.stream()
+			.filter(e -> !e.getFromDate().isAfter(rangeEnd) && (e.getToDate() == null || !e.getToDate().isBefore(rangeStart)))
+			.map(e -> e.getFromDate().isBefore(rangeStart) ? rangeStart : e.getFromDate())
+			.min(LocalDate::compareTo);
+	}
+
 	/** Names by id. Example: {118 → "Aryan Jain"}. An id that does not exist is not in the map. */
 	@Transactional(readOnly = true)
 	public Map<Long, String> names(Collection<Long> studentIds) {

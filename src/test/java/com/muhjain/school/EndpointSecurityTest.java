@@ -60,6 +60,9 @@ class EndpointSecurityTest extends AbstractIntegrationTest {
 
 	private static final String CLASS_FEES_BODY = "{\"fees\":[{\"className\":\"3\",\"schoolFee\":30000}]}";
 
+	private static final String FEE_PLAN_BODY = "{\"schoolFee\":30000,\"busFee\":8800,"
+			+ "\"payFrequency\":\"QUARTERLY\"}";
+
 	private static final String TEMPLATE_BODY = "{\"body\":\"{name} {time}\",\"active\":true}";
 
 	/** method, URL, body, a role WITHOUT the permission (null = any login is enough) */
@@ -125,7 +128,9 @@ class EndpointSecurityTest extends AbstractIntegrationTest {
 				Arguments.of("GET", "/api/v1/sessions", null, null),
 				Arguments.of("POST", "/api/v1/sessions", SESSION_BODY, Role.OFFICE_ADMIN),
 				Arguments.of("GET", "/api/v1/sessions/1/class-fees", null, Role.TRANSPORT_INCHARGE),
-				Arguments.of("PUT", "/api/v1/sessions/1/class-fees", CLASS_FEES_BODY, Role.OFFICE_ADMIN));
+				Arguments.of("PUT", "/api/v1/sessions/1/class-fees", CLASS_FEES_BODY, Role.OFFICE_ADMIN),
+				// Phase 7: the plan needs FEES_EDIT (not the transport in-charge).
+				Arguments.of("PUT", "/api/v1/students/1/fee-plan", FEE_PLAN_BODY, Role.TRANSPORT_INCHARGE));
 	}
 
 	@ParameterizedTest(name = "{0} {1} without token → 401")

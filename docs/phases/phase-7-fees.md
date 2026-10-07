@@ -80,7 +80,7 @@ Answer question **C2** in `docs/08-decisions.md` before building: does the accou
 - [x] 7.2 `fee` package: entities, enums, repositories.
 - [x] 7.3 Sessions and class fees endpoints (rules 1, 2).
 - [x] 7.4 `DueScheduleBuilder` (pure Java): plan + start date → list of dues (rule 6). Test examples A and B first.
-- [ ] 7.5 `FeePlanService.save` (rules 3 to 5, 7).
+- [x] 7.5 `FeePlanService.save` (rules 3 to 5, 7).
 - [ ] 7.6 `ReceiptNumberService` (rule 11).
 - [ ] 7.7 `PaymentService.record` and `PaymentService.correct` (rules 9, 10, 12, 13). Add `FEES_CORRECT` to the `Permission` enum, owner only, and to `RolePermissionMatrixTest`.
 - [ ] 7.8 `FeeStatusCalculator` (pure Java) with the examples from `docs/03-data-model.md` (rule 15).
