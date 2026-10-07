@@ -291,7 +291,8 @@ public class DevDataLoader implements ApplicationRunner {
 				AdmissionResponse admitted = admissionService.admit(new AdmissionRequest(first + " " + surname,
 						dob, isGirl ? Gender.F : Gender.M, className, (children % 2 == 0) ? "A" : "B", village, null,
 						occupations[f % occupations.length], yearStart,
-						List.of(new GuardianRequest(parent, phone, GuardianRelation.FATHER, true)), null, null, bus), null);
+						List.of(new GuardianRequest(parent, phone, GuardianRelation.FATHER, true)), null, null, bus, null, null),
+						null);
 				if (k == 0) {
 					firstChildOfFamily.add(admitted.studentId());
 				}

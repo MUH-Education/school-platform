@@ -42,8 +42,11 @@ public class FeePlanService {
 
 	private final AuditService audit;
 
+	private final ClassFeeService classFees;
+
 	public FeePlanService(FeePlanRepository plans, FeeDueRepository dues, SessionService sessions,
-			StudentQueryService students, AuditService audit) {
+			StudentQueryService students, AuditService audit, ClassFeeService classFees) {
+		this.classFees = classFees;
 		this.plans = plans;
 		this.dues = dues;
 		this.sessions = sessions;
@@ -102,6 +105,27 @@ public class FeePlanService {
 		audit.record("STUDENT", studentId, (before == null) ? AuditAction.CREATED : AuditAction.UPDATED,
 				((before == null) ? "Fee plan set: " : "Fee plan changed from " + before + " to ") + after, details);
 		return FeePlanResponse.of(plan, session.getName(), made);
+	}
+
+	/**
+	 * The plan of a new admission (rule 17). The school fee comes from the class fee when the clerk left it empty,
+	 * the bus fee from the bus part of the admission. Same checks and same dues as {@link #save}.
+	 *
+	 * @throws ApiException 400 VALIDATION (no school fee and no standard fee for the class)
+	 */
+	@Transactional
+	public FeePlanResponse saveAtAdmission(Long studentId, String className, AdmissionFeeRequest fee,
+			BigDecimal busFeeOfBus, Long userId) {
+		AcademicSession session = sessions.current();
+		BigDecimal schoolFee = fee.schoolFee();
+		if (schoolFee == null) {
+			schoolFee = classFees.standardFee(session.getId(), className)
+				.orElseThrow(() -> ApiException.validation("fee.schoolFee",
+						"is needed: no standard fee is set for class " + className));
+		}
+		BigDecimal busFee = (fee.busFee() != null) ? fee.busFee() : busFeeOfBus;
+		return save(studentId,
+				new FeePlanRequest(schoolFee, busFee, fee.discount(), fee.discountReason(), fee.payFrequency()), userId);
 	}
 
 	/**
