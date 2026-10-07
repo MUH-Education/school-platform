@@ -62,9 +62,8 @@ class DevDataLoaderTest extends AbstractIntegrationTest {
 			.andExpect(jsonPath("$.totals.routes").value(9))
 			.andExpect(jsonPath("$.totals.vehicles").value(9))
 			.andExpect(jsonPath("$.totals.seats").value(150))
-			.andExpect(jsonPath("$.totals.children").value(0))
-			// No children yet, so every route says so.
-			.andExpect(jsonPath("$.routes[0].verdict").value("NO_CHILDREN"));
+			// Phase 3: 40 students, 35 with a bus. One of them starts the bus 25 days from now, so 34 ride today.
+			.andExpect(jsonPath("$.totals.children").value(34));
 	}
 
 	@Test

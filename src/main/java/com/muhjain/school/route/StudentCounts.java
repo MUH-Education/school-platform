@@ -4,11 +4,10 @@ import java.time.LocalDate;
 import java.util.Map;
 
 /**
- * "How many children ride on this route?" Routes need the answer, but students come in Phase 3.
- * So routes ask this interface. Until Phase 3, {@link ZeroStudentCounts} answers 0 for everything.
- * Phase 3 deletes {@link ZeroStudentCounts} and adds a class in the {@code student} package that implements this
- * interface from {@code transport_enrolment} (query 1 of "Three queries used everywhere": children on route R on
- * day D, only ACTIVE students).
+ * "How many children ride on this route?" Routes need the answer, but students belong to another feature.
+ * So routes ask this interface, and the {@code student} package answers it ({@code StudentQueryService}, from
+ * {@code transport_enrolment}: query 1 of "Three queries used everywhere", only ACTIVE students).
+ * Example: the load board, {@code ROUTE_HAS_STUDENTS} and {@code STOP_HAS_STUDENTS} all use it.
  */
 public interface StudentCounts {
 

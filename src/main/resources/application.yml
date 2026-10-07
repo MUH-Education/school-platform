@@ -9,6 +9,12 @@ spring:
     open-in-view: false
     hibernate:
       ddl-auto: validate
+  servlet:
+    multipart:
+      # The photo limit is 2 MB and the code checks it with a clear message (PhotoRules).
+      # The student CSV may be bigger. These two numbers only stop huge uploads.
+      max-file-size: 5MB
+      max-request-size: 6MB
 
 app:
   zone: Asia/Kolkata
@@ -29,6 +35,9 @@ app:
   messaging:
     sms-provider: log              # log | msg91 | ...
     whatsapp-provider: log
+  photos:
+    storage: local                 # local = a folder on this machine. prod: S3PhotoStorage comes in Phase 9.
+    folder: ./data/photos          # the folder is in .gitignore
 
 ---
 # dev: your laptop. PostgreSQL starts from compose.yaml by itself.

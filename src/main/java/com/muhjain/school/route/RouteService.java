@@ -237,6 +237,37 @@ public class RouteService {
 			.collect(Collectors.toMap(Route::getVehicleId, r -> new RouteRef(r.getId(), r.getName())));
 	}
 
+	/** The few facts other features need about a route. Empty if the route does not exist. */
+	@Transactional(readOnly = true)
+	public Optional<RouteInfo> info(Long routeId) {
+		return routes.findById(routeId).map(route -> {
+			VehicleSummary vehicle = (route.getVehicleId() == null) ? null
+					: vehicleService.summaries(List.of(route.getVehicleId())).get(route.getVehicleId());
+			return new RouteInfo(route.getId(), route.getName(), route.isActive(),
+					(vehicle != null) ? vehicle.seats() : null);
+		});
+	}
+
+	/** Stops by id, with the route they belong to. A stop that does not exist is not in the map. */
+	@Transactional(readOnly = true)
+	public Map<Long, StopRef> stopRefs(Collection<Long> stopIds) {
+		if (stopIds.isEmpty()) {
+			return Map.of();
+		}
+		return stops.findAllById(stopIds)
+			.stream()
+			.collect(Collectors.toMap(RouteStop::getId, s -> new StopRef(s.getId(), s.getRouteId(), s.getName())));
+	}
+
+	/** Route names by id. Example: {4 → "Route 4"}. A route that does not exist is not in the map. */
+	@Transactional(readOnly = true)
+	public Map<Long, String> routeNames(Collection<Long> routeIds) {
+		if (routeIds.isEmpty()) {
+			return Map.of();
+		}
+		return routes.findAllById(routeIds).stream().collect(Collectors.toMap(Route::getId, Route::getName));
+	}
+
 	private Route find(Long id) {
 		return routes.findById(id)
 			.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "This route does not exist."));

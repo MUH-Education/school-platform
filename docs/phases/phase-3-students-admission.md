@@ -88,23 +88,23 @@ All under `/api/v1`: `/students` (list), `/students/{id}`, `/students/{id}/guard
 
 ## Tasks
 
-- [ ] 3.1 `V3__students.sql`.
-- [ ] 3.2 `student` package: entities `Student`, `Guardian`, `StudentGuardian`, `TransportEnrolment`; enums; repositories.
-- [ ] 3.3 `AdmissionNumberService` (rule 2) with a test that runs 20 admissions at the same time and gets 20 different numbers.
-- [ ] 3.4 `GuardianService.linkPhone(studentId, name, phone, relation, smsEnabled)` (rules 5, 6).
-- [ ] 3.5 `TransportEnrolmentService`: `current(studentId, date)`, `start`, `change`, `stop` (rules 10 to 14). Unit test the date logic first.
-- [ ] 3.6 `AdmissionService` + `POST /admissions` (rules 1 to 4).
-- [ ] 3.7 `StudentService.update` + `PUT /students/{id}` with audit summaries (rules 15, 16).
-- [ ] 3.8 Guardian endpoints: add, change, remove (rules 6 to 9).
-- [ ] 3.9 `PUT /students/{id}/transport` and `GET /students/{id}/transport`.
-- [ ] 3.10 `PhotoStorage` interface, `LocalFolderPhotoStorage`, the three photo endpoints (rules 18 to 21).
-- [ ] 3.11 `GET /students` with filters and paging (rules 22, 23).
-- [ ] 3.12 `GET /students/{id}` (full profile) and `GET /students/{id}/history`.
-- [ ] 3.13 Mark a student as LEFT (rule 17).
-- [ ] 3.14 `StudentQueryService.onRoute(routeId, date)`: the "children on route R on day D" query. Phase 4 uses it.
-- [ ] 3.15 Real `StudentCounts`; re-run the Phase 2 tests for load board and stops (rule 27).
-- [ ] 3.16 CSV import with dry run (rules 24 to 26).
-- [ ] 3.17 Extend the dev data loader: about 40 sample students across the routes, some brothers and sisters sharing a phone.
+- [x] 3.1 `V3__students.sql`.
+- [x] 3.2 `student` package: entities `Student`, `Guardian`, `StudentGuardian`, `TransportEnrolment`; enums; repositories.
+- [x] 3.3 `AdmissionNumberService` (rule 2) with a test that runs 20 admissions at the same time and gets 20 different numbers.
+- [x] 3.4 `GuardianService.linkPhone(studentId, name, phone, relation, smsEnabled)` (rules 5, 6).
+- [x] 3.5 `TransportEnrolmentService`: `current(studentId, date)`, `start`, `change`, `stop` (rules 10 to 14). Unit test the date logic first.
+- [x] 3.6 `AdmissionService` + `POST /admissions` (rules 1 to 4).
+- [x] 3.7 `StudentService.update` + `PUT /students/{id}` with audit summaries (rules 15, 16).
+- [x] 3.8 Guardian endpoints: add, change, remove (rules 6 to 9).
+- [x] 3.9 `PUT /students/{id}/transport` and `GET /students/{id}/transport`.
+- [x] 3.10 `PhotoStorage` interface, `LocalFolderPhotoStorage`, the three photo endpoints (rules 18 to 21).
+- [x] 3.11 `GET /students` with filters and paging (rules 22, 23).
+- [x] 3.12 `GET /students/{id}` (full profile) and `GET /students/{id}/history`.
+- [x] 3.13 Mark a student as LEFT (rule 17).
+- [x] 3.14 `StudentQueryService.onRoute(routeId, date)`: the "children on route R on day D" query. Phase 4 uses it.
+- [x] 3.15 Real `StudentCounts`; re-run the Phase 2 tests for load board and stops (rule 27).
+- [x] 3.16 CSV import with dry run (rules 24 to 26).
+- [x] 3.17 Extend the dev data loader: about 40 sample students across the routes, some brothers and sisters sharing a phone.
 
 ## Tests that must pass
 

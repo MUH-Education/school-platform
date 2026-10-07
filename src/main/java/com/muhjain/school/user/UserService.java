@@ -160,6 +160,21 @@ public class UserService {
 		auditService.record(ENTITY, user.getId(), AuditAction.UPDATED, "Logged out on all devices", null);
 	}
 
+	/**
+	 * Names for "who changed this". A user with no name shows a masked phone. Example: {2 → "Neelam", 5 → "+91XXXXXX0005"}.
+	 * An id that does not exist is not in the map.
+	 */
+	@Transactional(readOnly = true)
+	public java.util.Map<Long, String> displayNames(java.util.Collection<Long> ids) {
+		if (ids.isEmpty()) {
+			return java.util.Map.of();
+		}
+		return users.findAllById(ids)
+			.stream()
+			.collect(java.util.stream.Collectors.toMap(AppUser::getId, u -> (u.getName() != null && !u.getName().isBlank())
+					? u.getName() : com.muhjain.school.common.PhoneNumbers.mask(u.getPhone())));
+	}
+
 	/** Example: 2 → Neelam's row, active or not. */
 	@Transactional(readOnly = true)
 	public Optional<AppUser> findById(Long id) {
