@@ -52,4 +52,11 @@ public class EnquiryController {
 		return enquiryService.update(id, request);
 	}
 
+	/** Move to another stage. LOST needs {@code lostReason}. ADMITTED cannot be set here. */
+	@PostMapping("/{id}/status")
+	@PreAuthorize("hasAuthority('ENQUIRIES_EDIT')")
+	public EnquiryResponse changeStatus(@PathVariable Long id, @Valid @RequestBody StatusRequest request) {
+		return enquiryService.changeStatus(id, request);
+	}
+
 }

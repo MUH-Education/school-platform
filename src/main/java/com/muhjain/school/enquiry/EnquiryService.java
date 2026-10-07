@@ -101,6 +101,45 @@ public class EnquiryService {
 			.toList();
 	}
 
+	/**
+	 * Moves an enquiry to another stage (rule 3, see {@link EnquiryTransitions}). LOST needs a reason. Opening a LOST
+	 * enquiry again (to CONTACTED) clears the reason, and is refused when another open enquiry has the same phone and
+	 * class.
+	 *
+	 * @throws ApiException 404 NOT_FOUND, 400 VALIDATION (no reason, or ADMITTED by hand), 409 STATUS_CHANGE_NOT_ALLOWED,
+	 * 409 ENQUIRY_EXISTS
+	 */
+	@Transactional
+	public EnquiryResponse changeStatus(Long id, StatusRequest request) {
+		Enquiry enquiry = find(id);
+		EnquiryStatus to = request.status();
+		EnquiryTransitions.Move move = EnquiryTransitions.check(enquiry.getStatus(), to);
+		switch (move) {
+			case UNCHANGED -> {
+				return respond(enquiry);
+			}
+			case ADMITTED_BY_HAND -> throw ApiException.validation("status",
+					"ADMITTED is set only by an admission made from this enquiry");
+			case NOT_ALLOWED -> throw new ApiException(HttpStatus.CONFLICT, "STATUS_CHANGE_NOT_ALLOWED",
+					"An enquiry cannot go from " + enquiry.getStatus() + " to " + to + ".");
+			case ALLOWED -> {
+			}
+		}
+		String reason = (request.lostReason() == null) ? null : request.lostReason().strip();
+		if (to == EnquiryStatus.LOST && (reason == null || reason.isEmpty())) {
+			throw ApiException.validation("lostReason", "is needed when the enquiry is lost");
+		}
+		if (enquiry.getStatus() == EnquiryStatus.LOST) {
+			// Opening again: no other open enquiry may have the same phone and class.
+			enquiries.findOpen(enquiry.getPhone(), enquiry.getClassSought()).ifPresent(other -> {
+				throw twin(other.getId());
+			});
+		}
+		enquiry.setStatus(to);
+		enquiry.setLostReason((to == EnquiryStatus.LOST) ? NameKeys.tidy(reason) : null);
+		return respond(save(enquiry));
+	}
+
 	// ---- helpers shared with the other enquiry services in this package ----
 
 	Enquiry find(Long id) {
