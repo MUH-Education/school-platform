@@ -89,7 +89,7 @@ All under `/api/v1`: `/students` (list), `/students/{id}`, `/students/{id}/guard
 ## Tasks
 
 - [x] 3.1 `V3__students.sql`.
-- [ ] 3.2 `student` package: entities `Student`, `Guardian`, `StudentGuardian`, `TransportEnrolment`; enums; repositories.
+- [x] 3.2 `student` package: entities `Student`, `Guardian`, `StudentGuardian`, `TransportEnrolment`; enums; repositories.
 - [ ] 3.3 `AdmissionNumberService` (rule 2) with a test that runs 20 admissions at the same time and gets 20 different numbers.
 - [ ] 3.4 `GuardianService.linkPhone(studentId, name, phone, relation, smsEnabled)` (rules 5, 6).
 - [ ] 3.5 `TransportEnrolmentService`: `current(studentId, date)`, `start`, `change`, `stop` (rules 10 to 14). Unit test the date logic first.
