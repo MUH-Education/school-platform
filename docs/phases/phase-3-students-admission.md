@@ -93,7 +93,7 @@ All under `/api/v1`: `/students` (list), `/students/{id}`, `/students/{id}/guard
 - [x] 3.3 `AdmissionNumberService` (rule 2) with a test that runs 20 admissions at the same time and gets 20 different numbers.
 - [x] 3.4 `GuardianService.linkPhone(studentId, name, phone, relation, smsEnabled)` (rules 5, 6).
 - [x] 3.5 `TransportEnrolmentService`: `current(studentId, date)`, `start`, `change`, `stop` (rules 10 to 14). Unit test the date logic first.
-- [ ] 3.6 `AdmissionService` + `POST /admissions` (rules 1 to 4).
+- [x] 3.6 `AdmissionService` + `POST /admissions` (rules 1 to 4).
 - [ ] 3.7 `StudentService.update` + `PUT /students/{id}` with audit summaries (rules 15, 16).
 - [ ] 3.8 Guardian endpoints: add, change, remove (rules 6 to 9).
 - [ ] 3.9 `PUT /students/{id}/transport` and `GET /students/{id}/transport`.

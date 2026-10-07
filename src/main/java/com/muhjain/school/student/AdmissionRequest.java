@@ -1,0 +1,34 @@
+package com.muhjain.school.student;
+
+import java.time.LocalDate;
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+/**
+ * A new admission: the child, the parents' phones and the bus, saved together.
+ * <ul>
+ * <li>{@code guardians}: at least one phone, unless {@code siblingStudentId} is given.</li>
+ * <li>{@code siblingStudentId}: a brother or sister already in this school. The new child gets every phone of
+ * that child, so the clerk does not type the parents again.</li>
+ * <li>{@code enquiryId}: accepted and ignored until Phase 6.</li>
+ * <li>{@code joinedOn}: optional, means today.</li>
+ * <li>Fee fields are ignored until Phase 7.</li>
+ * </ul>
+ * Example: {@code { "name": "Aryan", "dob": "2018-05-14", "gender": "M", "className": "3", "section": "B",
+ * "village": "Jakhal", "fatherOccupation": "FARMER_SMALL",
+ * "guardians": [ { "name": "Ramesh", "phone": "98123 40208", "relation": "FATHER" } ],
+ * "bus": { "routeId": 4, "stopId": 18, "busFee": 8800 } }}
+ */
+@JsonIgnoreProperties(ignoreUnknown = true)
+public record AdmissionRequest(@NotBlank @Size(max = 120) String name, @NotNull LocalDate dob, @NotNull Gender gender,
+		@NotBlank String className, @Size(max = 4) String section, @NotBlank @Size(max = 80) String village,
+		@Size(max = 200) String address, @NotNull FatherOccupation fatherOccupation, LocalDate joinedOn,
+		@Valid List<@NotNull @Valid GuardianRequest> guardians, Long siblingStudentId, Long enquiryId,
+		@Valid AdmissionBus bus) {
+
+}

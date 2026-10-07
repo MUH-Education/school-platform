@@ -1,5 +1,9 @@
 package com.muhjain.school.student;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import com.muhjain.school.common.ApiException;
 import com.muhjain.school.common.NameKeys;
 import com.muhjain.school.common.PhoneNumbers;
@@ -57,6 +61,16 @@ public class GuardianService {
 		boolean first = links.findByStudentIdOrderByIdAsc(studentId).isEmpty();
 		StudentGuardian link = links.save(new StudentGuardian(studentId, guardian.getId(), relation, smsEnabled, first));
 		return GuardianResponse.of(guardian, link);
+	}
+
+	/** The phones of one child, oldest link first. The primary phone is the one with {@code primary = true}. */
+	@Transactional(readOnly = true)
+	public List<GuardianResponse> list(Long studentId) {
+		List<StudentGuardian> found = links.findByStudentIdOrderByIdAsc(studentId);
+		Map<Long, Guardian> byId = guardians.findByIdIn(found.stream().map(StudentGuardian::getGuardianId).toList())
+			.stream()
+			.collect(Collectors.toMap(Guardian::getId, g -> g));
+		return found.stream().map(link -> GuardianResponse.of(byId.get(link.getGuardianId()), link)).toList();
 	}
 
 	static String tidyName(String name) {
