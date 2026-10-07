@@ -159,7 +159,10 @@ public abstract class AbstractIntegrationTest {
 		clock.setInstant(Instant.now().truncatedTo(ChronoUnit.MILLIS));
 		clearInvocations(logOtpSender);
 		// Children first, because of the foreign keys.
+		jdbc.update("delete from enquiry_follow_up");
+		jdbc.update("delete from enquiry");
 		jdbc.update("delete from boarding_event");
+		jdbc.update("delete from message_outbox");
 		jdbc.update("delete from transport_enrolment");
 		jdbc.update("delete from student_guardian");
 		jdbc.update("delete from guardian");

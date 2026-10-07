@@ -18,7 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class MarkApiTest extends TripTestBase {
 
 	@MockitoSpyBean
-	private NoOpBoardingNotifier notifier;
+	private BoardingNotifier notifier;
 
 	@Test
 	void sameTapSentTwiceIsSavedOnce() throws Exception {

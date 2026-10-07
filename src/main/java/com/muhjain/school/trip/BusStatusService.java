@@ -15,6 +15,9 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.muhjain.school.common.ApiException;
+import com.muhjain.school.messaging.MessageService;
+import com.muhjain.school.messaging.SmsDelivery;
+import com.muhjain.school.messaging.SmsPolicy;
 import com.muhjain.school.route.StopTimes;
 import com.muhjain.school.setting.SettingService;
 import com.muhjain.school.staff.AssignmentService;
@@ -46,10 +49,13 @@ public class BusStatusService {
 
 	private final AssignmentService assignmentService;
 
+	private final MessageService messageService;
+
 	private final Clock clock;
 
 	public BusStatusService(RouteDayService routeDays, SettingService settings, VehicleService vehicleService,
-			AssignmentService assignmentService, Clock clock) {
+			AssignmentService assignmentService, MessageService messageService, Clock clock) {
+		this.messageService = messageService;
 		this.routeDays = routeDays;
 		this.settings = settings;
 		this.vehicleService = vehicleService;
@@ -64,6 +70,28 @@ public class BusStatusService {
 
 	public LocalDate today() {
 		return LocalDate.now(clock);
+	}
+
+	// Per event: the queue row if there is one; else "not for this class" if the child was tapped DONE for an event
+	// the class rule does not cover; else NONE.
+	private static Map<EventType, SmsDelivery> smsStates(RouteDay routeDay, RouteChild child,
+			Map<EventType, SmsDelivery> rows) {
+		Map<EventType, SmsDelivery> states = new java.util.EnumMap<>(EventType.class);
+		for (EventType type : EventType.values()) {
+			BoardingEvent tap = routeDay.tap(child.studentId(), type);
+			SmsDelivery row = rows.get(type);
+			if (row != null) {
+				states.put(type, row);
+			}
+			else if (tap != null && tap.getOutcome() == Outcome.DONE
+					&& !SmsPolicy.allows(child.className(), type)) {
+				states.put(type, SmsDelivery.NOT_FOR_CLASS);
+			}
+			else {
+				states.put(type, SmsDelivery.NONE);
+			}
+		}
+		return states;
 	}
 
 	/** Every active route, oldest first. */
@@ -89,11 +117,14 @@ public class BusStatusService {
 		Computed computed = compute(routeDay, day, effective, lateAfterMinutes());
 		RouteStatusResponse status = respond(List.of(computed), day).get(0);
 		Map<Long, String> stopNames = routeDay.stops().stream().collect(Collectors.toMap(StopTimes::id, StopTimes::name));
+		Map<Long, Map<EventType, SmsDelivery>> deliveries = messageService
+			.deliveries(routeDay.children().stream().map(RouteChild::studentId).toList(), day);
 		List<RouteChildStatus> children = routeDay.children()
 			.stream()
 			.map(c -> new RouteChildStatus(c.studentId(), c.name(), c.admissionNo(), c.className(), c.section(),
 					c.stopId(), stopNames.get(c.stopId()),
-					EventsResponse.of(routeDay.events().get(c.studentId()), clock.getZone())))
+					EventsResponse.of(routeDay.events().get(c.studentId()), clock.getZone()),
+					SmsResponse.of(smsStates(routeDay, c, deliveries.getOrDefault(c.studentId(), Map.of())))))
 			.toList();
 		return new RouteDetailResponse(day, status, children);
 	}
