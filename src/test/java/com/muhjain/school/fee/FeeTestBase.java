@@ -44,6 +44,16 @@ abstract class FeeTestBase extends AbstractIntegrationTest {
 				+ "?::date) returning id", Long.class, admissionNo, joinedOn);
 	}
 
+	/** Adds a van, a route and one stop straight into the database. Returns {routeId, stopId}. */
+	long[] addBusRoute(String name) {
+		long vehicle = addVehicle("Van " + name);
+		long route = jdbc.queryForObject("insert into route (name, vehicle_id) values (?, ?) returning id", Long.class,
+				name, vehicle);
+		long stop = jdbc.queryForObject("insert into route_stop (route_id, name, seq_no, morning_time, evening_time) "
+				+ "values (?, 'Jakhal', 1, time '07:40', time '15:00') returning id", Long.class, route);
+		return new long[] { route, stop };
+	}
+
 	ResultActions get(String token, String url) throws Exception {
 		return mockMvc.perform(MockMvcRequestBuilders.get(url).header("Authorization", bearer(token)));
 	}

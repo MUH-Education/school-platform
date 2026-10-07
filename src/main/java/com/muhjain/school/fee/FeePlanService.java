@@ -10,6 +10,7 @@ import java.util.Optional;
 import com.muhjain.school.audit.AuditAction;
 import com.muhjain.school.audit.AuditService;
 import com.muhjain.school.common.ApiException;
+import com.muhjain.school.common.DayText;
 import com.muhjain.school.student.StudentBasics;
 import com.muhjain.school.student.StudentQueryService;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -101,6 +102,41 @@ public class FeePlanService {
 		audit.record("STUDENT", studentId, (before == null) ? AuditAction.CREATED : AuditAction.UPDATED,
 				((before == null) ? "Fee plan set: " : "Fee plan changed from " + before + " to ") + after, details);
 		return FeePlanResponse.of(plan, session.getName(), made);
+	}
+
+	/**
+	 * Rule 8: the bus starts later. The amount is added to the plan's bus fee, and BUS dues are added from the start
+	 * day, split over the standard due dates after it. Nothing is deleted and no school due is touched.
+	 * Example: bus starts 2 Nov, ₹4,000, QUARTERLY → BUS ₹2,000 on 2 Nov and ₹2,000 on 1 Jan.
+	 * <p>
+	 * Does nothing when there is no amount, when the child has no plan yet (the plan will carry the bus fee when it
+	 * is made), or when the bus starts after the end of the current session.
+	 */
+	@Transactional
+	public void addBusFee(Long studentId, BigDecimal amount, LocalDate startsOn, Long userId) {
+		if (amount == null || amount.signum() <= 0) {
+			return;
+		}
+		AcademicSession session = sessions.current();
+		if (startsOn.isAfter(session.getEndsOn())) {
+			return;
+		}
+		Optional<FeePlan> found = plans.lockByStudentIdAndSessionId(studentId, session.getId());
+		if (found.isEmpty()) {
+			return;
+		}
+		FeePlan plan = found.get();
+		plan.setBusFee(plan.getBusFee().add(amount));
+		plans.saveAndFlush(plan);
+		dues.saveAll(DueScheduleBuilder
+			.build(FeeHead.BUS, amount, plan.getPayFrequency(), session.getStartsOn(), session.getEndsOn(), startsOn)
+			.stream()
+			.map(d -> new FeeDue(plan.getId(), d.head(), d.dueOn(), d.amount()))
+			.toList());
+		audit.record("STUDENT", studentId, AuditAction.UPDATED, "Bus fee " + MoneyText.of(amount)
+				+ " added to the fee plan from " + DayText.on(startsOn) + ". Bus fee is now "
+				+ MoneyText.of(plan.getBusFee()) + ".",
+				Map.of("busFeeAdded", amount, "busFee", plan.getBusFee(), "from", startsOn.toString()));
 	}
 
 	/** The plan of the current session, if the child has one. */
