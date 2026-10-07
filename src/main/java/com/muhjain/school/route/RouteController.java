@@ -25,14 +25,24 @@ public class RouteController {
 
 	private final RouteService routeService;
 
-	public RouteController(RouteService routeService) {
+	private final LoadBoardService loadBoardService;
+
+	public RouteController(RouteService routeService, LoadBoardService loadBoardService) {
 		this.routeService = routeService;
+		this.loadBoardService = loadBoardService;
 	}
 
 	@GetMapping
 	@PreAuthorize("hasAuthority('ROUTES_VIEW')")
 	public List<RouteResponse> list() {
 		return routeService.list();
+	}
+
+	/** The Routes and load screen: every active route with children, seats, load and cost, and the fleet totals. */
+	@GetMapping("/load-board")
+	@PreAuthorize("hasAuthority('ROUTES_VIEW')")
+	public LoadBoardResponse loadBoard() {
+		return loadBoardService.board();
 	}
 
 	@PostMapping

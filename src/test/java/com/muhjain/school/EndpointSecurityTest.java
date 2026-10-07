@@ -75,6 +75,7 @@ class EndpointSecurityTest extends AbstractIntegrationTest {
 				// office admin).
 				Arguments.of("GET", "/api/v1/routes", null, Role.ADMISSIONS_DESK),
 				Arguments.of("POST", "/api/v1/routes", ROUTE_BODY, Role.OFFICE_ADMIN),
+				Arguments.of("GET", "/api/v1/routes/load-board", null, Role.ADMISSIONS_DESK),
 				Arguments.of("GET", "/api/v1/routes/1", null, Role.ADMISSIONS_DESK),
 				Arguments.of("PUT", "/api/v1/routes/1", ROUTE_UPDATE_BODY, Role.OFFICE_ADMIN),
 				Arguments.of("DELETE", "/api/v1/routes/1", null, Role.OFFICE_ADMIN),

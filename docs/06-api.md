@@ -96,7 +96,9 @@ Errors (all 409): `STAFF_BUSY` if that person is on a vehicle on those days, the
 ]
 ```
 
-One row of `GET /routes/load-board`:
+`GET /routes/load-board` answers `{ "routes": [ ...rows... ], "totals": { "routes", "vehicles", "seats", "children", "load", "yearlyCost", "costPerChild", "feeGot", "surplus" } }`. Only active routes are rows. The totals are for the whole fleet (every vehicle that is turned on). A route with no vehicle has `vehicle`, `seats`, `load`, `yearlyCost`, `costPerChild` and `surplus` as null and the verdict `NO_VEHICLE`.
+
+One row of `routes`:
 
 ```json
 {

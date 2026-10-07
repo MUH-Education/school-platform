@@ -90,7 +90,7 @@ All under `/api/v1`: `/vehicles`, `/vehicles/{id}`, `/vehicles/{id}/documents`, 
 - [x] 2.9 `GET /vehicles/{id}/assignments` (history, newest first) and `GET /vehicles/attention`.
 - [x] 2.10 `route` package: `Route`, `RouteStop`, repositories, `RouteService`, `RouteController` (rules 13 to 15).
 - [x] 2.11 `LoadBoardCalculator` (pure Java) with `LoadBoardCalculatorTest`.
-- [ ] 2.12 `LoadBoardService` + `GET /routes/load-board` with totals for the whole fleet.
+- [x] 2.12 `LoadBoardService` + `GET /routes/load-board` with totals for the whole fleet.
 - [ ] 2.13 `AttendantRouteService.routeFor(userId, date)`: user → staff → vehicle where they are ATTENDANT on that day → active route. Phase 4 depends on this.
 - [ ] 2.14 Change the user rule from Phase 1: an ATTENDANT user's `staffId` must be a real staff row of type ATTENDANT.
 - [ ] 2.15 Audit: every create, update and assignment change writes an `audit_log` row with a readable summary, for example "Driver changed from Jagdish to Surender, 12 to 16 Oct".
