@@ -7,11 +7,13 @@ import java.util.Map;
 
 import com.muhjain.school.common.ApiException;
 import com.muhjain.school.common.NameKeys;
+import com.muhjain.school.common.PageResponse;
 import com.muhjain.school.common.PhoneNumbers;
 import com.muhjain.school.student.ClassNames;
 import com.muhjain.school.student.GuardianService;
 import com.muhjain.school.user.UserService;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -163,6 +165,40 @@ public class EnquiryService {
 			enquiry.setNextFollowUpOn(request.nextActionOn());
 		}
 		return get(id);
+	}
+
+	/**
+	 * The list, newest first, paged (rule 10). Filters are all optional.
+	 *
+	 * @param village any capital letters
+	 * @param overdue true = only open enquiries whose next follow-up is before today (rule 5)
+	 * @param q a part of the parent's or child's name, or at least 4 digits of the phone
+	 * @throws ApiException 400 VALIDATION for a bad page or size
+	 */
+	@Transactional(readOnly = true)
+	public PageResponse<EnquiryResponse> list(EnquiryStatus status, String village, EnquirySource source,
+			boolean overdue, String q, int page, int size) {
+		if (page < 0) {
+			throw ApiException.validation("page", "must be 0 or more");
+		}
+		if (size < 1 || size > 100) {
+			throw ApiException.validation("size", "must be between 1 and 100");
+		}
+		String villageKey = (village == null || village.isBlank()) ? null : NameKeys.tidy(village).toLowerCase(java.util.Locale.ROOT);
+		String like = null;
+		String phoneLike = null;
+		if (q != null && !q.isBlank()) {
+			String text = NameKeys.tidy(q).toLowerCase(java.util.Locale.ROOT);
+			like = "%" + text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
+			String digits = text.replaceAll("\\D", "");
+			if (digits.length() >= 4) {
+				phoneLike = "%" + digits + "%";
+			}
+		}
+		LocalDate today = today();
+		return PageResponse.of(enquiries
+			.search(status, villageKey, source, overdue, today, like, phoneLike, PageRequest.of(page, size))
+			.map(e -> EnquiryResponse.of(e, today, clock.getZone(), List.of())));
 	}
 
 	// ---- helpers shared with the other enquiry services in this package ----

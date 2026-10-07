@@ -1,6 +1,7 @@
 package com.muhjain.school.enquiry;
 
 import com.muhjain.school.auth.CurrentUser;
+import com.muhjain.school.common.PageResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -28,6 +30,19 @@ public class EnquiryController {
 	public EnquiryController(EnquiryService enquiryService, CurrentUser currentUser) {
 		this.enquiryService = enquiryService;
 		this.currentUser = currentUser;
+	}
+
+	/**
+	 * Paged list, newest first. Filters: {@code status}, {@code village}, {@code source}, {@code overdue=true},
+	 * {@code q} (name or phone).
+	 */
+	@GetMapping
+	@PreAuthorize("hasAuthority('ENQUIRIES_VIEW')")
+	public PageResponse<EnquiryResponse> list(@RequestParam(required = false) EnquiryStatus status,
+			@RequestParam(required = false) String village, @RequestParam(required = false) EnquirySource source,
+			@RequestParam(defaultValue = "false") boolean overdue, @RequestParam(required = false) String q,
+			@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "25") int size) {
+		return enquiryService.list(status, village, source, overdue, q, page, size);
 	}
 
 	/** Add an enquiry. 409 ENQUIRY_EXISTS (with {@code fields.enquiryId}) if the phone and class are open already. */
