@@ -58,7 +58,7 @@ You can build tasks 5.1 to 5.9 without the provider. Only 5.10 to 5.12 need real
 - [x] 5.6 `SmsSender` interface and `LogSmsSender`.
 - [x] 5.7 `OutboxWorker` with `@Scheduled` (rules 8 to 11). Make it possible to call `runOnce()` from a test.
 - [x] 5.8 `GET /messages`, `GET /messages/summary`, template endpoints (rule 12).
-- [ ] 5.9 `GET /bus-status/routes/{routeId}` now includes, per child and event, the SMS state: sent at, not for this class, or failed.
+- [x] 5.9 `GET /bus-status/routes/{routeId}` now includes, per child and event, the SMS state: sent at, not for this class, or failed.
 - [ ] 5.10 The real SMS sender class for the chosen provider. Read the provider's document. Keep all provider details inside this one class.
 - [ ] 5.11 `WhatsAppOtpSender` and `SmsOtpSender` for the chosen provider.
 - [ ] 5.12 Start-up checks for `prod` (rule 14).

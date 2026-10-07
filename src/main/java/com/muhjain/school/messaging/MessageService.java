@@ -145,6 +145,47 @@ public class MessageService {
 		return TemplateResponse.of(template);
 	}
 
+	/**
+	 * The boarding SMS of some children on one day, one answer per child and event. A child with two parent phones
+	 * has two rows; the worst one counts: FAILED, then QUEUED, then SENT, then TEST_ONLY.
+	 * A child and event with no row are not in the map.
+	 */
+	@Transactional(readOnly = true)
+	public Map<Long, Map<com.muhjain.school.trip.EventType, SmsDelivery>> deliveries(
+			java.util.Collection<Long> studentIds, LocalDate day) {
+		Map<Long, Map<com.muhjain.school.trip.EventType, SmsDelivery>> result = new HashMap<>();
+		if (studentIds.isEmpty()) {
+			return result;
+		}
+		for (MessageOutbox m : outbox.boardingFor(studentIds, day)) {
+			SmsState state = switch (m.getStatus()) {
+				case FAILED -> SmsState.FAILED;
+				case QUEUED -> SmsState.QUEUED;
+				case SENT -> SmsState.SENT;
+				case TEST_ONLY -> SmsState.TEST_ONLY;
+			};
+			SmsDelivery now = new SmsDelivery(state,
+					(m.getSentAt() == null) ? null : m.getSentAt().atZone(clock.getZone()).toOffsetDateTime());
+			result.computeIfAbsent(m.getStudentId(), id -> new java.util.EnumMap<>(com.muhjain.school.trip.EventType.class))
+				.merge(m.getEventType(), now, MessageService::worse);
+		}
+		return result;
+	}
+
+	private static SmsDelivery worse(SmsDelivery a, SmsDelivery b) {
+		return (rank(a.state()) >= rank(b.state())) ? a : b;
+	}
+
+	private static int rank(SmsState state) {
+		return switch (state) {
+			case FAILED -> 4;
+			case QUEUED -> 3;
+			case SENT -> 2;
+			case TEST_ONLY -> 1;
+			default -> 0;
+		};
+	}
+
 	private static MessageResponse toResponse(MessageOutbox m, String studentName, ZoneId zone) {
 		return new MessageResponse(m.getId(), m.getCreatedAt().atZone(zone).toOffsetDateTime(), m.getPurpose(),
 				m.getStudentId(), studentName, PhoneNumbers.mask(m.getPhone()), m.getEventType(), m.getBody(),
