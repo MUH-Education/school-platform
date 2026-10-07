@@ -101,7 +101,7 @@ All under `/api/v1`: `/students` (list), `/students/{id}`, `/students/{id}/guard
 - [x] 3.11 `GET /students` with filters and paging (rules 22, 23).
 - [x] 3.12 `GET /students/{id}` (full profile) and `GET /students/{id}/history`.
 - [x] 3.13 Mark a student as LEFT (rule 17).
-- [ ] 3.14 `StudentQueryService.onRoute(routeId, date)`: the "children on route R on day D" query. Phase 4 uses it.
+- [x] 3.14 `StudentQueryService.onRoute(routeId, date)`: the "children on route R on day D" query. Phase 4 uses it.
 - [ ] 3.15 Real `StudentCounts`; re-run the Phase 2 tests for load board and stops (rule 27).
 - [ ] 3.16 CSV import with dry run (rules 24 to 26).
 - [ ] 3.17 Extend the dev data loader: about 40 sample students across the routes, some brothers and sisters sharing a phone.

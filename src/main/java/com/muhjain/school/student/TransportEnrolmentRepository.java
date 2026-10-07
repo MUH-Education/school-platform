@@ -40,4 +40,18 @@ public interface TransportEnrolmentRepository extends JpaRepository<TransportEnr
 			+ "and e.fromDate <= :day and (e.toDate is null or e.toDate >= :day)")
 	long countOnRoute(@Param("routeId") Long routeId, @Param("day") LocalDate day);
 
+	/** Query 1 of "Three queries used everywhere": the active children on a route on a day, by name. */
+	@Query("select new com.muhjain.school.student.RouteChild(s.id, s.name, s.admissionNo, s.gender, s.className, "
+			+ "s.section, e.stopId) from TransportEnrolment e, Student s where s.id = e.studentId "
+			+ "and s.status = com.muhjain.school.student.StudentStatus.ACTIVE and e.routeId = :routeId "
+			+ "and e.fromDate <= :day and (e.toDate is null or e.toDate >= :day) order by s.name, s.id")
+	List<RouteChild> onRoute(@Param("routeId") Long routeId, @Param("day") LocalDate day);
+
+	/** Active children per stop of a route on a day. Each row is {stopId, count}. */
+	@Query("select e.stopId, count(distinct e.studentId) from TransportEnrolment e, Student s "
+			+ "where s.id = e.studentId and s.status = com.muhjain.school.student.StudentStatus.ACTIVE "
+			+ "and e.routeId = :routeId and e.fromDate <= :day and (e.toDate is null or e.toDate >= :day) "
+			+ "group by e.stopId")
+	List<Object[]> countByStop(@Param("routeId") Long routeId, @Param("day") LocalDate day);
+
 }
