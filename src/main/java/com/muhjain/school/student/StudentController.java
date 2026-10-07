@@ -80,6 +80,16 @@ public class StudentController {
 		return studentService.history(id);
 	}
 
+	/**
+	 * A child leaves (status LEFT) or comes back (status ACTIVE). Students are never deleted. Leaving closes the
+	 * open bus row.
+	 */
+	@PutMapping("/{id}/status")
+	@PreAuthorize("hasAuthority('STUDENTS_EDIT')")
+	public StudentResponse setStatus(@PathVariable Long id, @Valid @RequestBody UpdateStatusRequest request) {
+		return studentService.setStatus(id, request);
+	}
+
 	@PutMapping("/{id}")
 	@PreAuthorize("hasAuthority('STUDENTS_EDIT')")
 	public StudentResponse update(@PathVariable Long id, @Valid @RequestBody UpdateStudentRequest request) {

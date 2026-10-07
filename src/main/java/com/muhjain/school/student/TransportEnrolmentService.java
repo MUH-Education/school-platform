@@ -192,10 +192,13 @@ public class TransportEnrolmentService {
 	 * Closes the open bus of a child who leaves school (rule 17). The last day on the bus is the day the child
 	 * leaves. A row that would start after that day never took effect, so it is removed.
 	 * Example: leaves on 20 Oct, bus open since 1 Apr → the row ends on 20 Oct. No audit line, the caller writes one.
+	 *
+	 * @return true if a bus row was closed
 	 */
 	@Transactional
-	public void closeForLeaving(Long studentId, LocalDate leftOn) {
-		enrolments.findByStudentIdAndToDateIsNull(studentId).ifPresent(open -> {
+	public boolean closeForLeaving(Long studentId, LocalDate leftOn) {
+		Optional<TransportEnrolment> found = enrolments.findByStudentIdAndToDateIsNull(studentId);
+		found.ifPresent(open -> {
 			if (leftOn.isBefore(open.getFromDate())) {
 				enrolments.delete(open);
 			}
@@ -205,6 +208,7 @@ public class TransportEnrolmentService {
 			}
 			enrolments.flush();
 		});
+		return found.isPresent();
 	}
 
 	// ---- helpers ----

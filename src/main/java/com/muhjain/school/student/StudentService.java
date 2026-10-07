@@ -13,6 +13,7 @@ import com.muhjain.school.audit.AuditChanges;
 import com.muhjain.school.audit.AuditLog;
 import com.muhjain.school.audit.AuditService;
 import com.muhjain.school.common.ApiException;
+import com.muhjain.school.common.DayText;
 import com.muhjain.school.common.NameKeys;
 import com.muhjain.school.common.PageResponse;
 import com.muhjain.school.user.UserService;
@@ -177,6 +178,46 @@ public class StudentService {
 		students.save(student);
 		if (!changes.isEmpty()) {
 			auditService.record(ENTITY, id, AuditAction.UPDATED, changes.summary(), changes.details());
+		}
+		return toResponse(student);
+	}
+
+	/**
+	 * Rule 17. A student is never deleted. Leaving sets {@code status = LEFT} and {@code left_on}, and closes the
+	 * open bus row. Example: Aryan leaves on 20 Oct → "Left school on 20 Oct 2026. Bus ended."
+	 *
+	 * @throws ApiException 404 NOT_FOUND, 409 ALREADY_LEFT, 400 VALIDATION (leftOn)
+	 */
+	@Transactional
+	public StudentResponse setStatus(Long id, UpdateStatusRequest request) {
+		Student student = find(id);
+		if (request.status() == StudentStatus.LEFT) {
+			if (student.getStatus() == StudentStatus.LEFT) {
+				throw new ApiException(HttpStatus.CONFLICT, "ALREADY_LEFT", "This child has already left the school.");
+			}
+			LocalDate today = LocalDate.now(clock);
+			LocalDate leftOn = (request.leftOn() != null) ? request.leftOn() : today;
+			if (leftOn.isAfter(today)) {
+				throw ApiException.validation("leftOn", "cannot be in the future");
+			}
+			if (leftOn.isBefore(student.getJoinedOn())) {
+				throw ApiException.validation("leftOn", "cannot be before the joining day, " + DayText.on(student.getJoinedOn()));
+			}
+			student.setStatus(StudentStatus.LEFT);
+			student.setLeftOn(leftOn);
+			students.save(student);
+			boolean busClosed = transportService.closeForLeaving(id, leftOn);
+			auditService.record(ENTITY, id, AuditAction.UPDATED,
+					"Left school on " + DayText.on(leftOn) + "." + (busClosed ? " Bus ended." : ""),
+					Map.of("status", Map.of("old", "ACTIVE", "new", "LEFT"), "leftOn", leftOn.toString(),
+							"busClosed", busClosed));
+		}
+		else if (student.getStatus() == StudentStatus.LEFT) {
+			student.setStatus(StudentStatus.ACTIVE);
+			student.setLeftOn(null);
+			students.save(student);
+			auditService.record(ENTITY, id, AuditAction.UPDATED, "Back in school. Turned on again.",
+					Map.of("status", Map.of("old", "LEFT", "new", "ACTIVE")));
 		}
 		return toResponse(student);
 	}
