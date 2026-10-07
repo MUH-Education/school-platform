@@ -108,6 +108,9 @@ Add a line each time code needed a choice the docs did not cover.
 | 7 Oct 2026 | 2 | Rule 2 (`VEHICLE_IN_USE`) lives in `VehicleOverviewService`, for both `DELETE` and `PUT` with `active: false`. | `VehicleService` cannot ask `RouteService` (it would be a circle). |
 | 7 Oct 2026 | 2 | Stops are really deleted when they are missing from the list. **Risk for Phase 3:** a past `transport_enrolment` row may point at the stop (foreign key). Phase 3 must make `childrenByStop` count those too, or decide to turn stops off instead of deleting. | The data model has no "active" column on `route_stop`. |
 | 7 Oct 2026 | 2 | The stop numbers `seq_no` are unique per route, but the check waits until the end of the transaction (deferrable). | So a re-order or a swap in one request does not break the rule in the middle. |
+| 7 Oct 2026 | 2 | Load board for a route with no vehicle: `seats`, `load`, `yearlyCost`, `costPerChild` and `surplus` are null, `overBy` and `spare` are 0, verdict `NO_VEHICLE`. `feeGot` is still worked out from the children. | The docs did not say what the numbers are without a vehicle. |
+| 7 Oct 2026 | 2 | Verdict `THIN` ("load below 0.6") is worked out with whole numbers (`children x 5 < seats x 3`), not from the rounded load. Example: 119 children on 200 seats show load 0.60 but are THIN. Exactly 0.6 is OK. | A rounded number must not change the verdict. |
+| 7 Oct 2026 | 2 | Load board totals are for the whole fleet: `seats` and `yearlyCost` count every vehicle that is turned on, also one with no route (it still costs money). `children` and `feeGot` add up the routes. `surplus` = feeGot − yearlyCost. | The doc says "totals for the whole fleet". With the dev data (9 vehicles, 9 routes) it is 150 seats either way. |
 
 ## E. What changed from the first plan document
 
