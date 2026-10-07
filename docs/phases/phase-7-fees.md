@@ -78,7 +78,7 @@ Answer question **C2** in `docs/08-decisions.md` before building: does the accou
 
 - [x] 7.1 `V7__fees.sql`.
 - [x] 7.2 `fee` package: entities, enums, repositories.
-- [ ] 7.3 Sessions and class fees endpoints (rules 1, 2).
+- [x] 7.3 Sessions and class fees endpoints (rules 1, 2).
 - [ ] 7.4 `DueScheduleBuilder` (pure Java): plan + start date → list of dues (rule 6). Test examples A and B first.
 - [ ] 7.5 `FeePlanService.save` (rules 3 to 5, 7).
 - [ ] 7.6 `ReceiptNumberService` (rule 11).

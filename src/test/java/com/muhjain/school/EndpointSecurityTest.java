@@ -55,6 +55,11 @@ class EndpointSecurityTest extends AbstractIntegrationTest {
 	private static final String ENQUIRY_BODY = "{\"parentName\":\"Ramesh Jain\",\"phone\":\"9812340208\","
 			+ "\"village\":\"Jakhal\",\"classSought\":\"3\",\"source\":\"WALK_IN\"}";
 
+	private static final String SESSION_BODY = "{\"name\":\"2027-28\",\"startsOn\":\"2027-04-01\","
+			+ "\"endsOn\":\"2028-03-31\",\"current\":false}";
+
+	private static final String CLASS_FEES_BODY = "{\"fees\":[{\"className\":\"3\",\"schoolFee\":30000}]}";
+
 	private static final String TEMPLATE_BODY = "{\"body\":\"{name} {time}\",\"active\":true}";
 
 	/** method, URL, body, a role WITHOUT the permission (null = any login is enough) */
@@ -114,7 +119,13 @@ class EndpointSecurityTest extends AbstractIntegrationTest {
 				Arguments.of("PUT", "/api/v1/enquiries/1", ENQUIRY_BODY, Role.TRANSPORT_INCHARGE),
 				Arguments.of("POST", "/api/v1/enquiries/1/follow-ups", "{\"note\":\"Called\"}", Role.ATTENDANT),
 				Arguments.of("POST", "/api/v1/enquiries/1/status", "{\"status\":\"CONTACTED\"}", Role.ATTENDANT),
-				Arguments.of("GET", "/api/v1/enquiries/1/prefill", null, Role.TRANSPORT_INCHARGE));
+				Arguments.of("GET", "/api/v1/enquiries/1/prefill", null, Role.TRANSPORT_INCHARGE),
+				// Phase 7: sessions are readable by any login; class fees need FEES_VIEW (not the transport
+				// in-charge); adding a session or saving class fees needs SETTINGS_EDIT (not the office admin).
+				Arguments.of("GET", "/api/v1/sessions", null, null),
+				Arguments.of("POST", "/api/v1/sessions", SESSION_BODY, Role.OFFICE_ADMIN),
+				Arguments.of("GET", "/api/v1/sessions/1/class-fees", null, Role.TRANSPORT_INCHARGE),
+				Arguments.of("PUT", "/api/v1/sessions/1/class-fees", CLASS_FEES_BODY, Role.OFFICE_ADMIN));
 	}
 
 	@ParameterizedTest(name = "{0} {1} without token → 401")
