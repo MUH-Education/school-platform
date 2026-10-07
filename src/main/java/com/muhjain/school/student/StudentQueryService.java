@@ -104,4 +104,13 @@ public class StudentQueryService {
 		});
 	}
 
+	/** Names by id. Example: {118 → "Aryan Jain"}. An id that does not exist is not in the map. */
+	@Transactional(readOnly = true)
+	public Map<Long, String> names(Collection<Long> studentIds) {
+		if (studentIds.isEmpty()) {
+			return Map.of();
+		}
+		return students.findByIdIn(studentIds).stream().collect(Collectors.toMap(Student::getId, Student::getName));
+	}
+
 }

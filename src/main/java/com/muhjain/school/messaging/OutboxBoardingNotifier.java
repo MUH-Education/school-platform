@@ -68,9 +68,10 @@ public class OutboxBoardingNotifier implements BoardingNotifier {
 		}
 		LocalTime time = occurredAt.atZone(clock.getZone()).toLocalTime();
 		String body = SmsTextBuilder.build(template.getBody(), child.name(), time);
+		Instant now = Instant.now(clock).truncatedTo(java.time.temporal.ChronoUnit.MICROS);
 		for (SmsTarget.Phone phone : child.phones()) {
 			int saved = outbox.queueBoarding(phone.phone(), phone.guardianId(), child.studentId(), serviceDate,
-					eventType.name(), code, body);
+					eventType.name(), code, body, now);
 			if (saved == 0) {
 				log.debug("SMS for {} on {} {} was queued before", PhoneNumbers.mask(phone.phone()), serviceDate,
 						eventType);
