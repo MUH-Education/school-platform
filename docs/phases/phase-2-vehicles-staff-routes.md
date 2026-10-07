@@ -79,22 +79,22 @@ All under `/api/v1`: `/vehicles`, `/vehicles/{id}`, `/vehicles/{id}/documents`, 
 
 ## Tasks
 
-- [ ] 2.1 `V2__vehicles_staff_routes.sql`.
-- [ ] 2.2 `vehicle` package: `Vehicle`, `VehicleDocument`, enums, repositories.
-- [ ] 2.3 `VehicleService` + `VehicleController`: create, update, turn off, documents, paper status (rules 1 to 3).
-- [ ] 2.4 `staff` package: `Staff`, repository, `StaffService`, `StaffController` (rules 4, 5).
-- [ ] 2.5 `VehicleAssignment` entity and repository with the query "rows of this vehicle covering day D".
-- [ ] 2.6 `AssignmentService.onDate(vehicleId, date)` → driver, attendant, helper (rule 9). Unit test this first.
-- [ ] 2.7 `AssignmentService.change(...)` (rules 6 to 8, 10 to 12).
-- [ ] 2.8 `GET /vehicles` and `GET /vehicles/{id}` now include today's driver, attendant, helper and route.
-- [ ] 2.9 `GET /vehicles/{id}/assignments` (history, newest first) and `GET /vehicles/attention`.
-- [ ] 2.10 `route` package: `Route`, `RouteStop`, repositories, `RouteService`, `RouteController` (rules 13 to 15).
-- [ ] 2.11 `LoadBoardCalculator` (pure Java) with `LoadBoardCalculatorTest`.
-- [ ] 2.12 `LoadBoardService` + `GET /routes/load-board` with totals for the whole fleet.
-- [ ] 2.13 `AttendantRouteService.routeFor(userId, date)`: user → staff → vehicle where they are ATTENDANT on that day → active route. Phase 4 depends on this.
-- [ ] 2.14 Change the user rule from Phase 1: an ATTENDANT user's `staffId` must be a real staff row of type ATTENDANT.
-- [ ] 2.15 Audit: every create, update and assignment change writes an `audit_log` row with a readable summary, for example "Driver changed from Jagdish to Surender, 12 to 16 Oct".
-- [ ] 2.16 A dev-only data loader (`@Profile("dev")`): 9 vehicles (7 small vans with 14 seats, 2 mid buses with 26 seats, ₹30,300 a month each), 9 routes, drivers and attendants. So the screens have data while you build.
+- [x] 2.1 `V2__vehicles_staff_routes.sql`.
+- [x] 2.2 `vehicle` package: `Vehicle`, `VehicleDocument`, enums, repositories.
+- [x] 2.3 `VehicleService` + `VehicleController`: create, update, turn off, documents, paper status (rules 1 to 3).
+- [x] 2.4 `staff` package: `Staff`, repository, `StaffService`, `StaffController` (rules 4, 5).
+- [x] 2.5 `VehicleAssignment` entity and repository with the query "rows of this vehicle covering day D".
+- [x] 2.6 `AssignmentService.onDate(vehicleId, date)` → driver, attendant, helper (rule 9). Unit test this first.
+- [x] 2.7 `AssignmentService.change(...)` (rules 6 to 8, 10 to 12).
+- [x] 2.8 `GET /vehicles` and `GET /vehicles/{id}` now include today's driver, attendant, helper and route.
+- [x] 2.9 `GET /vehicles/{id}/assignments` (history, newest first) and `GET /vehicles/attention`.
+- [x] 2.10 `route` package: `Route`, `RouteStop`, repositories, `RouteService`, `RouteController` (rules 13 to 15).
+- [x] 2.11 `LoadBoardCalculator` (pure Java) with `LoadBoardCalculatorTest`.
+- [x] 2.12 `LoadBoardService` + `GET /routes/load-board` with totals for the whole fleet.
+- [x] 2.13 `AttendantRouteService.routeFor(userId, date)`: user → staff → vehicle where they are ATTENDANT on that day → active route. Phase 4 depends on this.
+- [x] 2.14 Change the user rule from Phase 1: an ATTENDANT user's `staffId` must be a real staff row of type ATTENDANT.
+- [x] 2.15 Audit: every create, update and assignment change writes an `audit_log` row with a readable summary, for example "Driver changed from Jagdish to Surender, 12 to 16 Oct".
+- [x] 2.16 A dev-only data loader (`@Profile("dev")`): 9 vehicles (7 small vans with 14 seats, 2 mid buses with 26 seats, ₹30,300 a month each), 9 routes, drivers and attendants. So the screens have data while you build.
 
 ## Tests that must pass
 

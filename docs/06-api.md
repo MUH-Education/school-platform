@@ -46,6 +46,14 @@ Details: `docs/04-login-otp-jwt.md`.
 | `PUT /staff/{id}` | `VEHICLES_EDIT` | Change a person |
 | `DELETE /staff/{id}` | `VEHICLES_EDIT` | Turn off. 409 if still on a vehicle. |
 
+`GET /vehicles` and `GET /vehicles/{id}` give `driver`, `attendant` and `helper` (each a person or null). `GET /staff` gives `worksOn` (the vehicle and duty today, or null). Both answer for today. `GET /vehicles` and `GET /vehicles/{id}` also take an optional `?date=2026-10-14` and then show the people of that day. A person with `"temporary": true` is a replacement.
+
+`PUT /vehicles/{id}` and `PUT /staff/{id}` take the whole object, with `active`. `active: false` is the same as `DELETE`, `active: true` turns it on again. `PUT /vehicles/{id}/documents` takes the four dates: `{ "fitness": "2027-01-10", "insurance": "2026-10-28", "permit": null, "puc": null }`. A date that is null or left out removes that paper.
+
+`GET /vehicles/attention` is a list, the most urgent first. A paper: `{ "kind": "PAPER", "vehicleId": 4, "vehicleName": "Van 4", "docType": "INSURANCE", "validTill": "2026-10-17", "status": "ENDING_SOON", "daysLeft": 10 }`. A licence: `{ "kind": "LICENCE", "staffId": 21, "staffName": "Jagdish", "validTill": "2026-10-12", "status": "ENDING_SOON", "daysLeft": 5 }`. Only turned-on vehicles and drivers. A paper with no date is not listed. `daysLeft` is below 0 when ended.
+
+`GET /vehicles/{id}/assignments` is a list, newest first: `{ "id", "vehicleId", "staffId", "staffName", "duty", "fromDate", "toDate", "temporary", "reason", "createdBy", "createdAt" }`.
+
 Change a driver:
 
 ```json
@@ -60,7 +68,9 @@ POST /api/v1/vehicles/4/assignments
 }
 ```
 
-409 `STAFF_BUSY` if that person is on another vehicle on those days. The message names the vehicle: "Rajpal drives Van 1 on these days."
+A permanent change has no `toDate`: `{ "duty": "DRIVER", "staffId": 22, "fromDate": "2026-11-01" }`. The old permanent row ends on 31 Oct.
+
+Errors (all 409): `STAFF_BUSY` if that person is on a vehicle on those days, the message names it: "Rajpal drives Van 1 on these days." `WRONG_STAFF_TYPE` (a DRIVER duty needs a DRIVER), `LICENCE_ENDED`, `STAFF_INACTIVE`, `VEHICLE_INACTIVE`, `FROM_DATE_TOO_EARLY` (a permanent change must start after the current person started), `TEMPORARY_OVERLAP` (two replacements for the same duty on the same day).
 
 ## Routes — Phase 2
 
@@ -74,6 +84,8 @@ POST /api/v1/vehicles/4/assignments
 | `PUT /routes/{id}/stops` | `ROUTES_EDIT` | Save the full ordered list of stops |
 | `GET /routes/load-board` | `ROUTES_VIEW` | The Routes and load screen: every route with children, seats, load, cost |
 
+`POST /routes` takes `{ "name": "Route 4", "vehicleId": 4 }` (`vehicleId` is optional). `PUT /routes/{id}` takes the whole route: `{ "name": "Route 4", "vehicleId": 4, "active": true }`. `active: false` is the same as `DELETE`, `active: true` turns it on again. Other 409 codes: `VEHICLE_HAS_ROUTE`, `VEHICLE_INACTIVE`, `ROUTE_NAME_ALREADY_USED`. A vehicle on `GET /vehicles` has a `route` (`{ "id": 4, "name": "Route 4" }` or null).
+
 `PUT /routes/4/stops` sends the whole list in order. A stop with an `id` is kept. A stop without an `id` is new. A stop missing from the list is removed (409 `STOP_HAS_STUDENTS` if children board there).
 
 ```json
@@ -84,7 +96,9 @@ POST /api/v1/vehicles/4/assignments
 ]
 ```
 
-One row of `GET /routes/load-board`:
+`GET /routes/load-board` answers `{ "routes": [ ...rows... ], "totals": { "routes", "vehicles", "seats", "children", "load", "yearlyCost", "costPerChild", "feeGot", "surplus" } }`. Only active routes are rows. The totals are for the whole fleet (every vehicle that is turned on). A route with no vehicle has `vehicle`, `seats`, `load`, `yearlyCost`, `costPerChild` and `surplus` as null and the verdict `NO_VEHICLE`.
+
+One row of `routes`:
 
 ```json
 {

@@ -2,6 +2,7 @@ package com.muhjain.school;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.time.ZoneId;
 
@@ -38,7 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Base class for tests that need the whole app and a real database.
  * One PostgreSQL container starts once and is shared by every test class.
- * Before each test: the clock is set to the real "now", and users, codes and audit rows are deleted.
+ * Before each test: the clock is set to the real "now", and users, codes, audit rows, vehicles, staff and routes are deleted.
  * Example: {@code class HealthEndpointTest extends AbstractIntegrationTest}
  */
 @SpringBootTest
@@ -77,9 +78,48 @@ public abstract class AbstractIntegrationTest {
 	protected AppUser addUser(String phone, Role role) {
 		AppUser user = new AppUser(phone, role);
 		if (role == Role.ATTENDANT) {
-			user.setStaffId(14L);
+			user.setStaffId(addStaff("Balwan", "ATTENDANT"));
 		}
 		return userRepository.saveAndFlush(user);
+	}
+
+	/**
+	 * Adds a staff row straight into the database and returns its id.
+	 * A DRIVER gets a licence that ends on 31 Dec 2030. Example: {@code addStaff("Jagdish", "DRIVER")}
+	 */
+	protected long addStaff(String name, String staffType) {
+		return addStaff(name, staffType, "DRIVER".equals(staffType) ? LocalDate.of(2030, 12, 31) : null);
+	}
+
+	/** Same, with the licence end date given (only for a DRIVER). */
+	protected long addStaff(String name, String staffType, LocalDate licenceValidTill) {
+		boolean driver = "DRIVER".equals(staffType);
+		return jdbc.queryForObject("insert into staff (name, phone, staff_type, licence_no, licence_valid_till) "
+				+ "values (?, '+919811100000', ?, ?, ?) returning id", Long.class, name, staffType,
+				driver ? "HR2620110012345" : null, driver ? licenceValidTill : null);
+	}
+
+	/** Adds a small van (14 seats, 30300.00 a month) straight into the database and returns its id. */
+	protected long addVehicle(String name) {
+		return addVehicle(name, 14);
+	}
+
+	/** Same, with the number of seats given. */
+	protected long addVehicle(String name, int seats) {
+		return jdbc.queryForObject("insert into vehicle (name, registration_no, vehicle_type, seats, monthly_cost, "
+				+ "owned_by) values (?, ?, ?, ?, 30300.00, 'CONTRACTOR') returning id", Long.class, name,
+				"REG " + name.toUpperCase(), (seats > 14) ? "MID_BUS" : "SMALL_VAN", seats);
+	}
+
+	/**
+	 * Adds an assignment row straight into the database and returns its id.
+	 * Example: {@code addAssignment(van4, jagdish, "DRIVER", "2026-04-01", null, false)}
+	 */
+	protected long addAssignment(long vehicleId, long staffId, String duty, String from, String to,
+			boolean temporary) {
+		return jdbc.queryForObject("insert into vehicle_assignment (vehicle_id, staff_id, duty, from_date, to_date, "
+				+ "temporary) values (?, ?, ?, ?::date, ?::date, ?) returning id", Long.class, vehicleId, staffId,
+				duty, from, to, temporary);
 	}
 
 	/** The last code LogOtpSender was asked to send to this phone. */
@@ -118,10 +158,17 @@ public abstract class AbstractIntegrationTest {
 	void resetClockAndTables() {
 		clock.setInstant(Instant.now().truncatedTo(ChronoUnit.MILLIS));
 		clearInvocations(logOtpSender);
+		// Children first, because of the foreign keys.
+		jdbc.update("delete from route_stop");
+		jdbc.update("delete from route");
+		jdbc.update("delete from vehicle_assignment");
+		jdbc.update("delete from vehicle_document");
 		jdbc.update("update app_setting set updated_by = null");
 		jdbc.update("delete from audit_log");
 		jdbc.update("delete from otp_code");
 		jdbc.update("delete from app_user");
+		jdbc.update("delete from staff");
+		jdbc.update("delete from vehicle");
 	}
 
 	@TestConfiguration(proxyBeanMethods = false)
