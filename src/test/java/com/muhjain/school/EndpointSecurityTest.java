@@ -142,7 +142,9 @@ class EndpointSecurityTest extends AbstractIntegrationTest {
 				Arguments.of("POST", "/api/v1/students/1/payments", PAYMENT_BODY, Role.TRANSPORT_INCHARGE),
 				Arguments.of("POST", "/api/v1/students/1/payment-corrections", CORRECTION_BODY, Role.OFFICE_ADMIN),
 				// Phase 7: reading a child's fees needs FEES_VIEW (not the transport in-charge).
-				Arguments.of("GET", "/api/v1/students/1/fees", null, Role.TRANSPORT_INCHARGE));
+				Arguments.of("GET", "/api/v1/students/1/fees", null, Role.TRANSPORT_INCHARGE),
+				// Phase 7: the payment list needs FEES_VIEW (not the transport in-charge).
+				Arguments.of("GET", "/api/v1/payments?from=2026-10-01&to=2026-10-07", null, Role.TRANSPORT_INCHARGE));
 	}
 
 	@ParameterizedTest(name = "{0} {1} without token → 401")

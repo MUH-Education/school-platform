@@ -108,7 +108,23 @@ public class StudentQueryService {
 	@Transactional(readOnly = true)
 	public java.util.Optional<StudentBasics> basics(Long studentId) {
 		return students.findById(studentId)
-			.map(s -> new StudentBasics(s.getId(), s.getName(), s.getClassName(), s.getJoinedOn(), s.getStatus()));
+			.map(StudentQueryService::basicsOf);
+	}
+
+	/** Many children at once, by id. An id that does not exist is not in the map. */
+	@Transactional(readOnly = true)
+	public Map<Long, StudentBasics> basics(Collection<Long> studentIds) {
+		if (studentIds.isEmpty()) {
+			return Map.of();
+		}
+		return students.findByIdIn(studentIds)
+			.stream()
+			.collect(Collectors.toMap(Student::getId, StudentQueryService::basicsOf));
+	}
+
+	private static StudentBasics basicsOf(Student s) {
+		return new StudentBasics(s.getId(), s.getAdmissionNo(), s.getName(), s.getClassName(), s.getJoinedOn(),
+				s.getStatus());
 	}
 
 	/**
