@@ -73,7 +73,7 @@ public class FeePlanService {
 			reason = DiscountReason.NONE;
 		}
 
-		Optional<FeePlan> existing = plans.findByStudentIdAndSessionId(studentId, session.getId());
+		Optional<FeePlan> existing = plans.lockByStudentIdAndSessionId(studentId, session.getId());
 		FeePlan plan = existing.orElseGet(() -> new FeePlan(studentId, session.getId(), userId));
 		String before = existing.map(FeePlanService::describe).orElse(null);
 		plan.setSchoolFee(schoolFee);
