@@ -85,7 +85,7 @@ All under `/api/v1`: `/vehicles`, `/vehicles/{id}`, `/vehicles/{id}/documents`, 
 - [x] 2.4 `staff` package: `Staff`, repository, `StaffService`, `StaffController` (rules 4, 5).
 - [x] 2.5 `VehicleAssignment` entity and repository with the query "rows of this vehicle covering day D".
 - [x] 2.6 `AssignmentService.onDate(vehicleId, date)` → driver, attendant, helper (rule 9). Unit test this first.
-- [ ] 2.7 `AssignmentService.change(...)` (rules 6 to 8, 10 to 12).
+- [x] 2.7 `AssignmentService.change(...)` (rules 6 to 8, 10 to 12).
 - [ ] 2.8 `GET /vehicles` and `GET /vehicles/{id}` now include today's driver, attendant, helper and route.
 - [ ] 2.9 `GET /vehicles/{id}/assignments` (history, newest first) and `GET /vehicles/attention`.
 - [ ] 2.10 `route` package: `Route`, `RouteStop`, repositories, `RouteService`, `RouteController` (rules 13 to 15).

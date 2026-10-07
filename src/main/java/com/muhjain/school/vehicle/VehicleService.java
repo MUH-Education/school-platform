@@ -128,6 +128,23 @@ public class VehicleService {
 		return toResponse(vehicle, now, today());
 	}
 
+	/**
+	 * Locks the vehicle row until the end of the transaction, so two changes of its people cannot run at the same
+	 * moment. Call it inside a transaction.
+	 *
+	 * @throws ApiException 404 NOT_FOUND, 409 VEHICLE_INACTIVE
+	 */
+	@Transactional
+	public VehicleResponse lockActive(Long id) {
+		Vehicle vehicle = vehicles.findByIdForUpdate(id)
+			.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "This vehicle does not exist."));
+		if (!vehicle.isActive()) {
+			throw new ApiException(HttpStatus.CONFLICT, "VEHICLE_INACTIVE",
+					vehicle.getName() + " is turned off. Turn it on first.");
+		}
+		return toResponse(vehicle, documents.findByVehicleId(id), today());
+	}
+
 	/** Names for other features. Example: {4 → "Van 4"}. Ids that do not exist are left out. */
 	@Transactional(readOnly = true)
 	public Map<Long, String> names(Collection<Long> ids) {
