@@ -197,4 +197,53 @@ class VehicleApiTest extends AbstractIntegrationTest {
 			.andExpect(jsonPath("$.documents[1].status").value("ENDING_SOON"));
 	}
 
+	@Test
+	void admissionsDeskGets403OnVehicles() throws Exception {
+		long van4 = createVan4();
+		String deskToken = tokenFor(addUser("+919812340005", Role.ADMISSIONS_DESK));
+
+		mockMvc.perform(get("/api/v1/vehicles").header("Authorization", bearer(deskToken)))
+			.andExpect(status().isForbidden())
+			.andExpect(jsonPath("$.error").value("FORBIDDEN"));
+		mockMvc.perform(get("/api/v1/vehicles/" + van4).header("Authorization", bearer(deskToken)))
+			.andExpect(status().isForbidden());
+		mockMvc.perform(get("/api/v1/staff").header("Authorization", bearer(deskToken)))
+			.andExpect(status().isForbidden());
+	}
+
+	@Test
+	void officeAdminCanGetButNotPostVehicles() throws Exception {
+		long van4 = createVan4();
+		String adminToken = tokenFor(addUser("+919812340004", Role.OFFICE_ADMIN));
+
+		mockMvc.perform(get("/api/v1/vehicles").header("Authorization", bearer(adminToken)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.length()").value(1));
+		mockMvc.perform(get("/api/v1/vehicles/" + van4).header("Authorization", bearer(adminToken)))
+			.andExpect(status().isOk());
+
+		mockMvc.perform(post("/api/v1/vehicles").header("Authorization", bearer(adminToken))
+			.contentType(MediaType.APPLICATION_JSON)
+			.content(VAN4.replace("Van 4", "Van 9").replace("HR 23 A 1104", "HR 23 A 9999")))
+			.andExpect(status().isForbidden())
+			.andExpect(jsonPath("$.error").value("FORBIDDEN"));
+		mockMvc.perform(delete("/api/v1/vehicles/" + van4).header("Authorization", bearer(adminToken)))
+			.andExpect(status().isForbidden());
+		// Nothing was changed by the refused calls.
+		assertThat(jdbc.queryForObject("select count(*) from vehicle", Integer.class)).isEqualTo(1);
+		assertThat(jdbc.queryForObject("select active from vehicle where id = ?", Boolean.class, van4)).isTrue();
+	}
+
+	@Test
+	void attendantGets403OnVehiclesAndStaff() throws Exception {
+		String attendantToken = tokenFor(addUser("+919812340006", Role.ATTENDANT));
+
+		mockMvc.perform(get("/api/v1/vehicles").header("Authorization", bearer(attendantToken)))
+			.andExpect(status().isForbidden());
+		mockMvc.perform(get("/api/v1/staff").header("Authorization", bearer(attendantToken)))
+			.andExpect(status().isForbidden());
+		mockMvc.perform(get("/api/v1/routes").header("Authorization", bearer(attendantToken)))
+			.andExpect(status().isForbidden());
+	}
+
 }

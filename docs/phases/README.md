@@ -10,8 +10,8 @@ Change the Status column as you go: **Not started** → **In progress** → **Do
 |---|---|---|---|---|
 | 0 | [Project setup](phase-0-setup.md) | Empty app starts, connects to PostgreSQL, tests run | S | Done |
 | 1 | [Login, users, roles](phase-1-login-users.md) | Log in with phone and OTP. Owner adds users. | M | Done |
-| 2 | [Vehicles, staff, routes](phase-2-vehicles-staff-routes.md) | Add vehicles, drivers, attendants. Change who is assigned. Routes and stops. | M | In progress |
-| 3 | [Students and admission](phase-3-students-admission.md) | Admit a student, edit later, add phone numbers, photo, start or change bus | L | Not started |
+| 2 | [Vehicles, staff, routes](phase-2-vehicles-staff-routes.md) | Add vehicles, drivers, attendants. Change who is assigned. Routes and stops. | M | Done |
+| 3 | [Students and admission](phase-3-students-admission.md) | Admit a student, edit later, add phone numbers, photo, start or change bus | L | In progress |
 | 4 | [Trips and bus status](phase-4-trips-bus-status.md) | Attendant taps children. Office sees every bus. | L | Not started |
 | 5 | [SMS and WhatsApp](phase-5-sms-whatsapp.md) | Parents get Hindi SMS. Real OTP on WhatsApp or SMS. | M | Not started |
 | 6 | [Enquiries](phase-6-enquiries.md) | Enquiry list with stages and follow-ups | S | Not started |
