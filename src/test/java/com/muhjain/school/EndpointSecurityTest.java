@@ -34,6 +34,10 @@ class EndpointSecurityTest extends AbstractIntegrationTest {
 
 	private static final String VEHICLE_UPDATE_BODY = VEHICLE_BODY.replace("}", ",\"active\":true}");
 
+	private static final String STAFF_BODY = "{\"name\":\"Balwan\",\"phone\":\"9812340011\",\"staffType\":\"ATTENDANT\"}";
+
+	private static final String STAFF_UPDATE_BODY = STAFF_BODY.replace("}", ",\"active\":true}");
+
 	private static final String DOCUMENTS_BODY = "{\"insurance\":\"2026-10-28\"}";
 
 	/** method, URL, body, a role WITHOUT the permission (null = any login is enough) */
@@ -54,7 +58,11 @@ class EndpointSecurityTest extends AbstractIntegrationTest {
 				Arguments.of("GET", "/api/v1/vehicles/1", null, Role.ADMISSIONS_DESK),
 				Arguments.of("PUT", "/api/v1/vehicles/1", VEHICLE_UPDATE_BODY, Role.OFFICE_ADMIN),
 				Arguments.of("DELETE", "/api/v1/vehicles/1", null, Role.OFFICE_ADMIN),
-				Arguments.of("PUT", "/api/v1/vehicles/1/documents", DOCUMENTS_BODY, Role.OFFICE_ADMIN));
+				Arguments.of("PUT", "/api/v1/vehicles/1/documents", DOCUMENTS_BODY, Role.OFFICE_ADMIN),
+				Arguments.of("GET", "/api/v1/staff", null, Role.ADMISSIONS_DESK),
+				Arguments.of("POST", "/api/v1/staff", STAFF_BODY, Role.OFFICE_ADMIN),
+				Arguments.of("PUT", "/api/v1/staff/1", STAFF_UPDATE_BODY, Role.OFFICE_ADMIN),
+				Arguments.of("DELETE", "/api/v1/staff/1", null, Role.OFFICE_ADMIN));
 	}
 
 	@ParameterizedTest(name = "{0} {1} without token → 401")
