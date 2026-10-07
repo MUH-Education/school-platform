@@ -50,8 +50,12 @@ public class StudentImportService {
 	private static final List<String> REQUIRED = List.of("name", "gender", "dob", "class", "village", "parent_phone");
 
 	private static final List<DateTimeFormatter> DATE_FORMATS = List.of(DateTimeFormatter.ISO_LOCAL_DATE,
-			DateTimeFormatter.ofPattern("d/M/uuuu"), DateTimeFormatter.ofPattern("d-M-uuuu"),
-			DateTimeFormatter.ofPattern("d.M.uuuu"));
+			strict("d/M/uuuu"), strict("d-M-uuuu"), strict("d.M.uuuu"));
+
+	// Strict: 31/02/2015 is an error, not 28 Feb.
+	private static DateTimeFormatter strict(String pattern) {
+		return DateTimeFormatter.ofPattern(pattern).withResolverStyle(java.time.format.ResolverStyle.STRICT);
+	}
 
 	private static final Pattern DIGITS_ONLY = Pattern.compile("\\D");
 
