@@ -18,6 +18,20 @@ import com.muhjain.school.staff.Duty;
 import com.muhjain.school.staff.StaffResponse;
 import com.muhjain.school.staff.StaffService;
 import com.muhjain.school.staff.StaffType;
+import com.muhjain.school.student.AdmissionBus;
+import com.muhjain.school.student.AdmissionRequest;
+import com.muhjain.school.student.AdmissionResponse;
+import com.muhjain.school.student.AdmissionService;
+import com.muhjain.school.student.ClassNames;
+import com.muhjain.school.student.FatherOccupation;
+import com.muhjain.school.student.Gender;
+import com.muhjain.school.student.GuardianRelation;
+import com.muhjain.school.student.GuardianRequest;
+import com.muhjain.school.student.GuardianService;
+import com.muhjain.school.student.StudentFilter;
+import com.muhjain.school.student.StudentService;
+import com.muhjain.school.student.StudentStatus;
+import com.muhjain.school.student.UpdateStatusRequest;
 import com.muhjain.school.vehicle.CreateVehicleRequest;
 import com.muhjain.school.vehicle.OwnedBy;
 import com.muhjain.school.vehicle.VehicleDocumentsRequest;
@@ -42,8 +56,18 @@ import org.springframework.transaction.annotation.Transactional;
  * <li>Papers: all valid, except Van 2 insurance (ends in 12 days) and Van 6 PUC (ended 5 days ago).
  * The licence of Dalbir (Van 7) ends in 20 days. So the "needs attention" list is not empty.</li>
  * </ul>
+ * Phase 3 adds about 40 students across the routes:
+ * <ul>
+ * <li>28 families. 12 of them have two children (brother and sister, or two brothers) who <b>share one parent
+ * phone</b>, so the guardian table has one row for that phone.</li>
+ * <li>4 families have no bus. One child starts the bus 25 days from now (so {@code onRoute} does not list the child
+ * before that day). One child has left school (status LEFT).</li>
+ * <li>A grandfather's phone that already belongs to a cousin is added to one child, to show one guardian row for
+ * one phone.</li>
+ * </ul>
+ * The fleet and the students are loaded separately. Each part does nothing if its data is already there.
  * <b>Only the {@code dev} profile.</b> It never runs in {@code test} or {@code prod}.
- * It does nothing if there is already a vehicle. Phone numbers are made up. It uses services only.
+ * Phone numbers are made up. It uses services only.
  */
 @Component
 @Profile("dev")
@@ -79,10 +103,20 @@ public class DevDataLoader implements ApplicationRunner {
 
 	private final RouteService routeService;
 
+	private final AdmissionService admissionService;
+
+	private final GuardianService guardianService;
+
+	private final StudentService studentService;
+
 	private final Clock clock;
 
 	public DevDataLoader(VehicleService vehicleService, StaffService staffService,
-			AssignmentService assignmentService, RouteService routeService, Clock clock) {
+			AssignmentService assignmentService, RouteService routeService, AdmissionService admissionService,
+			GuardianService guardianService, StudentService studentService, Clock clock) {
+		this.admissionService = admissionService;
+		this.guardianService = guardianService;
+		this.studentService = studentService;
 		this.vehicleService = vehicleService;
 		this.staffService = staffService;
 		this.assignmentService = assignmentService;
@@ -93,10 +127,22 @@ public class DevDataLoader implements ApplicationRunner {
 	@Override
 	@Transactional
 	public void run(ApplicationArguments args) {
-		if (!vehicleService.list().isEmpty()) {
-			log.info("Dev data: there are vehicles already, nothing loaded");
-			return;
+		if (vehicleService.list().isEmpty()) {
+			loadFleet();
 		}
+		else {
+			log.info("Dev data: there are vehicles already, fleet not loaded");
+		}
+		if (studentService.list(new StudentFilter(null, null, null, null, null, null), 0, 1, null)
+			.totalItems() == 0) {
+			loadStudents();
+		}
+		else {
+			log.info("Dev data: there are students already, students not loaded");
+		}
+	}
+
+	private void loadFleet() {
 		LocalDate today = LocalDate.now(clock);
 		LocalDate yearStart = schoolYearStart(today);
 
@@ -126,6 +172,84 @@ public class DevDataLoader implements ApplicationRunner {
 			routeService.saveStops(route.id(), stops(n));
 		}
 		log.info("Dev data loaded: 9 vehicles, 9 routes, {} staff", DRIVERS.length * 2 + 2);
+	}
+
+	// ---- students (Phase 3) ----
+
+	private static final String[] BOYS = { "Aryan", "Ishaan", "Vihaan", "Rohan", "Kabir", "Dev", "Harsh", "Lakshay",
+			"Mohit", "Naman", "Parth", "Rudra", "Yash", "Tanmay", "Nitin", "Sahil", "Aman", "Gaurav" };
+
+	private static final String[] GIRLS = { "Siya", "Ananya", "Diya", "Kavya", "Muskan", "Pooja", "Riya", "Sneha",
+			"Tanvi", "Vani", "Khushi", "Palak" };
+
+	private static final String[] FATHERS = { "Ramesh", "Suresh", "Mahipal", "Dharampal", "Jagbir", "Rajender", "Satyawan",
+			"Balbir", "Naresh", "Subhash", "Krishan", "Om Prakash", "Ravinder", "Sandeep" };
+
+	private static final String[] SURNAMES = { "Jain", "Sharma", "Goyal", "Bishnoi", "Jat", "Garg", "Singh",
+			"Kumar" };
+
+	private static final int FAMILIES = 28;
+
+	private void loadStudents() {
+		List<RouteResponse> routes = routeService.list();
+		if (routes.isEmpty()) {
+			log.info("Dev data: there are no routes, students not loaded");
+			return;
+		}
+		LocalDate today = LocalDate.now(clock);
+		LocalDate yearStart = schoolYearStart(today);
+		FatherOccupation[] occupations = FatherOccupation.values();
+
+		int boy = 0;
+		int girl = 0;
+		int children = 0;
+		List<Long> firstChildOfFamily = new ArrayList<>();
+		List<String> phones = new ArrayList<>();
+		Long lastStudent = null;
+		for (int f = 0; f < FAMILIES; f++) {
+			String surname = SURNAMES[f % SURNAMES.length];
+			String parent = FATHERS[f % FATHERS.length] + " " + surname;
+			// Made-up numbers: 98111 00001, 98111 00002, ...
+			String phone = "98111" + String.format("%05d", f + 1);
+			phones.add(phone);
+			RouteResponse route = routes.get(f % routes.size());
+			// The first three stops are villages. The fourth is the town where the school is.
+			int stopIndex = f % Math.min(3, route.stops().size());
+			boolean busFamily = f % 7 != 6;
+			// 12 families have two children and one shared phone.
+			int kids = (f < 12) ? 2 : 1;
+			for (int k = 0; k < kids; k++) {
+				boolean isGirl = (k == 1 && f % 2 == 0) || (k == 0 && f % 5 == 4);
+				String first = isGirl ? GIRLS[girl++ % GIRLS.length] : BOYS[boy++ % BOYS.length];
+				String className = ClassNames.ALL.get((f + 5 * k) % ClassNames.ALL.size());
+				int age = 3 + ClassNames.ALL.indexOf(className);
+				LocalDate dob = LocalDate.of(today.getYear() - age, 1 + (children % 12), 1 + (children % 27));
+				String village = busFamily ? route.stops().get(stopIndex).name() : "Tohana town";
+
+				AdmissionBus bus = null;
+				if (busFamily) {
+					// Family 5: the first child starts the bus 25 days from now.
+					LocalDate from = (f == 5 && k == 0) ? today.plusDays(25) : null;
+					bus = new AdmissionBus(route.id(), route.stops().get(stopIndex).id(), from, null);
+				}
+				AdmissionResponse admitted = admissionService.admit(new AdmissionRequest(first + " " + surname,
+						dob, isGirl ? Gender.F : Gender.M, className, (children % 2 == 0) ? "A" : "B", village, null,
+						occupations[f % occupations.length], yearStart,
+						List.of(new GuardianRequest(parent, phone, GuardianRelation.FATHER, true)), null, null, bus), null);
+				if (k == 0) {
+					firstChildOfFamily.add(admitted.studentId());
+				}
+				lastStudent = admitted.studentId();
+				children++;
+			}
+		}
+		// Family 3's first child gets the phone of family 4's father too, as "grandfather". It is the same number as a
+		// cousin's parent, so there is still one guardian row for it.
+		guardianService.add(firstChildOfFamily.get(3),
+				new GuardianRequest("Dharampal Goyal", phones.get(4), GuardianRelation.GRANDFATHER, true));
+		// The last child has left school 10 days ago.
+		studentService.setStatus(lastStudent, new UpdateStatusRequest(StudentStatus.LEFT, today.minusDays(10)));
+		log.info("Dev data loaded: {} students in {} families", children, FAMILIES);
 	}
 
 	private Long addStaff(String name, StaffType type, int phoneNumber, String licenceNo, LocalDate licenceTill) {
