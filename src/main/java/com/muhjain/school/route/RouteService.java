@@ -259,6 +259,30 @@ public class RouteService {
 			.collect(Collectors.toMap(RouteStop::getId, s -> new StopRef(s.getId(), s.getRouteId(), s.getName())));
 	}
 
+	/** One route in short, turned off ones too. Empty if the route does not exist. */
+	@Transactional(readOnly = true)
+	public Optional<RouteSummary> summary(Long routeId) {
+		return routes.findById(routeId).map(r -> new RouteSummary(r.getId(), r.getName(), r.getVehicleId()));
+	}
+
+	/** The routes that are turned on, oldest first. Bus status shows these. */
+	@Transactional(readOnly = true)
+	public List<RouteSummary> activeSummaries() {
+		return routes.findByActiveTrueOrderByIdAsc()
+			.stream()
+			.map(r -> new RouteSummary(r.getId(), r.getName(), r.getVehicleId()))
+			.toList();
+	}
+
+	/** The stops of a route in morning order, with their times. Example: Sadhanwas 07:25, Jakhal 07:40, ... */
+	@Transactional(readOnly = true)
+	public List<StopTimes> stopTimes(Long routeId) {
+		return stops.findByRouteIdOrderBySeqNoAsc(routeId)
+			.stream()
+			.map(s -> new StopTimes(s.getId(), s.getName(), s.getSeqNo(), s.getMorningTime(), s.getEveningTime()))
+			.toList();
+	}
+
 	/** Route names by id. Example: {4 → "Route 4"}. A route that does not exist is not in the map. */
 	@Transactional(readOnly = true)
 	public Map<Long, String> routeNames(Collection<Long> routeIds) {

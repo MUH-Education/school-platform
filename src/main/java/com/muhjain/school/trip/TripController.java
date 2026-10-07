@@ -1,11 +1,16 @@
 package com.muhjain.school.trip;
 
+import java.time.LocalDate;
+
 import com.muhjain.school.auth.CurrentUser;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -19,10 +24,13 @@ public class TripController {
 
 	private final MarkService markService;
 
+	private final ManifestService manifestService;
+
 	private final CurrentUser currentUser;
 
-	public TripController(MarkService markService, CurrentUser currentUser) {
+	public TripController(MarkService markService, ManifestService manifestService, CurrentUser currentUser) {
 		this.markService = markService;
+		this.manifestService = manifestService;
 		this.currentUser = currentUser;
 	}
 
@@ -31,6 +39,17 @@ public class TripController {
 	@PreAuthorize("hasAnyAuthority('TRIPS_RECORD', 'TRIPS_RECORD_ANY')")
 	public MarksResponse marks(@Valid @RequestBody MarksRequest request) {
 		return new MarksResponse(markService.apply(currentUser.id(), request.marks()));
+	}
+
+	/**
+	 * The stops and children of a route for a day. An attendant gets their own route today (the route comes from
+	 * the server; if they send another routeId the answer is 403 NOT_YOUR_ROUTE). The office gives routeId and date.
+	 */
+	@GetMapping("/manifest")
+	@PreAuthorize("hasAnyAuthority('TRIPS_RECORD', 'TRIPS_RECORD_ANY')")
+	public ManifestResponse manifest(@RequestParam(required = false) Long routeId,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+		return manifestService.manifest(currentUser.id(), routeId, date);
 	}
 
 }
