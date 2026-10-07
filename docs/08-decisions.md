@@ -111,6 +111,8 @@ Add a line each time code needed a choice the docs did not cover.
 | 7 Oct 2026 | 2 | Load board for a route with no vehicle: `seats`, `load`, `yearlyCost`, `costPerChild` and `surplus` are null, `overBy` and `spare` are 0, verdict `NO_VEHICLE`. `feeGot` is still worked out from the children. | The docs did not say what the numbers are without a vehicle. |
 | 7 Oct 2026 | 2 | Verdict `THIN` ("load below 0.6") is worked out with whole numbers (`children x 5 < seats x 3`), not from the rounded load. Example: 119 children on 200 seats show load 0.60 but are THIN. Exactly 0.6 is OK. | A rounded number must not change the verdict. |
 | 7 Oct 2026 | 2 | Load board totals are for the whole fleet: `seats` and `yearlyCost` count every vehicle that is turned on, also one with no route (it still costs money). `children` and `feeGot` add up the routes. `surplus` = feeGot − yearlyCost. | The doc says "totals for the whole fleet". With the dev data (9 vehicles, 9 routes) it is 150 seats either way. |
+| 7 Oct 2026 | 2 | `AttendantRouteService.routeFor(userId, date)` gives `Optional<AttendantRoute>` (route id and name, vehicle id and name). It is empty if: the user does not exist or is turned off, has no staff row, the person is turned off, is not the ATTENDANT of any vehicle that day (a temporary replacement removes the permanent attendant for those days), or the vehicle has no active route. Only the ATTENDANT duty counts, not DRIVER or HELPER. | Phase 4 turns "empty" into 403 `NOT_YOUR_ROUTE`. |
+| 7 Oct 2026 | 2 | `GET /auth/me` still sends `route: null`. Phase 4 fills it from `AttendantRouteService`. | The Phase 1 code says "until Phase 4", and `AuthController` would need to call the `route` package. |
 
 ## E. What changed from the first plan document
 

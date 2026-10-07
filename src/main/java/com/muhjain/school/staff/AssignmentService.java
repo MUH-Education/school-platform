@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -84,6 +85,28 @@ public class AssignmentService {
 		return rows.stream()
 			.map(r -> AssignmentResponse.of(r, people.get(r.getStaffId()).getName(), clock.getZone()))
 			.toList();
+	}
+
+	/**
+	 * The vehicle where this person is the ATTENDANT on this day. Rule 9 applies: a permanent attendant whose
+	 * duty is covered by a temporary replacement that day is not on the vehicle, and the replacement is.
+	 * Example: Balwan is the attendant of Van 4 → 4. On 14 Oct Hari replaces him → Balwan: empty, Hari: 4.
+	 * A person who is turned off is on no vehicle.
+	 */
+	@Transactional(readOnly = true)
+	public Optional<Long> attendantVehicleOn(Long staffId, LocalDate day) {
+		if (staff.findById(staffId).filter(Staff::isActive).isEmpty()) {
+			return Optional.empty();
+		}
+		return assignments.ofStaffCoveringDay(staffId, day)
+			.stream()
+			.filter(row -> row.getDuty() == Duty.ATTENDANT)
+			.map(VehicleAssignment::getVehicleId)
+			.filter(vehicleId -> AssignmentRules.pick(assignments.coveringDay(vehicleId, day), Duty.ATTENDANT, day)
+				.map(VehicleAssignment::getStaffId)
+				.filter(staffId::equals)
+				.isPresent())
+			.findFirst();
 	}
 
 	/**
