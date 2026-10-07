@@ -20,8 +20,11 @@ public class BusStatusController {
 
 	private final BusStatusService busStatusService;
 
-	public BusStatusController(BusStatusService busStatusService) {
+	private final AttentionService attentionService;
+
+	public BusStatusController(BusStatusService busStatusService, AttentionService attentionService) {
 		this.busStatusService = busStatusService;
+		this.attentionService = attentionService;
 	}
 
 	/** Every route. {@code phase} default: MORNING before 12:00, EVENING after. {@code date} default: today. */
@@ -40,6 +43,14 @@ public class BusStatusController {
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
 			@RequestParam(required = false) BusPhase phase) {
 		return busStatusService.route(routeId, date, phase);
+	}
+
+	/** Buses with no taps or late (morning), and children nobody answered for in the evening. */
+	@GetMapping("/attention")
+	@PreAuthorize("hasAuthority('BUS_STATUS_VIEW')")
+	public AttentionResponse attention(
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+		return attentionService.attention(date);
 	}
 
 }

@@ -177,7 +177,7 @@ public class BusStatusService {
 		return new Counts(route.children().size(), boarded, absent, notTravelling, answered, boardedAtHome);
 	}
 
-	private List<RouteStatusResponse> respond(Collection<Computed> computed, LocalDate day) {
+	List<RouteStatusResponse> respond(Collection<Computed> computed, LocalDate day) {
 		List<Long> vehicleIds = computed.stream().map(c -> c.route().vehicleId()).filter(Objects::nonNull).distinct().toList();
 		Map<Long, String> vehicleNames = vehicleService.names(vehicleIds);
 		Map<Long, Crew> crews = assignmentService.onDate(vehicleIds, day);
