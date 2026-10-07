@@ -74,6 +74,13 @@ public class EnquiryController {
 		return enquiryService.update(id, request);
 	}
 
+	/** The fields the New admission screen can copy from this enquiry. Needs ADMISSIONS_CREATE. */
+	@GetMapping("/{id}/prefill")
+	@PreAuthorize("hasAuthority('ADMISSIONS_CREATE')")
+	public PrefillResponse prefill(@PathVariable Long id) {
+		return enquiryService.prefill(id);
+	}
+
 	/** Move to another stage. LOST needs {@code lostReason}. ADMITTED cannot be set here. */
 	@PostMapping("/{id}/status")
 	@PreAuthorize("hasAuthority('ENQUIRIES_EDIT')")

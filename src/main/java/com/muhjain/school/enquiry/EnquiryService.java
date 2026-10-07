@@ -259,6 +259,38 @@ public class EnquiryService {
 		enquiries.saveAndFlush(enquiry);
 	}
 
+	/**
+	 * The fields the New admission screen can copy (task 6.9).
+	 *
+	 * @throws ApiException 404 NOT_FOUND, 409 ENQUIRY_ALREADY_ADMITTED
+	 */
+	@Transactional(readOnly = true)
+	public PrefillResponse prefill(Long id) {
+		Enquiry e = find(id);
+		if (e.getStatus() == EnquiryStatus.ADMITTED) {
+			throw new ApiException(HttpStatus.CONFLICT, "ENQUIRY_ALREADY_ADMITTED",
+					"A child was admitted from this enquiry already.");
+		}
+		LocalDate date = e.getCreatedAt().atZone(clock.getZone()).toLocalDate();
+		return new PrefillResponse(e.getId(), e.getChildName(), e.getClassSought(), e.getVillage(), e.getNeedsBus(),
+				new PrefillResponse.Guardian(e.getParentName(), e.getPhone(), relationOf(e.getRelation())),
+				"Started from the enquiry of " + e.getParentName() + " (" + com.muhjain.school.common.DayText.on(date) + ")",
+				date);
+	}
+
+	// The enquiry keeps the relation as free text. FATHER, mother, "Mother" all map. Anything else is OTHER.
+	private static com.muhjain.school.student.GuardianRelation relationOf(String text) {
+		if (text != null) {
+			String wanted = text.strip().toUpperCase(java.util.Locale.ROOT).replace(' ', '_');
+			for (com.muhjain.school.student.GuardianRelation relation : com.muhjain.school.student.GuardianRelation.values()) {
+				if (relation.name().equals(wanted)) {
+					return relation;
+				}
+			}
+		}
+		return com.muhjain.school.student.GuardianRelation.OTHER;
+	}
+
 	// ---- helpers shared with the other enquiry services in this package ----
 
 	Enquiry find(Long id) {
