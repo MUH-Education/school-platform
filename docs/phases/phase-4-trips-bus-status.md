@@ -102,7 +102,7 @@ Bus status is **calculated** from taps. Nothing is stored. Put the maths in one 
 - [x] 4.5 `MarkService.apply(user, marks)` (rules 4 to 10). Write the tests first.
 - [x] 4.6 `POST /trips/marks`.
 - [x] 4.7 `ManifestService` + `GET /trips/manifest` (rules 11 to 13).
-- [ ] 4.8 `GET /trips/my-route`: the attendant's route and the count for each of the four jobs.
+- [x] 4.8 `GET /trips/my-route`: the attendant's route and the count for each of the four jobs.
 - [ ] 4.9 `BusStatusCalculator` (pure Java) with tests for every state, using the examples in rule 16.
 - [ ] 4.10 `BusStatusService` + `GET /bus-status` and `GET /bus-status/routes/{routeId}`.
 - [ ] 4.11 `AttentionService` + `GET /bus-status/attention` (rules 20 to 22).

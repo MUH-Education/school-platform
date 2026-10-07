@@ -26,12 +26,23 @@ public class TripController {
 
 	private final ManifestService manifestService;
 
+	private final MyRouteService myRouteService;
+
 	private final CurrentUser currentUser;
 
-	public TripController(MarkService markService, ManifestService manifestService, CurrentUser currentUser) {
+	public TripController(MarkService markService, ManifestService manifestService, MyRouteService myRouteService,
+			CurrentUser currentUser) {
+		this.myRouteService = myRouteService;
 		this.markService = markService;
 		this.manifestService = manifestService;
 		this.currentUser = currentUser;
+	}
+
+	/** The attendant's own route today and the progress of the four jobs. No route today → {@code route: null}. */
+	@GetMapping("/my-route")
+	@PreAuthorize("hasAuthority('TRIPS_RECORD')")
+	public MyRouteResponse myRoute() {
+		return myRouteService.myRoute(currentUser.id());
 	}
 
 	/** Save one or many taps. Same tap twice = one row. A bad tap gets its own error, the others are saved. */
