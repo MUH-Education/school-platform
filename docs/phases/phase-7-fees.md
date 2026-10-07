@@ -113,9 +113,9 @@ Answer question **C2** in `docs/08-decisions.md` before building: does the accou
 
 ## Done when
 
-- You admit a child on 1 April with ₹30,000 + ₹8,800 quarterly and ₹9,700 paid. `GET /students/{id}/fees` shows `pendingNow` ₹0, `remainingThisYear` ₹29,100 and next due ₹9,700 on 1 July.
-- You set the clock to 15 August without a second payment. Status is DELAYED.
-- `/check-phase 7` passes.
+- [x] You admit a child on 1 April with ₹30,000 + ₹8,800 quarterly and ₹9,700 paid. `GET /students/{id}/fees` shows `pendingNow` ₹0, `remainingThisYear` ₹29,100 and next due ₹9,700 on 1 July.
+- [x] You set the clock to 15 August without a second payment. Status is DELAYED.
+- [x] `/check-phase 7` passes. (The command does not exist in this repo. The lines above were checked by hand on the running app: PostgreSQL in Docker, `java -jar`, app clock set with libfaketime.)
 
 ## Out of scope
 
