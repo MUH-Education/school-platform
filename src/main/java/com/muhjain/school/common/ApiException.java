@@ -37,6 +37,14 @@ public class ApiException extends RuntimeException {
 				Map.of(field, problem), null);
 	}
 
+	/**
+	 * 409 that also tells the client which row is in the way. Example:
+	 * {@code conflict("ENQUIRY_EXISTS", "...", Map.of("enquiryId", "12"))}.
+	 */
+	public static ApiException conflict(String code, String message, Map<String, String> fields) {
+		return new ApiException(HttpStatus.CONFLICT, code, message, fields, null);
+	}
+
 	/** 429 with a {@code Retry-After: 42} header. Example: "wait 42 seconds before asking for a new code". */
 	public static ApiException tooManyRequests(String code, String message, long retryAfterSeconds) {
 		return new ApiException(HttpStatus.TOO_MANY_REQUESTS, code, message, null, Math.max(1, retryAfterSeconds));
@@ -50,7 +58,7 @@ public class ApiException extends RuntimeException {
 		return code;
 	}
 
-	/** Only for 400 VALIDATION, otherwise null. */
+	/** For 400 VALIDATION, and for a 409 that names the row in the way. Otherwise null. */
 	public Map<String, String> getFields() {
 		return fields;
 	}

@@ -207,4 +207,10 @@ public class GuardianService {
 		}
 	}
 
+	/** Does this guardian (phone of a parent) exist? Enquiries use it to check {@code referredByGuardianId}. */
+	@Transactional(readOnly = true)
+	public boolean exists(Long guardianId) {
+		return guardians.existsById(guardianId);
+	}
+
 }

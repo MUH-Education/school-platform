@@ -84,6 +84,25 @@ public class Enquiry extends BaseEntity {
 		this.createdBy = createdBy;
 	}
 
+	/** Copies the details (not the stage, the lost reason, the admission or who created it) from another object. */
+	void copyDetailsFrom(Enquiry other) {
+		this.parentName = other.parentName;
+		this.phone = other.phone;
+		this.relation = other.relation;
+		this.village = other.village;
+		this.childName = other.childName;
+		this.classSought = other.classSought;
+		this.childAge = other.childAge;
+		this.currentSchool = other.currentSchool;
+		this.source = other.source;
+		this.referredBy = other.referredBy;
+		this.referredByGuardianId = other.referredByGuardianId;
+		this.needsBus = other.needsBus;
+		this.nextFollowUpOn = other.nextFollowUpOn;
+		this.note = other.note;
+		this.sessionName = other.sessionName;
+	}
+
 	public String getParentName() {
 		return parentName;
 	}
