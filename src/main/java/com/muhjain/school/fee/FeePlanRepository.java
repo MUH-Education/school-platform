@@ -24,4 +24,6 @@ public interface FeePlanRepository extends JpaRepository<FeePlan, Long> {
 
 	List<FeePlan> findBySessionId(Long sessionId);
 
+	List<FeePlan> findBySessionIdAndStudentIdIn(Long sessionId, java.util.Collection<Long> studentIds);
+
 }

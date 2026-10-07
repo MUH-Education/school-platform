@@ -11,6 +11,8 @@ public interface FeeDueRepository extends JpaRepository<FeeDue, Long> {
 
 	List<FeeDue> findByFeePlanIdOrderByDueOnAscIdAsc(Long feePlanId);
 
+	List<FeeDue> findByFeePlanIdIn(java.util.Collection<Long> feePlanIds);
+
 	/** All dues of one fee head in a plan. Example: SCHOOL of a quarterly plan of 30000 → 30000.00. */
 	@Query("select coalesce(sum(d.amount), 0) from FeeDue d where d.feePlanId = :planId and d.feeHead = :head")
 	java.math.BigDecimal totalOf(@Param("planId") Long planId, @Param("head") FeeHead head);
