@@ -59,4 +59,12 @@ public class EnquiryController {
 		return enquiryService.changeStatus(id, request);
 	}
 
+	/** Add a call or visit note. It may set the next follow-up date. Answers the enquiry with its follow-ups. */
+	@PostMapping("/{id}/follow-ups")
+	@PreAuthorize("hasAuthority('ENQUIRIES_EDIT')")
+	@ResponseStatus(HttpStatus.CREATED)
+	public EnquiryResponse addFollowUp(@PathVariable Long id, @Valid @RequestBody FollowUpRequest request) {
+		return enquiryService.addFollowUp(id, request, currentUser.id());
+	}
+
 }

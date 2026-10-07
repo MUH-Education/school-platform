@@ -140,6 +140,31 @@ public class EnquiryService {
 		return respond(save(enquiry));
 	}
 
+	/**
+	 * Saves one call or visit (rule 4). The enquiry's next follow-up date is always the date of the newest follow-up:
+	 * a follow-up with a date moves it, a follow-up with no date clears it (nothing is planned any more, so the
+	 * enquiry is not overdue). A closed enquiry (ADMITTED, LOST) gets the note but keeps its date.
+	 * Example: next date 5 Oct, the clerk calls on 7 Oct and sets 12 Oct → next date 12 Oct, no longer overdue.
+	 *
+	 * @throws ApiException 404 NOT_FOUND, 400 VALIDATION (note blank, date in the past)
+	 */
+	@Transactional
+	public EnquiryResponse addFollowUp(Long id, FollowUpRequest request, Long userId) {
+		Enquiry enquiry = find(id);
+		String note = request.note().strip();
+		if (note.isEmpty()) {
+			throw ApiException.validation("note", "must not be blank");
+		}
+		if (request.nextActionOn() != null && request.nextActionOn().isBefore(today())) {
+			throw ApiException.validation("nextActionOn", "cannot be in the past");
+		}
+		followUps.save(new EnquiryFollowUp(id, note, request.nextActionOn(), userId));
+		if (enquiry.getStatus().isOpen()) {
+			enquiry.setNextFollowUpOn(request.nextActionOn());
+		}
+		return get(id);
+	}
+
 	// ---- helpers shared with the other enquiry services in this package ----
 
 	Enquiry find(Long id) {

@@ -51,7 +51,7 @@ This phase needs only Phase 1. You can build it any time after Phase 1. The link
 - [x] 6.2 `enquiry` package: entities, enums `EnquirySource`, `EnquiryStatus`, repositories.
 - [x] 6.3 `EnquiryService.create` and `update` (rules 1, 2, 6, 7).
 - [x] 6.4 `EnquiryService.changeStatus` (rule 3). Unit test the allowed moves as a table.
-- [ ] 6.5 Follow-ups (rule 4).
+- [x] 6.5 Follow-ups (rule 4).
 - [ ] 6.6 List with filters, overdue flag on each row (rules 5, 10).
 - [ ] 6.7 Summary (rule 9).
 - [ ] 6.8 Link from admission (rule 8). Add the test to the Phase 3 admission tests.
