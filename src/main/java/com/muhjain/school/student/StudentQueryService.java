@@ -29,7 +29,14 @@ public class StudentQueryService {
 
 	private final StudentRepository students;
 
-	public StudentQueryService(TransportEnrolmentRepository enrolments, StudentRepository students) {
+	private final StudentGuardianRepository studentGuardians;
+
+	private final GuardianRepository guardians;
+
+	public StudentQueryService(TransportEnrolmentRepository enrolments, StudentRepository students,
+			StudentGuardianRepository studentGuardians, GuardianRepository guardians) {
+		this.studentGuardians = studentGuardians;
+		this.guardians = guardians;
 		this.enrolments = enrolments;
 		this.students = students;
 	}
@@ -73,6 +80,28 @@ public class StudentQueryService {
 			.stream()
 			.collect(Collectors.toMap(Student::getId, s -> new StudentBus(s.getId(),
 					s.getStatus() == StudentStatus.ACTIVE, routes.get(s.getId()))));
+	}
+
+	/**
+	 * The facts for a parent SMS about one child. Only the phones whose link has {@code sms_enabled} are listed.
+	 * Empty if the child does not exist.
+	 */
+	@Transactional(readOnly = true)
+	public java.util.Optional<SmsTarget> smsTarget(Long studentId) {
+		return students.findById(studentId).map(student -> {
+			List<StudentGuardian> links = studentGuardians.findByStudentIdOrderByIdAsc(studentId)
+				.stream()
+				.filter(StudentGuardian::isSmsEnabled)
+				.toList();
+			Map<Long, Guardian> byId = guardians.findAllById(links.stream().map(StudentGuardian::getGuardianId).toList())
+				.stream()
+				.collect(Collectors.toMap(Guardian::getId, Function.identity()));
+			List<SmsTarget.Phone> phones = links.stream()
+				.map(link -> new SmsTarget.Phone(link.getGuardianId(), byId.get(link.getGuardianId()).getPhone()))
+				.toList();
+			return new SmsTarget(student.getId(), student.getName(), student.getGender(), student.getClassName(),
+					phones);
+		});
 	}
 
 }

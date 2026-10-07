@@ -26,7 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ConcurrentTapTest extends TripTestBase {
 
 	@MockitoSpyBean
-	private NoOpBoardingNotifier notifier;
+	private BoardingNotifier notifier;
 
 	private void inParallel(Callable<?> first, Callable<?> second) throws Exception {
 		ExecutorService pool = Executors.newFixedThreadPool(2);
