@@ -96,7 +96,7 @@ Bus status is **calculated** from taps. Nothing is stored. Put the maths in one 
 ## Tasks
 
 - [x] 4.1 `V4__trips.sql`.
-- [ ] 4.2 `trip` package: `BoardingEvent` entity, enums `EventType`, `Outcome`, repository.
+- [x] 4.2 `trip` package: `BoardingEvent` entity, enums `EventType`, `Outcome`, repository.
 - [ ] 4.3 `TripAccess`: one class that answers "may this user touch this route on this date?" (rules 1 to 3). Every trip endpoint goes through it. Unit test it.
 - [ ] 4.4 `BoardingNotifier` interface + `NoOpBoardingNotifier`.
 - [ ] 4.5 `MarkService.apply(user, marks)` (rules 4 to 10). Write the tests first.
