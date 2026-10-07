@@ -3,6 +3,7 @@ package com.muhjain.school.vehicle;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -125,6 +126,12 @@ public class VehicleService {
 		}
 		documents.flush();
 		return toResponse(vehicle, now, today());
+	}
+
+	/** Names for other features. Example: {4 → "Van 4"}. Ids that do not exist are left out. */
+	@Transactional(readOnly = true)
+	public Map<Long, String> names(Collection<Long> ids) {
+		return vehicles.findAllById(ids).stream().collect(Collectors.toMap(Vehicle::getId, Vehicle::getName));
 	}
 
 	/** The school day, in the school zone. */

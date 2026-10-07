@@ -124,4 +124,59 @@ class StaffApiTest extends AbstractIntegrationTest {
 		assertThat(jdbc.queryForObject("select active from staff where id = ?", Boolean.class, id)).isFalse();
 	}
 
+	@Test
+	void personOnAVehicleCannotBeTurnedOff() throws Exception {
+		// 7 Oct 2026. Jagdish drives Van 4 from 1 Apr 2026 with no end date.
+		long van4 = addVehicle("Van 4");
+		long jagdish = addStaff("Jagdish", "DRIVER");
+		addAssignment(van4, jagdish, "DRIVER", "2026-04-01", null, false);
+
+		mockMvc.perform(delete("/api/v1/staff/" + jagdish).header("Authorization", bearer(token)))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.error").value("STAFF_ASSIGNED"))
+			.andExpect(jsonPath("$.message").value("Jagdish works on Van 4 as DRIVER. Change who works there first."));
+		// The same rule holds for a PUT with active=false.
+		send(put("/api/v1/staff/" + jagdish), "{\"name\":\"Jagdish\",\"phone\":\"9812340010\","
+				+ "\"staffType\":\"DRIVER\",\"licenceNo\":\"X1\",\"licenceValidTill\":\"2029-03-31\","
+				+ "\"active\":false}")
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.error").value("STAFF_ASSIGNED"));
+		assertThat(jdbc.queryForObject("select active from staff where id = ?", Boolean.class, jagdish)).isTrue();
+	}
+
+	@Test
+	void personWhoseLastDayWasYesterdayCanBeTurnedOff() throws Exception {
+		long van4 = addVehicle("Van 4");
+		long jagdish = addStaff("Jagdish", "DRIVER");
+		addAssignment(van4, jagdish, "DRIVER", "2026-04-01", "2026-10-06", false);
+
+		mockMvc.perform(delete("/api/v1/staff/" + jagdish).header("Authorization", bearer(token)))
+			.andExpect(status().isNoContent());
+
+		// A row that starts in the future also blocks: "today or later".
+		long surender = addStaff("Surender", "DRIVER");
+		addAssignment(van4, surender, "DRIVER", "2026-11-01", null, false);
+		mockMvc.perform(delete("/api/v1/staff/" + surender).header("Authorization", bearer(token)))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.error").value("STAFF_ASSIGNED"));
+	}
+
+	@Test
+	void typeCannotChangeAfterThePersonWorkedADuty() throws Exception {
+		long van4 = addVehicle("Van 4");
+		long jagdish = addStaff("Jagdish", "DRIVER");
+		addAssignment(van4, jagdish, "DRIVER", "2026-04-01", "2026-10-06", false);
+
+		send(put("/api/v1/staff/" + jagdish), "{\"name\":\"Jagdish\",\"phone\":\"9812340010\","
+				+ "\"staffType\":\"HELPER\",\"active\":true}")
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.error").value("STAFF_TYPE_IN_USE"));
+		// A person with no duty yet may change type.
+		long balwan = addStaff("Balwan", "ATTENDANT");
+		send(put("/api/v1/staff/" + balwan), "{\"name\":\"Balwan\",\"phone\":\"9812340011\","
+				+ "\"staffType\":\"HELPER\",\"active\":true}")
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.staffType").value("HELPER"));
+	}
+
 }

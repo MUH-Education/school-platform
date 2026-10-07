@@ -99,6 +99,29 @@ public abstract class AbstractIntegrationTest {
 				driver ? "HR2620110012345" : null, driver ? licenceValidTill : null);
 	}
 
+	/** Adds a small van (14 seats, 30300.00 a month) straight into the database and returns its id. */
+	protected long addVehicle(String name) {
+		return addVehicle(name, 14);
+	}
+
+	/** Same, with the number of seats given. */
+	protected long addVehicle(String name, int seats) {
+		return jdbc.queryForObject("insert into vehicle (name, registration_no, vehicle_type, seats, monthly_cost, "
+				+ "owned_by) values (?, ?, ?, ?, 30300.00, 'CONTRACTOR') returning id", Long.class, name,
+				"REG " + name.toUpperCase(), (seats > 14) ? "MID_BUS" : "SMALL_VAN", seats);
+	}
+
+	/**
+	 * Adds an assignment row straight into the database and returns its id.
+	 * Example: {@code addAssignment(van4, jagdish, "DRIVER", "2026-04-01", null, false)}
+	 */
+	protected long addAssignment(long vehicleId, long staffId, String duty, String from, String to,
+			boolean temporary) {
+		return jdbc.queryForObject("insert into vehicle_assignment (vehicle_id, staff_id, duty, from_date, to_date, "
+				+ "temporary) values (?, ?, ?, ?::date, ?::date, ?) returning id", Long.class, vehicleId, staffId,
+				duty, from, to, temporary);
+	}
+
 	/** The last code LogOtpSender was asked to send to this phone. */
 	protected String lastCodeSentTo(String phone) {
 		ArgumentCaptor<String> code = ArgumentCaptor.forClass(String.class);
