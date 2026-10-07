@@ -5,7 +5,10 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
+import com.muhjain.school.audit.AuditAction;
+import com.muhjain.school.audit.AuditService;
 import com.muhjain.school.common.ApiException;
+import com.muhjain.school.common.DayText;
 import com.muhjain.school.common.NameKeys;
 import com.muhjain.school.common.PageResponse;
 import com.muhjain.school.common.PhoneNumbers;
@@ -33,11 +36,15 @@ public class EnquiryService {
 
 	private final UserService userService;
 
+	private final AuditService auditService;
+
 	private final Clock clock;
 
 	public EnquiryService(EnquiryRepository enquiries, EnquiryFollowUpRepository followUps,
-			GuardianService guardianService, UserService userService, Clock clock) {
+			GuardianService guardianService, UserService userService, AuditService auditService,
+			Clock clock) {
 		this.userService = userService;
+		this.auditService = auditService;
 		this.enquiries = enquiries;
 		this.followUps = followUps;
 		this.guardianService = guardianService;
@@ -55,7 +62,12 @@ public class EnquiryService {
 		Enquiry enquiry = new Enquiry(userId);
 		apply(enquiry, request);
 		checkNoOpenTwin(enquiry);
-		return respond(save(enquiry));
+		Enquiry saved = save(enquiry);
+		auditService.record(ENTITY, saved.getId(), AuditAction.CREATED,
+				"Enquiry added: " + saved.getParentName() + ", " + saved.getVillage() + ", class "
+						+ saved.getClassSought() + " (" + saved.getSource() + ")",
+				details("source", saved.getSource().name(), "phone", PhoneNumbers.mask(saved.getPhone())));
+		return respond(saved);
 	}
 
 	/**
@@ -137,9 +149,14 @@ public class EnquiryService {
 				throw twin(other.getId());
 			});
 		}
+		EnquiryStatus from = enquiry.getStatus();
 		enquiry.setStatus(to);
 		enquiry.setLostReason((to == EnquiryStatus.LOST) ? NameKeys.tidy(reason) : null);
-		return respond(save(enquiry));
+		Enquiry saved = save(enquiry);
+		auditService.record(ENTITY, id, AuditAction.UPDATED,
+				"Status changed from " + from + " to " + to + ((to == EnquiryStatus.LOST) ? ": " + saved.getLostReason() : ""),
+				details("from", from.name(), "to", to.name()));
+		return respond(saved);
 	}
 
 	/**
@@ -164,6 +181,10 @@ public class EnquiryService {
 		if (enquiry.getStatus().isOpen()) {
 			enquiry.setNextFollowUpOn(request.nextActionOn());
 		}
+		auditService.record(ENTITY, id, AuditAction.UPDATED,
+				"Follow-up added: " + shorten(note) + ((request.nextActionOn() != null)
+						? ", next " + DayText.on(request.nextActionOn()) : ", no next date"),
+				details("nextActionOn", (request.nextActionOn() != null) ? request.nextActionOn().toString() : null));
 		return get(id);
 	}
 
@@ -257,6 +278,8 @@ public class EnquiryService {
 		enquiry.setLostReason(null);
 		enquiry.setAdmittedStudentId(studentId);
 		enquiries.saveAndFlush(enquiry);
+		auditService.record(ENTITY, enquiryId, AuditAction.UPDATED, "Admitted: the child was admitted from this enquiry",
+				details("studentId", String.valueOf(studentId)));
 	}
 
 	/**
@@ -289,6 +312,21 @@ public class EnquiryService {
 			}
 		}
 		return com.muhjain.school.student.GuardianRelation.OTHER;
+	}
+
+	static final String ENTITY = "ENQUIRY";
+
+	// A short line for the change history: the first 80 characters of a note.
+	private static String shorten(String text) {
+		return (text.length() <= 80) ? text : text.substring(0, 77) + "...";
+	}
+
+	private static Map<String, Object> details(String... keyValues) {
+		Map<String, Object> details = new java.util.LinkedHashMap<>();
+		for (int i = 0; i < keyValues.length; i += 2) {
+			details.put(keyValues[i], keyValues[i + 1]);
+		}
+		return details;
 	}
 
 	// ---- helpers shared with the other enquiry services in this package ----
