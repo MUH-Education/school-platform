@@ -40,6 +40,13 @@ public class VehicleController {
 		return vehicleService.list(date);
 	}
 
+	/** Papers and licences that ended or end within 30 days. */
+	@GetMapping("/attention")
+	@PreAuthorize("hasAuthority('VEHICLES_VIEW')")
+	public List<AttentionItem> attention() {
+		return vehicleService.attention();
+	}
+
 	@PostMapping
 	@PreAuthorize("hasAuthority('VEHICLES_EDIT')")
 	@ResponseStatus(HttpStatus.CREATED)

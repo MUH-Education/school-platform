@@ -72,6 +72,21 @@ public class AssignmentService {
 	}
 
 	/**
+	 * Everybody who worked on this vehicle, newest first (by first day). Temporary rows are included.
+	 *
+	 * @throws ApiException 404 NOT_FOUND
+	 */
+	@Transactional(readOnly = true)
+	public List<AssignmentResponse> history(Long vehicleId) {
+		vehicleService.requireExists(vehicleId);
+		List<VehicleAssignment> rows = assignments.findByVehicleIdOrderByFromDateDescIdDesc(vehicleId);
+		Map<Long, Staff> people = people(rows);
+		return rows.stream()
+			.map(r -> AssignmentResponse.of(r, people.get(r.getStaffId()).getName(), clock.getZone()))
+			.toList();
+	}
+
+	/**
 	 * Where each person works on one day. A person who is on no vehicle that day is not in the map.
 	 * A replaced permanent person is not on the vehicle that day either (rule 9).
 	 */

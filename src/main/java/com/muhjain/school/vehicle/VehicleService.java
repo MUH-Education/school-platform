@@ -145,6 +145,31 @@ public class VehicleService {
 		return toResponse(vehicle, documents.findByVehicleId(id), today());
 	}
 
+	/**
+	 * Papers of turned-on vehicles that have ended or end within 30 days, the most urgent first.
+	 * Papers with no date are not listed (nothing to count).
+	 */
+	@Transactional(readOnly = true)
+	public List<AttentionItem> paperAttention(LocalDate today) {
+		List<VehicleDocument> due = documents
+			.findByValidTillLessThanEqualOrderByValidTillAscIdAsc(today.plusDays(PaperStatus.SOON_DAYS));
+		Map<Long, Vehicle> byId = vehicles.findAllById(due.stream().map(VehicleDocument::getVehicleId).toList())
+			.stream()
+			.filter(Vehicle::isActive)
+			.collect(Collectors.toMap(Vehicle::getId, v -> v));
+		return due.stream()
+			.filter(d -> byId.containsKey(d.getVehicleId()))
+			.map(d -> AttentionItem.paper(d.getVehicleId(), byId.get(d.getVehicleId()).getName(), d.getDocType(),
+					d.getValidTill(), today))
+			.toList();
+	}
+
+	/** @throws ApiException 404 NOT_FOUND */
+	@Transactional(readOnly = true)
+	public void requireExists(Long id) {
+		find(id);
+	}
+
 	/** Names for other features. Example: {4 → "Van 4"}. Ids that do not exist are left out. */
 	@Transactional(readOnly = true)
 	public Map<Long, String> names(Collection<Long> ids) {

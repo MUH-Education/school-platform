@@ -2,11 +2,14 @@ package com.muhjain.school.vehicle;
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import com.muhjain.school.staff.AssignmentService;
 import com.muhjain.school.staff.Crew;
+import com.muhjain.school.staff.StaffService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,11 +27,15 @@ public class VehicleOverviewService {
 
 	private final AssignmentService assignmentService;
 
+	private final StaffService staffService;
+
 	private final Clock clock;
 
-	public VehicleOverviewService(VehicleService vehicleService, AssignmentService assignmentService, Clock clock) {
+	public VehicleOverviewService(VehicleService vehicleService, AssignmentService assignmentService,
+			StaffService staffService, Clock clock) {
 		this.vehicleService = vehicleService;
 		this.assignmentService = assignmentService;
+		this.staffService = staffService;
 		this.clock = clock;
 	}
 
@@ -49,6 +56,19 @@ public class VehicleOverviewService {
 	@Transactional(readOnly = true)
 	public VehicleResponse get(Long id, LocalDate date) {
 		return withCrew(vehicleService.get(id), dayOrToday(date));
+	}
+
+	/**
+	 * Papers of vehicles and licences of drivers that have ended or end within 30 days. The most urgent first.
+	 * Example on 7 Oct: Van 4 insurance valid till 17 Oct → ENDING_SOON, 10 days left.
+	 */
+	@Transactional(readOnly = true)
+	public List<AttentionItem> attention() {
+		LocalDate today = today();
+		return Stream.concat(vehicleService.paperAttention(today).stream(),
+				staffService.licenceAttention(today).stream())
+			.sorted(Comparator.comparing(AttentionItem::validTill).thenComparing(AttentionItem::kind))
+			.toList();
 	}
 
 	@Transactional

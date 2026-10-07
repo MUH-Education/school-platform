@@ -50,6 +50,10 @@ Details: `docs/04-login-otp-jwt.md`.
 
 `PUT /vehicles/{id}` and `PUT /staff/{id}` take the whole object, with `active`. `active: false` is the same as `DELETE`, `active: true` turns it on again. `PUT /vehicles/{id}/documents` takes the four dates: `{ "fitness": "2027-01-10", "insurance": "2026-10-28", "permit": null, "puc": null }`. A date that is null or left out removes that paper.
 
+`GET /vehicles/attention` is a list, the most urgent first. A paper: `{ "kind": "PAPER", "vehicleId": 4, "vehicleName": "Van 4", "docType": "INSURANCE", "validTill": "2026-10-17", "status": "ENDING_SOON", "daysLeft": 10 }`. A licence: `{ "kind": "LICENCE", "staffId": 21, "staffName": "Jagdish", "validTill": "2026-10-12", "status": "ENDING_SOON", "daysLeft": 5 }`. Only turned-on vehicles and drivers. A paper with no date is not listed. `daysLeft` is below 0 when ended.
+
+`GET /vehicles/{id}/assignments` is a list, newest first: `{ "id", "vehicleId", "staffId", "staffName", "duty", "fromDate", "toDate", "temporary", "reason", "createdBy", "createdAt" }`.
+
 Change a driver:
 
 ```json

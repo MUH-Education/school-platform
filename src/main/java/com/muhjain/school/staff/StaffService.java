@@ -8,6 +8,8 @@ import java.util.Map;
 import com.muhjain.school.common.ApiException;
 import com.muhjain.school.common.NameKeys;
 import com.muhjain.school.common.PhoneNumbers;
+import com.muhjain.school.vehicle.AttentionItem;
+import com.muhjain.school.vehicle.PaperStatus;
 import com.muhjain.school.vehicle.VehicleService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -46,6 +48,17 @@ public class StaffService {
 		return staff.findAllByOrderByIdAsc()
 			.stream()
 			.map(s -> StaffResponse.of(s, today, places.get(s.getId())))
+			.toList();
+	}
+
+	/** Licences of turned-on drivers that have ended or end within 30 days, the most urgent first. */
+	@Transactional(readOnly = true)
+	public List<AttentionItem> licenceAttention(LocalDate today) {
+		return staff
+			.findByStaffTypeAndActiveTrueAndLicenceValidTillLessThanEqualOrderByLicenceValidTillAscIdAsc(
+					StaffType.DRIVER, today.plusDays(PaperStatus.SOON_DAYS))
+			.stream()
+			.map(s -> AttentionItem.licence(s.getId(), s.getName(), s.getLicenceValidTill(), today))
 			.toList();
 	}
 

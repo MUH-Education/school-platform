@@ -62,6 +62,8 @@ class EndpointSecurityTest extends AbstractIntegrationTest {
 				Arguments.of("PUT", "/api/v1/vehicles/1", VEHICLE_UPDATE_BODY, Role.OFFICE_ADMIN),
 				Arguments.of("DELETE", "/api/v1/vehicles/1", null, Role.OFFICE_ADMIN),
 				Arguments.of("PUT", "/api/v1/vehicles/1/documents", DOCUMENTS_BODY, Role.OFFICE_ADMIN),
+				Arguments.of("GET", "/api/v1/vehicles/attention", null, Role.ADMISSIONS_DESK),
+				Arguments.of("GET", "/api/v1/vehicles/1/assignments", null, Role.ADMISSIONS_DESK),
 				Arguments.of("POST", "/api/v1/vehicles/1/assignments", ASSIGNMENT_BODY, Role.OFFICE_ADMIN),
 				Arguments.of("GET", "/api/v1/staff", null, Role.ADMISSIONS_DESK),
 				Arguments.of("POST", "/api/v1/staff", STAFF_BODY, Role.OFFICE_ADMIN),
