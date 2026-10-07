@@ -40,11 +40,15 @@ public class StudentController {
 
 	private final StudentPhotoService photoService;
 
+	private final StudentImportService importService;
+
 	private final CurrentUser currentUser;
 
 	public StudentController(StudentService studentService, GuardianService guardianService,
-			TransportEnrolmentService transportService, StudentPhotoService photoService, CurrentUser currentUser) {
+			TransportEnrolmentService transportService, StudentPhotoService photoService,
+			StudentImportService importService, CurrentUser currentUser) {
 		this.photoService = photoService;
+		this.importService = importService;
 		this.studentService = studentService;
 		this.guardianService = guardianService;
 		this.transportService = transportService;
@@ -88,6 +92,17 @@ public class StudentController {
 	@PreAuthorize("hasAuthority('STUDENTS_EDIT')")
 	public StudentResponse setStatus(@PathVariable Long id, @Valid @RequestBody UpdateStatusRequest request) {
 		return studentService.setStatus(id, request);
+	}
+
+	/**
+	 * Import existing students from a CSV file (multipart field {@code file}). Use {@code dryRun=true} first: it checks
+	 * every line, reports the bad ones with their line number, and saves nothing.
+	 */
+	@PostMapping("/import")
+	@PreAuthorize("hasAuthority('STUDENTS_EDIT')")
+	public ImportResponse importStudents(@RequestParam("file") MultipartFile file,
+			@RequestParam(defaultValue = "false") boolean dryRun) throws IOException {
+		return importService.importCsv(file.getBytes(), dryRun, currentUser.id());
 	}
 
 	@PutMapping("/{id}")
