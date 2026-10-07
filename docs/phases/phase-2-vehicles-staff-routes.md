@@ -94,7 +94,7 @@ All under `/api/v1`: `/vehicles`, `/vehicles/{id}`, `/vehicles/{id}/documents`, 
 - [x] 2.13 `AttendantRouteService.routeFor(userId, date)`: user → staff → vehicle where they are ATTENDANT on that day → active route. Phase 4 depends on this.
 - [x] 2.14 Change the user rule from Phase 1: an ATTENDANT user's `staffId` must be a real staff row of type ATTENDANT.
 - [x] 2.15 Audit: every create, update and assignment change writes an `audit_log` row with a readable summary, for example "Driver changed from Jagdish to Surender, 12 to 16 Oct".
-- [ ] 2.16 A dev-only data loader (`@Profile("dev")`): 9 vehicles (7 small vans with 14 seats, 2 mid buses with 26 seats, ₹30,300 a month each), 9 routes, drivers and attendants. So the screens have data while you build.
+- [x] 2.16 A dev-only data loader (`@Profile("dev")`): 9 vehicles (7 small vans with 14 seats, 2 mid buses with 26 seats, ₹30,300 a month each), 9 routes, drivers and attendants. So the screens have data while you build.
 
 ## Tests that must pass
 
