@@ -5,6 +5,7 @@ import java.util.List;
 import com.muhjain.school.auth.CurrentUser;
 import java.io.IOException;
 
+import com.muhjain.school.common.PageResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
@@ -48,6 +49,21 @@ public class StudentController {
 		this.guardianService = guardianService;
 		this.transportService = transportService;
 		this.currentUser = currentUser;
+	}
+
+	/**
+	 * The Students list, paged: {@code ?page=0&size=25&sort=name,asc}. Filters: {@code q} (name, admission number or
+	 * phone), {@code className}, {@code village}, {@code routeId}, {@code bus=YES|NO}. Only active students, unless
+	 * {@code status=LEFT}.
+	 */
+	@GetMapping
+	@PreAuthorize("hasAuthority('STUDENTS_VIEW')")
+	public PageResponse<StudentListItem> list(@RequestParam(required = false) String q,
+			@RequestParam(required = false) String className, @RequestParam(required = false) String village,
+			@RequestParam(required = false) Long routeId, @RequestParam(required = false) BusFilter bus,
+			@RequestParam(required = false) StudentStatus status, @RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "25") int size, @RequestParam(required = false) String sort) {
+		return studentService.list(new StudentFilter(q, className, village, routeId, bus, status), page, size, sort);
 	}
 
 	@PutMapping("/{id}")

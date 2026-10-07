@@ -63,6 +63,25 @@ public class TransportEnrolmentService {
 		return enrolments.coveringDay(studentId, date).map(row -> toResponses(List.of(row)).getFirst());
 	}
 
+	/**
+	 * The bus of many children on one day, as text, for the Students list. A child with no bus is not in the map.
+	 * Example: {118 → "Route 4 · Jakhal"}.
+	 */
+	@Transactional(readOnly = true)
+	public Map<Long, String> busLabels(java.util.Collection<Long> studentIds, LocalDate date) {
+		if (studentIds.isEmpty()) {
+			return Map.of();
+		}
+		List<TransportEnrolment> rows = enrolments.coveringDay(studentIds, date);
+		List<EnrolmentResponse> responses = toResponses(rows);
+		Map<Long, String> labels = new java.util.HashMap<>();
+		for (int i = 0; i < rows.size(); i++) {
+			EnrolmentResponse r = responses.get(i);
+			labels.put(rows.get(i).getStudentId(), r.routeName() + " · " + r.stopName());
+		}
+		return labels;
+	}
+
 	/** The whole bus history, newest first. @throws ApiException 404 NOT_FOUND */
 	@Transactional(readOnly = true)
 	public List<EnrolmentResponse> history(Long studentId) {

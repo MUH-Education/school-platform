@@ -98,7 +98,7 @@ All under `/api/v1`: `/students` (list), `/students/{id}`, `/students/{id}/guard
 - [x] 3.8 Guardian endpoints: add, change, remove (rules 6 to 9).
 - [x] 3.9 `PUT /students/{id}/transport` and `GET /students/{id}/transport`.
 - [x] 3.10 `PhotoStorage` interface, `LocalFolderPhotoStorage`, the three photo endpoints (rules 18 to 21).
-- [ ] 3.11 `GET /students` with filters and paging (rules 22, 23).
+- [x] 3.11 `GET /students` with filters and paging (rules 22, 23).
 - [ ] 3.12 `GET /students/{id}` (full profile) and `GET /students/{id}/history`.
 - [ ] 3.13 Mark a student as LEFT (rule 17).
 - [ ] 3.14 `StudentQueryService.onRoute(routeId, date)`: the "children on route R on day D" query. Phase 4 uses it.

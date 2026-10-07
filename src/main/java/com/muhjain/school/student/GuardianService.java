@@ -166,6 +166,31 @@ public class GuardianService {
 		return found.stream().map(link -> GuardianResponse.of(byId.get(link.getGuardianId()), link)).toList();
 	}
 
+	/**
+	 * The first (primary) phone of each child, for the Students list. A child with no phone is not in the map.
+	 * Example: {118 → "+919812340208"}.
+	 */
+	@Transactional(readOnly = true)
+	public Map<Long, String> firstPhones(java.util.Collection<Long> studentIds) {
+		if (studentIds.isEmpty()) {
+			return Map.of();
+		}
+		List<StudentGuardian> found = links.findByStudentIdInOrderByIdAsc(studentIds);
+		Map<Long, String> phones = guardians.findByIdIn(found.stream().map(StudentGuardian::getGuardianId).toList())
+			.stream()
+			.collect(Collectors.toMap(Guardian::getId, Guardian::getPhone));
+		Map<Long, String> first = new java.util.HashMap<>();
+		Map<Long, Boolean> isPrimary = new java.util.HashMap<>();
+		for (StudentGuardian link : found) {
+			// The primary phone wins. If none is primary, the oldest link wins.
+			if (!first.containsKey(link.getStudentId()) || (link.isPrimary() && !isPrimary.get(link.getStudentId()))) {
+				first.put(link.getStudentId(), phones.get(link.getGuardianId()));
+				isPrimary.put(link.getStudentId(), link.isPrimary());
+			}
+		}
+		return first;
+	}
+
 	static String tidyName(String name) {
 		String tidy = NameKeys.tidy(name);
 		return (tidy == null || tidy.isEmpty()) ? null : tidy;

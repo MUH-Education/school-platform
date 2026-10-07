@@ -1,6 +1,7 @@
 package com.muhjain.school.student;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,6 +23,12 @@ public interface TransportEnrolmentRepository extends JpaRepository<TransportEnr
 	@Query("select e from TransportEnrolment e where e.studentId = :studentId and e.fromDate <= :day "
 			+ "and (e.toDate is null or e.toDate >= :day)")
 	Optional<TransportEnrolment> coveringDay(@Param("studentId") Long studentId, @Param("day") LocalDate day);
+
+	/** Same for many children. A child has at most one row that covers a day. */
+	@Query("select e from TransportEnrolment e where e.studentId in :studentIds and e.fromDate <= :day "
+			+ "and (e.toDate is null or e.toDate >= :day)")
+	List<TransportEnrolment> coveringDay(@Param("studentIds") Collection<Long> studentIds,
+			@Param("day") LocalDate day);
 
 	/** The last day of the newest closed row. A new row must start after it. Null if the child has no closed row. */
 	@Query("select max(e.toDate) from TransportEnrolment e where e.studentId = :studentId")

@@ -3,6 +3,8 @@ package com.muhjain.school.student;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.Locale;
 
 import com.muhjain.school.audit.AuditAction;
@@ -10,6 +12,10 @@ import com.muhjain.school.audit.AuditChanges;
 import com.muhjain.school.audit.AuditService;
 import com.muhjain.school.common.ApiException;
 import com.muhjain.school.common.NameKeys;
+import com.muhjain.school.common.PageResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,6 +48,62 @@ public class StudentService {
 		this.transportService = transportService;
 		this.auditService = auditService;
 		this.clock = clock;
+	}
+
+	// The columns the list may be sorted by. Anything else is a 400, so a client cannot sort by a secret column.
+	private static final Set<String> SORTABLE = Set.of("name", "admissionNo", "className", "village", "joinedOn");
+
+	private static final int MAX_PAGE_SIZE = 100;
+
+	/**
+	 * Rules 22 and 23. Only ACTIVE students unless {@code status = LEFT} is asked.
+	 * Example: {@code q = "aryan", bus = YES} → every child whose name has "aryan" and who is on a bus today.
+	 *
+	 * @param sort like {@code "name,asc"}. Default: name, ascending.
+	 * @throws ApiException 400 VALIDATION (page, size, sort, class)
+	 */
+	@Transactional(readOnly = true)
+	public PageResponse<StudentListItem> list(StudentFilter filter, int page, int size, String sort) {
+		if (page < 0) {
+			throw ApiException.validation("page", "must be 0 or more");
+		}
+		if (size < 1 || size > MAX_PAGE_SIZE) {
+			throw ApiException.validation("size", "must be between 1 and " + MAX_PAGE_SIZE);
+		}
+		String className = null;
+		if (filter.className() != null && !filter.className().isBlank()) {
+			className = ClassNames.parse(filter.className())
+				.orElseThrow(() -> ApiException.validation("className", "must be Nursery, LKG, UKG or 1 to 12"));
+		}
+		StudentFilter checked = new StudentFilter(filter.q(), className, filter.village(), filter.routeId(),
+				filter.bus(), filter.status());
+		LocalDate today = LocalDate.now(clock);
+		Page<Student> found = students.findAll(StudentSpecs.of(checked, today),
+				PageRequest.of(page, size, sortOf(sort)));
+
+		List<Long> ids = found.getContent().stream().map(Student::getId).toList();
+		Map<Long, String> buses = transportService.busLabels(ids, today);
+		Map<Long, String> phones = guardianService.firstPhones(ids);
+		return PageResponse.of(found.map(s -> new StudentListItem(s.getId(), s.getName(), s.getAdmissionNo(),
+				s.getClassName(), s.getSection(), s.getVillage(), buses.get(s.getId()), phones.get(s.getId()),
+				s.getPhotoKey() != null)));
+	}
+
+	// "name,desc" → sort by name, descending. The id is the tie-break, so pages never repeat a row.
+	private static Sort sortOf(String sort) {
+		String property = "name";
+		Sort.Direction direction = Sort.Direction.ASC;
+		if (sort != null && !sort.isBlank()) {
+			String[] parts = sort.split(",");
+			property = parts[0].strip();
+			if (parts.length > 1) {
+				direction = "desc".equalsIgnoreCase(parts[1].strip()) ? Sort.Direction.DESC : Sort.Direction.ASC;
+			}
+		}
+		if (!SORTABLE.contains(property)) {
+			throw ApiException.validation("sort", "can be one of " + String.join(", ", SORTABLE.stream().sorted().toList()));
+		}
+		return Sort.by(direction, property).and(Sort.by(Sort.Direction.ASC, "id"));
 	}
 
 	/** The full profile. @throws ApiException 404 NOT_FOUND */
