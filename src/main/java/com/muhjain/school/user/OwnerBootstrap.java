@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 /**
@@ -13,7 +14,9 @@ import org.springframework.stereotype.Component;
  * If {@code app_user} is empty and APP_OWNER_PHONE is set, this creates one OWNER with that phone.
  * Once any user exists it does nothing. A wrong phone stops the app, so the mistake is seen at once.
  */
+// Runs first, so the dev data loader (which needs one office user for the taps) finds the owner.
 @Component
+@Order(0)
 public class OwnerBootstrap implements ApplicationRunner {
 
 	private static final Logger log = LoggerFactory.getLogger(OwnerBootstrap.class);

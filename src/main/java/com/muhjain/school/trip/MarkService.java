@@ -54,6 +54,12 @@ public class MarkService {
 		this.clock = clock;
 	}
 
+	/** Is there any tap on this school day? The dev data loader asks, so it adds its taps only once a day. */
+	@Transactional(readOnly = true)
+	public boolean anyTapOn(LocalDate day) {
+		return !events.findByServiceDate(day).isEmpty();
+	}
+
 	/**
 	 * Handles every tap alone. One bad tap does not stop the others. A bad tap saves nothing.
 	 *
