@@ -41,6 +41,12 @@ class EndpointSecurityTest extends AbstractIntegrationTest {
 	private static final String ASSIGNMENT_BODY = "{\"duty\":\"DRIVER\",\"staffId\":1,\"fromDate\":\"2026-10-12\","
 			+ "\"toDate\":\"2026-10-16\",\"temporary\":true}";
 
+	private static final String ROUTE_BODY = "{\"name\":\"Route 4\"}";
+
+	private static final String ROUTE_UPDATE_BODY = "{\"name\":\"Route 4\",\"active\":true}";
+
+	private static final String STOPS_BODY = "[{\"name\":\"Jakhal\",\"morningTime\":\"07:40\"}]";
+
 	private static final String DOCUMENTS_BODY = "{\"insurance\":\"2026-10-28\"}";
 
 	/** method, URL, body, a role WITHOUT the permission (null = any login is enough) */
@@ -65,6 +71,14 @@ class EndpointSecurityTest extends AbstractIntegrationTest {
 				Arguments.of("GET", "/api/v1/vehicles/attention", null, Role.ADMISSIONS_DESK),
 				Arguments.of("GET", "/api/v1/vehicles/1/assignments", null, Role.ADMISSIONS_DESK),
 				Arguments.of("POST", "/api/v1/vehicles/1/assignments", ASSIGNMENT_BODY, Role.OFFICE_ADMIN),
+				// Routes: reading needs ROUTES_VIEW (not the admissions desk), changing needs ROUTES_EDIT (not the
+				// office admin).
+				Arguments.of("GET", "/api/v1/routes", null, Role.ADMISSIONS_DESK),
+				Arguments.of("POST", "/api/v1/routes", ROUTE_BODY, Role.OFFICE_ADMIN),
+				Arguments.of("GET", "/api/v1/routes/1", null, Role.ADMISSIONS_DESK),
+				Arguments.of("PUT", "/api/v1/routes/1", ROUTE_UPDATE_BODY, Role.OFFICE_ADMIN),
+				Arguments.of("DELETE", "/api/v1/routes/1", null, Role.OFFICE_ADMIN),
+				Arguments.of("PUT", "/api/v1/routes/1/stops", STOPS_BODY, Role.OFFICE_ADMIN),
 				Arguments.of("GET", "/api/v1/staff", null, Role.ADMISSIONS_DESK),
 				Arguments.of("POST", "/api/v1/staff", STAFF_BODY, Role.OFFICE_ADMIN),
 				Arguments.of("PUT", "/api/v1/staff/1", STAFF_UPDATE_BODY, Role.OFFICE_ADMIN),

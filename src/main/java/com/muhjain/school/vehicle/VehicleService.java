@@ -170,6 +170,20 @@ public class VehicleService {
 		find(id);
 	}
 
+	/** Short facts for other features. Ids that do not exist are left out. */
+	@Transactional(readOnly = true)
+	public Map<Long, VehicleSummary> summaries(Collection<Long> ids) {
+		return vehicles.findAllById(ids)
+			.stream()
+			.collect(Collectors.toMap(Vehicle::getId, VehicleSummary::of));
+	}
+
+	/** Every vehicle that is turned on, oldest first. The "whole fleet" of the load board. */
+	@Transactional(readOnly = true)
+	public List<VehicleSummary> activeSummaries() {
+		return vehicles.findByActiveTrueOrderByIdAsc().stream().map(VehicleSummary::of).toList();
+	}
+
 	/** Names for other features. Example: {4 → "Van 4"}. Ids that do not exist are left out. */
 	@Transactional(readOnly = true)
 	public Map<Long, String> names(Collection<Long> ids) {

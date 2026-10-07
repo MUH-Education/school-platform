@@ -84,6 +84,8 @@ Errors (all 409): `STAFF_BUSY` if that person is on a vehicle on those days, the
 | `PUT /routes/{id}/stops` | `ROUTES_EDIT` | Save the full ordered list of stops |
 | `GET /routes/load-board` | `ROUTES_VIEW` | The Routes and load screen: every route with children, seats, load, cost |
 
+`POST /routes` takes `{ "name": "Route 4", "vehicleId": 4 }` (`vehicleId` is optional). `PUT /routes/{id}` takes the whole route: `{ "name": "Route 4", "vehicleId": 4, "active": true }`. `active: false` is the same as `DELETE`, `active: true` turns it on again. Other 409 codes: `VEHICLE_HAS_ROUTE`, `VEHICLE_INACTIVE`, `ROUTE_NAME_ALREADY_USED`. A vehicle on `GET /vehicles` has a `route` (`{ "id": 4, "name": "Route 4" }` or null).
+
 `PUT /routes/4/stops` sends the whole list in order. A stop with an `id` is kept. A stop without an `id` is new. A stop missing from the list is removed (409 `STOP_HAS_STUDENTS` if children board there).
 
 ```json

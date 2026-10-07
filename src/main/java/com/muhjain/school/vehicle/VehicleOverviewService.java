@@ -7,9 +7,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import com.muhjain.school.common.ApiException;
+import com.muhjain.school.route.RouteRef;
+import com.muhjain.school.route.RouteService;
 import com.muhjain.school.staff.AssignmentService;
 import com.muhjain.school.staff.Crew;
 import com.muhjain.school.staff.StaffService;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,13 +33,16 @@ public class VehicleOverviewService {
 
 	private final StaffService staffService;
 
+	private final RouteService routeService;
+
 	private final Clock clock;
 
 	public VehicleOverviewService(VehicleService vehicleService, AssignmentService assignmentService,
-			StaffService staffService, Clock clock) {
+			StaffService staffService, RouteService routeService, Clock clock) {
 		this.vehicleService = vehicleService;
 		this.assignmentService = assignmentService;
 		this.staffService = staffService;
+		this.routeService = routeService;
 		this.clock = clock;
 	}
 
@@ -48,8 +55,10 @@ public class VehicleOverviewService {
 	public List<VehicleResponse> list(LocalDate date) {
 		LocalDate day = dayOrToday(date);
 		List<VehicleResponse> vehicles = vehicleService.list();
-		Map<Long, Crew> crews = assignmentService.onDate(vehicles.stream().map(VehicleResponse::id).toList(), day);
-		return vehicles.stream().map(v -> v.withCrew(crews.get(v.id()))).toList();
+		List<Long> ids = vehicles.stream().map(VehicleResponse::id).toList();
+		Map<Long, Crew> crews = assignmentService.onDate(ids, day);
+		Map<Long, RouteRef> routes = routeService.activeRoutesByVehicle(ids);
+		return vehicles.stream().map(v -> v.withCrew(crews.get(v.id()), routes.get(v.id()))).toList();
 	}
 
 	/** @throws com.muhjain.school.common.ApiException 404 NOT_FOUND */
@@ -76,13 +85,27 @@ public class VehicleOverviewService {
 		return withCrew(vehicleService.create(request), today());
 	}
 
+	/**
+	 * Change a vehicle. {@code active: false} follows rule 2, the same as DELETE.
+	 *
+	 * @throws com.muhjain.school.common.ApiException 409 VEHICLE_IN_USE and the errors of {@link VehicleService}
+	 */
 	@Transactional
 	public VehicleResponse update(Long id, UpdateVehicleRequest request) {
+		if (!request.active()) {
+			checkNoActiveRoute(id);
+		}
 		return withCrew(vehicleService.update(id, request), today());
 	}
 
+	/**
+	 * Rule 2: a vehicle that runs an active route cannot be turned off.
+	 *
+	 * @throws com.muhjain.school.common.ApiException 404 NOT_FOUND, 409 VEHICLE_IN_USE
+	 */
 	@Transactional
 	public void turnOff(Long id) {
+		checkNoActiveRoute(id);
 		vehicleService.turnOff(id);
 	}
 
@@ -92,7 +115,17 @@ public class VehicleOverviewService {
 	}
 
 	private VehicleResponse withCrew(VehicleResponse vehicle, LocalDate day) {
-		return vehicle.withCrew(assignmentService.onDate(vehicle.id(), day));
+		return vehicle.withCrew(assignmentService.onDate(vehicle.id(), day),
+				routeService.activeRouteOfVehicle(vehicle.id()).orElse(null));
+	}
+
+	// Rule 2. Example: "This vehicle runs Route 4. Move the route first."
+	private void checkNoActiveRoute(Long vehicleId) {
+		vehicleService.requireExists(vehicleId);
+		routeService.activeRouteOfVehicle(vehicleId).ifPresent(route -> {
+			throw new ApiException(HttpStatus.CONFLICT, "VEHICLE_IN_USE",
+					"This vehicle runs " + route.name() + ". Move the route first.");
+		});
 	}
 
 	private LocalDate dayOrToday(LocalDate date) {

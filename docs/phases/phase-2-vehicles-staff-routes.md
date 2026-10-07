@@ -88,7 +88,7 @@ All under `/api/v1`: `/vehicles`, `/vehicles/{id}`, `/vehicles/{id}/documents`, 
 - [x] 2.7 `AssignmentService.change(...)` (rules 6 to 8, 10 to 12).
 - [x] 2.8 `GET /vehicles` and `GET /vehicles/{id}` now include today's driver, attendant, helper and route.
 - [x] 2.9 `GET /vehicles/{id}/assignments` (history, newest first) and `GET /vehicles/attention`.
-- [ ] 2.10 `route` package: `Route`, `RouteStop`, repositories, `RouteService`, `RouteController` (rules 13 to 15).
+- [x] 2.10 `route` package: `Route`, `RouteStop`, repositories, `RouteService`, `RouteController` (rules 13 to 15).
 - [ ] 2.11 `LoadBoardCalculator` (pure Java) with `LoadBoardCalculatorTest`.
 - [ ] 2.12 `LoadBoardService` + `GET /routes/load-board` with totals for the whole fleet.
 - [ ] 2.13 `AttendantRouteService.routeFor(userId, date)`: user → staff → vehicle where they are ATTENDANT on that day → active route. Phase 4 depends on this.
