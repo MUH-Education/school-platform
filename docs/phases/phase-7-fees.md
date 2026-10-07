@@ -84,7 +84,7 @@ Answer question **C2** in `docs/08-decisions.md` before building: does the accou
 - [x] 7.6 `ReceiptNumberService` (rule 11).
 - [x] 7.7 `PaymentService.record` and `PaymentService.correct` (rules 9, 10, 12, 13). Add `FEES_CORRECT` to the `Permission` enum, owner only, and to `RolePermissionMatrixTest`.
 - [x] 7.8 `FeeStatusCalculator` (pure Java) with the examples from `docs/03-data-model.md` (rule 15).
-- [ ] 7.9 `GET /students/{id}/fees` (rule 16).
+- [x] 7.9 `GET /students/{id}/fees` (rule 16).
 - [x] 7.10 Hook into transport change (rule 8).
 - [x] 7.11 Extend admission (rule 17).
 - [x] 7.12 `GET /payments` with date filter and paging.

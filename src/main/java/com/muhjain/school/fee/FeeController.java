@@ -4,6 +4,7 @@ import com.muhjain.school.auth.CurrentUser;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * The fees of one child.
  * <ul>
+ * <li>{@code GET /api/v1/students/{id}/fees} — FEES_VIEW</li>
  * <li>{@code PUT /api/v1/students/{id}/fee-plan} — FEES_EDIT</li>
  * <li>{@code POST /api/v1/students/{id}/payments} — FEES_EDIT</li>
  * <li>{@code POST /api/v1/students/{id}/payment-corrections} — FEES_CORRECT (owner only)</li>
@@ -28,12 +30,22 @@ public class FeeController {
 
 	private final PaymentService paymentService;
 
+	private final FeeViewService viewService;
+
 	private final CurrentUser currentUser;
 
-	public FeeController(FeePlanService planService, PaymentService paymentService, CurrentUser currentUser) {
+	public FeeController(FeePlanService planService, PaymentService paymentService, FeeViewService viewService,
+			CurrentUser currentUser) {
+		this.viewService = viewService;
 		this.planService = planService;
 		this.paymentService = paymentService;
 		this.currentUser = currentUser;
+	}
+
+	@GetMapping("/fees")
+	@PreAuthorize("hasAuthority('FEES_VIEW')")
+	public FeesResponse fees(@PathVariable Long studentId) {
+		return viewService.view(studentId);
 	}
 
 	@PutMapping("/fee-plan")

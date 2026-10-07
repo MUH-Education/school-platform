@@ -140,7 +140,9 @@ class EndpointSecurityTest extends AbstractIntegrationTest {
 				// Phase 7: a payment needs FEES_EDIT (not the transport in-charge); a correction needs FEES_CORRECT,
 				// which only the owner has (not even the office admin).
 				Arguments.of("POST", "/api/v1/students/1/payments", PAYMENT_BODY, Role.TRANSPORT_INCHARGE),
-				Arguments.of("POST", "/api/v1/students/1/payment-corrections", CORRECTION_BODY, Role.OFFICE_ADMIN));
+				Arguments.of("POST", "/api/v1/students/1/payment-corrections", CORRECTION_BODY, Role.OFFICE_ADMIN),
+				// Phase 7: reading a child's fees needs FEES_VIEW (not the transport in-charge).
+				Arguments.of("GET", "/api/v1/students/1/fees", null, Role.TRANSPORT_INCHARGE));
 	}
 
 	@ParameterizedTest(name = "{0} {1} without token → 401")
