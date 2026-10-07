@@ -24,9 +24,11 @@ public class AdmissionController {
 		this.currentUser = currentUser;
 	}
 
-	/** Student, parents' phones and bus in one go. Fee fields are ignored until Phase 7. */
+	/** Student, parents' phones, bus, fee plan and first payment in one go. */
 	@PostMapping
-	@PreAuthorize("hasAuthority('ADMISSIONS_CREATE')")
+	// The fee plan and the first payment need FEES_EDIT as well. Today every role with ADMISSIONS_CREATE has it.
+	@PreAuthorize("hasAuthority('ADMISSIONS_CREATE') and (#request.fee() == null and #request.firstPayment() == null "
+			+ "or hasAuthority('FEES_EDIT'))")
 	@ResponseStatus(HttpStatus.CREATED)
 	public AdmissionResponse admit(@Valid @RequestBody AdmissionRequest request) {
 		return admissionService.admit(request, currentUser.id());

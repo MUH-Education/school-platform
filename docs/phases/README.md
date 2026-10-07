@@ -15,8 +15,8 @@ Change the Status column as you go: **Not started** → **In progress** → **Do
 | 4 | [Trips and bus status](phase-4-trips-bus-status.md) | Attendant taps children. Office sees every bus. | L | Done |
 | 5 | [SMS and WhatsApp](phase-5-sms-whatsapp.md) | Parents get Hindi SMS. Real OTP on WhatsApp or SMS. | M | Done |
 | 6 | [Enquiries](phase-6-enquiries.md) | Enquiry list with stages and follow-ups | S | Done |
-| 7 | [Fees](phase-7-fees.md) | Fee plan at admission, payments, pending amount, status | L | In progress |
-| 8 | [Analytics](phase-8-analytics.md) | Filters, graph numbers, download | M | Not started |
+| 7 | [Fees](phase-7-fees.md) | Fee plan at admission, payments, pending amount, status | L | Done |
+| 8 | [Analytics](phase-8-analytics.md) | Filters, graph numbers, download | M | In progress |
 | 9 | [Go live](phase-9-go-live.md) | Running on a server in India with backups | M | Not started |
 
 Size: **S** is about one week, **M** about one and a half weeks, **L** about two weeks. This assumes about 10 to 12 hours a week with Claude Code doing most of the typing. It is a guess, not a promise.

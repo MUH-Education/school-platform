@@ -13,6 +13,7 @@ import com.muhjain.school.audit.AuditAction;
 import com.muhjain.school.audit.AuditService;
 import com.muhjain.school.common.ApiException;
 import com.muhjain.school.common.DayText;
+import com.muhjain.school.fee.FeePlanService;
 import com.muhjain.school.route.RouteInfo;
 import com.muhjain.school.route.RouteService;
 import com.muhjain.school.route.StopRef;
@@ -51,8 +52,12 @@ public class TransportEnrolmentService {
 
 	private final StudentQueryService queries;
 
+	private final FeePlanService feePlans;
+
 	public TransportEnrolmentService(StudentRepository students, TransportEnrolmentRepository enrolments,
-			RouteService routeService, AuditService auditService, StudentQueryService queries) {
+			RouteService routeService, AuditService auditService, StudentQueryService queries,
+			FeePlanService feePlans) {
+		this.feePlans = feePlans;
 		this.queries = queries;
 		this.students = students;
 		this.enrolments = enrolments;
@@ -140,6 +145,8 @@ public class TransportEnrolmentService {
 		TransportSaveResponse result = insert(student, target, fromDate, busFee, userId);
 		audit(studentId, "Bus started: " + target.label() + ", from " + DayText.on(fromDate),
 				details("started", target, fromDate, null));
+		// Rule 8 of Phase 7: the bus fee of a bus that starts later becomes BUS dues in the fee plan.
+		feePlans.addBusFee(studentId, busFee, fromDate, userId);
 		return result;
 	}
 

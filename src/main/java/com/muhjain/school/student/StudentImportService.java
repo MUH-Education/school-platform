@@ -210,7 +210,7 @@ public class StudentImportService {
 		GuardianRequest guardian = new GuardianRequest(parentName.isEmpty() ? null : parentName, phone,
 				GuardianRelation.OTHER, true);
 		return new AdmissionRequest(name, dob, gender, className, section.isEmpty() ? null : section, village, null,
-				occupation, joinedOn, List.of(guardian), null, null, bus);
+				occupation, joinedOn, List.of(guardian), null, null, bus, null, null);
 	}
 
 	private static String value(CsvReader.Row row, Map<String, Integer> columns, String column) {

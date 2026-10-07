@@ -76,20 +76,20 @@ Answer question **C2** in `docs/08-decisions.md` before building: does the accou
 
 ## Tasks
 
-- [ ] 7.1 `V7__fees.sql`.
-- [ ] 7.2 `fee` package: entities, enums, repositories.
-- [ ] 7.3 Sessions and class fees endpoints (rules 1, 2).
-- [ ] 7.4 `DueScheduleBuilder` (pure Java): plan + start date → list of dues (rule 6). Test examples A and B first.
-- [ ] 7.5 `FeePlanService.save` (rules 3 to 5, 7).
-- [ ] 7.6 `ReceiptNumberService` (rule 11).
-- [ ] 7.7 `PaymentService.record` and `PaymentService.correct` (rules 9, 10, 12, 13). Add `FEES_CORRECT` to the `Permission` enum, owner only, and to `RolePermissionMatrixTest`.
-- [ ] 7.8 `FeeStatusCalculator` (pure Java) with the examples from `docs/03-data-model.md` (rule 15).
-- [ ] 7.9 `GET /students/{id}/fees` (rule 16).
-- [ ] 7.10 Hook into transport change (rule 8).
-- [ ] 7.11 Extend admission (rule 17).
-- [ ] 7.12 `GET /payments` with date filter and paging.
-- [ ] 7.12a Add `feeStatus` to each row of `GET /students` (the "Fee" column of the Students screen).
-- [ ] 7.13 Dev data: plans for the sample students, with a mix of on time, delayed and defaulted.
+- [x] 7.1 `V7__fees.sql`.
+- [x] 7.2 `fee` package: entities, enums, repositories.
+- [x] 7.3 Sessions and class fees endpoints (rules 1, 2).
+- [x] 7.4 `DueScheduleBuilder` (pure Java): plan + start date → list of dues (rule 6). Test examples A and B first.
+- [x] 7.5 `FeePlanService.save` (rules 3 to 5, 7).
+- [x] 7.6 `ReceiptNumberService` (rule 11).
+- [x] 7.7 `PaymentService.record` and `PaymentService.correct` (rules 9, 10, 12, 13). Add `FEES_CORRECT` to the `Permission` enum, owner only, and to `RolePermissionMatrixTest`.
+- [x] 7.8 `FeeStatusCalculator` (pure Java) with the examples from `docs/03-data-model.md` (rule 15).
+- [x] 7.9 `GET /students/{id}/fees` (rule 16).
+- [x] 7.10 Hook into transport change (rule 8).
+- [x] 7.11 Extend admission (rule 17).
+- [x] 7.12 `GET /payments` with date filter and paging.
+- [x] 7.12a Add `feeStatus` to each row of `GET /students` (the "Fee" column of the Students screen).
+- [x] 7.13 Dev data: plans for the sample students, with a mix of on time, delayed and defaulted.
 
 ## Tests that must pass
 
@@ -113,9 +113,9 @@ Answer question **C2** in `docs/08-decisions.md` before building: does the accou
 
 ## Done when
 
-- You admit a child on 1 April with ₹30,000 + ₹8,800 quarterly and ₹9,700 paid. `GET /students/{id}/fees` shows `pendingNow` ₹0, `remainingThisYear` ₹29,100 and next due ₹9,700 on 1 July.
-- You set the clock to 15 August without a second payment. Status is DELAYED.
-- `/check-phase 7` passes.
+- [x] You admit a child on 1 April with ₹30,000 + ₹8,800 quarterly and ₹9,700 paid. `GET /students/{id}/fees` shows `pendingNow` ₹0, `remainingThisYear` ₹29,100 and next due ₹9,700 on 1 July.
+- [x] You set the clock to 15 August without a second payment. Status is DELAYED.
+- [x] `/check-phase 7` passes. (The command does not exist in this repo. The lines above were checked by hand on the running app: PostgreSQL in Docker, `java -jar`, app clock set with libfaketime.)
 
 ## Out of scope
 

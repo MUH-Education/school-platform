@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -66,8 +67,12 @@ public class StudentController {
 			@RequestParam(required = false) String className, @RequestParam(required = false) String village,
 			@RequestParam(required = false) Long routeId, @RequestParam(required = false) BusFilter bus,
 			@RequestParam(required = false) StudentStatus status, @RequestParam(defaultValue = "0") int page,
-			@RequestParam(defaultValue = "25") int size, @RequestParam(required = false) String sort) {
-		return studentService.list(new StudentFilter(q, className, village, routeId, bus, status), page, size, sort);
+			@RequestParam(defaultValue = "25") int size, @RequestParam(required = false) String sort,
+			Authentication authentication) {
+		// The "Fee" column is fee information, so it needs FEES_VIEW as well (the transport in-charge has none).
+		boolean withFeeStatus = authentication.getAuthorities().stream().anyMatch(a -> "FEES_VIEW".equals(a.getAuthority()));
+		return studentService.list(new StudentFilter(q, className, village, routeId, bus, status), page, size, sort,
+				withFeeStatus);
 	}
 
 	/** The full profile: details, parents, bus now, photo flag. */

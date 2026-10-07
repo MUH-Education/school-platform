@@ -13,6 +13,8 @@ import com.muhjain.school.audit.AuditChanges;
 import com.muhjain.school.audit.AuditLog;
 import com.muhjain.school.audit.AuditService;
 import com.muhjain.school.common.ApiException;
+import com.muhjain.school.fee.FeeStatus;
+import com.muhjain.school.fee.FeeStatusService;
 import com.muhjain.school.common.DayText;
 import com.muhjain.school.common.NameKeys;
 import com.muhjain.school.common.PageResponse;
@@ -45,11 +47,14 @@ public class StudentService {
 
 	private final UserService userService;
 
+	private final FeeStatusService feeStatusService;
+
 	private final Clock clock;
 
 	public StudentService(StudentRepository students, GuardianService guardianService,
 			TransportEnrolmentService transportService, AuditService auditService, UserService userService,
-			Clock clock) {
+			FeeStatusService feeStatusService, Clock clock) {
+		this.feeStatusService = feeStatusService;
 		this.userService = userService;
 		this.students = students;
 		this.guardianService = guardianService;
@@ -72,6 +77,16 @@ public class StudentService {
 	 */
 	@Transactional(readOnly = true)
 	public PageResponse<StudentListItem> list(StudentFilter filter, int page, int size, String sort) {
+		return list(filter, page, size, sort, false);
+	}
+
+	/**
+	 * Same, and with {@code withFeeStatus} each row has its fee status (task 7.12a). The caller says true only for
+	 * a user who has FEES_VIEW. Example: Aryan has a plan and is 45 days late → {@code feeStatus: DELAYED}.
+	 */
+	@Transactional(readOnly = true)
+	public PageResponse<StudentListItem> list(StudentFilter filter, int page, int size, String sort,
+			boolean withFeeStatus) {
 		if (page < 0) {
 			throw ApiException.validation("page", "must be 0 or more");
 		}
@@ -92,9 +107,10 @@ public class StudentService {
 		List<Long> ids = found.getContent().stream().map(Student::getId).toList();
 		Map<Long, String> buses = transportService.busLabels(ids, today);
 		Map<Long, String> phones = guardianService.firstPhones(ids);
+		Map<Long, FeeStatus> feeStatuses = withFeeStatus ? feeStatusService.statuses(ids) : Map.of();
 		return PageResponse.of(found.map(s -> new StudentListItem(s.getId(), s.getName(), s.getAdmissionNo(),
 				s.getClassName(), s.getSection(), s.getVillage(), buses.get(s.getId()), phones.get(s.getId()),
-				s.getPhotoKey() != null)));
+				s.getPhotoKey() != null, feeStatuses.get(s.getId()))));
 	}
 
 	// "name,desc" → sort by name, descending. The id is the tie-break, so pages never repeat a row.

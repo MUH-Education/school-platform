@@ -4,7 +4,9 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
@@ -16,6 +18,22 @@ import com.muhjain.school.enquiry.EnquiryStatus;
 import com.muhjain.school.enquiry.FollowUpRequest;
 import com.muhjain.school.enquiry.NeedsBus;
 import com.muhjain.school.enquiry.StatusRequest;
+import com.muhjain.school.fee.AcademicSession;
+import com.muhjain.school.fee.ClassFeeItem;
+import com.muhjain.school.fee.ClassFeeService;
+import com.muhjain.school.fee.ClassFeesRequest;
+import com.muhjain.school.fee.DiscountReason;
+import com.muhjain.school.fee.DueResponse;
+import com.muhjain.school.fee.FeeHead;
+import com.muhjain.school.fee.FeePlanRequest;
+import com.muhjain.school.fee.FeePlanResponse;
+import com.muhjain.school.fee.FeePlanService;
+import com.muhjain.school.fee.PayFrequency;
+import com.muhjain.school.fee.PaymentLine;
+import com.muhjain.school.fee.PaymentMode;
+import com.muhjain.school.fee.PaymentRequest;
+import com.muhjain.school.fee.PaymentService;
+import com.muhjain.school.fee.SessionService;
 import com.muhjain.school.route.CreateRouteRequest;
 import com.muhjain.school.route.RouteResponse;
 import com.muhjain.school.route.RouteService;
@@ -101,7 +119,9 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>
  * Phase 6 adds 29 enquiries for the next session: 7 NEW, 6 CONTACTED, 5 VISITED, 3 APPLIED, 4 ADMITTED (linked to
  * real students) and 4 LOST, 5 of them overdue (the CONTACTED ones with a past date). So the enquiry screens have numbers: 29 enquiries, 14% admitted.
- * The fleet, the students, the taps and the enquiries are loaded separately. Each part does nothing if its data is already there.
+ * Phase 7 adds the standard class fees and a fee plan for every active child (half on time, a quarter delayed, a
+ * quarter defaulted), with the payments that make those states, when today is inside the current session.
+ * The fleet, the students, the fees, the taps and the enquiries are loaded separately. Each part does nothing if its data is already there.
  * <b>Only the {@code dev} profile.</b> It never runs in {@code test} or {@code prod}.
  * Phone numbers are made up. It uses services only.
  */
@@ -153,12 +173,26 @@ public class DevDataLoader implements ApplicationRunner {
 
 	private final EnquiryService enquiryService;
 
+	private final SessionService sessionService;
+
+	private final ClassFeeService classFeeService;
+
+	private final FeePlanService feePlanService;
+
+	private final PaymentService paymentService;
+
 	private final Clock clock;
 
 	public DevDataLoader(VehicleService vehicleService, StaffService staffService,
 			AssignmentService assignmentService, RouteService routeService, AdmissionService admissionService,
 			GuardianService guardianService, StudentService studentService, StudentQueryService studentQuery,
-			MarkService markService, UserService userService, EnquiryService enquiryService, Clock clock) {
+			MarkService markService, UserService userService, EnquiryService enquiryService,
+			SessionService sessionService, ClassFeeService classFeeService, FeePlanService feePlanService,
+			PaymentService paymentService, Clock clock) {
+		this.sessionService = sessionService;
+		this.classFeeService = classFeeService;
+		this.feePlanService = feePlanService;
+		this.paymentService = paymentService;
 		this.enquiryService = enquiryService;
 		this.studentQuery = studentQuery;
 		this.markService = markService;
@@ -189,6 +223,7 @@ public class DevDataLoader implements ApplicationRunner {
 		else {
 			log.info("Dev data: there are students already, students not loaded");
 		}
+		loadFees();
 		loadTaps();
 		if (enquiryService.summary().total() == 0) {
 			loadEnquiries();
@@ -291,7 +326,8 @@ public class DevDataLoader implements ApplicationRunner {
 				AdmissionResponse admitted = admissionService.admit(new AdmissionRequest(first + " " + surname,
 						dob, isGirl ? Gender.F : Gender.M, className, (children % 2 == 0) ? "A" : "B", village, null,
 						occupations[f % occupations.length], yearStart,
-						List.of(new GuardianRequest(parent, phone, GuardianRelation.FATHER, true)), null, null, bus), null);
+						List.of(new GuardianRequest(parent, phone, GuardianRelation.FATHER, true)), null, null, bus, null, null),
+						null);
 				if (k == 0) {
 					firstChildOfFamily.add(admitted.studentId());
 				}
@@ -373,6 +409,88 @@ public class DevDataLoader implements ApplicationRunner {
 			EnquiryStatus.APPLIED, EnquiryStatus.ADMITTED, EnquiryStatus.ADMITTED, EnquiryStatus.ADMITTED,
 			EnquiryStatus.ADMITTED, EnquiryStatus.LOST, EnquiryStatus.LOST, EnquiryStatus.LOST,
 			EnquiryStatus.LOST };
+
+	/**
+	 * Phase 7: the standard class fees and a fee plan for every active child, with a mix of on time (half), delayed
+	 * and defaulted (a quarter each). Does nothing if a plan exists. Needs students, and today inside the current session.
+	 * <p>
+	 * How the mix is made: a DELAYED child pays a MONTHLY plan up to, but not including, the oldest due that is 11 to
+	 * 60 days late. A DEFAULTED child pays up to, but not including, the oldest due that is more than 60 days late.
+	 * An ON_TIME child pays every due up to today. Example on 7 Oct: DELAYED leaves the 1 Sep due unpaid (36 days).
+	 */
+	private void loadFees() {
+		if (feePlanService.anyPlanExists()) {
+			log.info("Dev data: there are fee plans already, fees not loaded");
+			return;
+		}
+		AcademicSession session = sessionService.current();
+		LocalDate today = LocalDate.now(clock);
+		if (today.isBefore(session.getStartsOn()) || today.isAfter(session.getEndsOn())) {
+			log.info("Dev data: today is outside the current session {}, fees not loaded", session.getName());
+			return;
+		}
+		if (classFeeService.list(session.getId()).isEmpty()) {
+			List<ClassFeeItem> fees = new ArrayList<>();
+			for (int i = 0; i < ClassNames.ALL.size(); i++) {
+				fees.add(new ClassFeeItem(ClassNames.ALL.get(i), BigDecimal.valueOf(18000 + 1500L * i)));
+			}
+			classFeeService.replace(session.getId(), new ClassFeesRequest(fees));
+		}
+		var children = studentService.list(new StudentFilter(null, null, null, null, null, null), 0, 100, "name")
+			.items();
+		PaymentMode[] modes = PaymentMode.values();
+		int index = 0;
+		for (var child : children) {
+			String wanted = switch (index % 4) {
+				case 2 -> "DELAYED";
+				case 3 -> "DEFAULTED";
+				default -> "ON_TIME";
+			};
+			PayFrequency frequency = switch (wanted) {
+				case "DELAYED" -> PayFrequency.MONTHLY;
+				case "DEFAULTED" -> (index % 8 == 3) ? PayFrequency.QUARTERLY : PayFrequency.YEARLY;
+				default -> PayFrequency.values()[(index / 4) % 3];
+			};
+			boolean discount = index % 8 == 5;
+			BigDecimal schoolFee = classFeeService.standardFee(session.getId(), child.className())
+				.orElse(BigDecimal.valueOf(30000));
+			FeePlanResponse plan = feePlanService.save(child.id(),
+					new FeePlanRequest(schoolFee, (child.busNow() != null) ? new BigDecimal("8800") : null,
+							discount ? new BigDecimal("2000") : null,
+							discount ? DiscountReason.SIBLING : null, frequency),
+					null);
+			payUpTo(child.id(), plan, wanted, today, modes[index % modes.length]);
+			index++;
+		}
+		log.info("Dev data: {} fee plans made", index);
+	}
+
+	// Pays every due before the day that makes the wanted status. No such day (or ON_TIME): every due up to today.
+	private void payUpTo(Long studentId, FeePlanResponse plan, String wanted, LocalDate today, PaymentMode mode) {
+		LocalDate stopAt = null;
+		for (DueResponse due : plan.dues()) {
+			long late = ChronoUnit.DAYS.between(due.dueOn(), today);
+			boolean fits = switch (wanted) {
+				case "DELAYED" -> late >= 11 && late <= 60;
+				case "DEFAULTED" -> late > 60;
+				default -> false;
+			};
+			if (fits && (stopAt == null || due.dueOn().isBefore(stopAt))) {
+				stopAt = due.dueOn();
+			}
+		}
+		EnumMap<FeeHead, BigDecimal> money = new EnumMap<>(FeeHead.class);
+		for (DueResponse due : plan.dues()) {
+			boolean before = (stopAt == null) ? !due.dueOn().isAfter(today) : due.dueOn().isBefore(stopAt);
+			if (before) {
+				money.merge(due.feeHead(), due.amount(), BigDecimal::add);
+			}
+		}
+		List<PaymentLine> lines = money.entrySet().stream().map(e -> new PaymentLine(e.getKey(), e.getValue())).toList();
+		if (!lines.isEmpty()) {
+			paymentService.record(studentId, new PaymentRequest(null, mode, null, lines), null);
+		}
+	}
 
 	private void loadEnquiries() {
 		LocalDate today = LocalDate.now(clock);

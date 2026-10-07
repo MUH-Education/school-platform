@@ -1,5 +1,6 @@
 package com.muhjain.school.student;
 
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -12,6 +13,11 @@ import java.util.Set;
 import com.muhjain.school.audit.AuditAction;
 import com.muhjain.school.audit.AuditService;
 import com.muhjain.school.enquiry.EnquiryService;
+import com.muhjain.school.fee.DueResponse;
+import com.muhjain.school.fee.FeePlanResponse;
+import com.muhjain.school.fee.FeePlanService;
+import com.muhjain.school.fee.PaymentService;
+import com.muhjain.school.fee.ReceiptResponse;
 import com.muhjain.school.common.ApiException;
 import com.muhjain.school.common.NameKeys;
 import org.springframework.stereotype.Service;
@@ -40,11 +46,18 @@ public class AdmissionService {
 
 	private final EnquiryService enquiryService;
 
+	private final FeePlanService feePlanService;
+
+	private final PaymentService paymentService;
+
 	private final Clock clock;
 
 	public AdmissionService(StudentRepository students, AdmissionNumberService numbers,
 			GuardianService guardianService, TransportEnrolmentService transportService, AuditService auditService,
-			EnquiryService enquiryService, Clock clock) {
+			EnquiryService enquiryService, FeePlanService feePlanService, PaymentService paymentService,
+			Clock clock) {
+		this.feePlanService = feePlanService;
+		this.paymentService = paymentService;
 		this.enquiryService = enquiryService;
 		this.students = students;
 		this.numbers = numbers;
@@ -74,6 +87,9 @@ public class AdmissionService {
 			throw ApiException.validation("guardians", "at least one parent phone is needed");
 		}
 
+		if (request.firstPayment() != null && request.fee() == null) {
+			throw ApiException.validation("firstPayment", "needs a fee plan: send the fee part too");
+		}
 		if (request.enquiryId() != null) {
 			enquiryService.requireAdmittable(request.enquiryId());
 		}
@@ -105,13 +121,30 @@ public class AdmissionService {
 				.warning();
 		}
 
+		// Rule 17 of Phase 7: the fee plan and the first payment, in this same transaction. The plan is made after
+		// the bus, so its bus dues start on the first bus day. A refused payment rolls back the whole admission.
+		String receiptNo = null;
+		BigDecimal stillToPay = null;
+		if (request.fee() != null) {
+			BigDecimal busFee = (request.bus() != null) ? request.bus().busFee() : null;
+			FeePlanResponse plan = feePlanService.saveAtAdmission(student.getId(), className, request.fee(), busFee,
+					userId);
+			stillToPay = plan.dues().stream().map(DueResponse::amount).reduce(BigDecimal.ZERO, BigDecimal::add);
+			if (request.firstPayment() != null) {
+				ReceiptResponse receipt = paymentService.record(student.getId(), request.firstPayment(), userId);
+				receiptNo = receipt.receiptNo();
+				stillToPay = receipt.stillToPay();
+			}
+		}
+
 		if (request.enquiryId() != null) {
 			// Rule 8 of Phase 6: the enquiry becomes ADMITTED in this same transaction.
 			enquiryService.markAdmitted(request.enquiryId(), student.getId());
 		}
 
 		auditAdmission(student, request.siblingStudentId(), linked.size(), request.bus() != null);
-		return new AdmissionResponse(student.getId(), admissionNo, student.getName(), warning);
+		return new AdmissionResponse(student.getId(), admissionNo, student.getName(), warning, receiptNo,
+				stillToPay);
 	}
 
 	// Rule 4: the phones of the brother or sister.
