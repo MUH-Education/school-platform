@@ -12,8 +12,8 @@ Change the Status column as you go: **Not started** → **In progress** → **Do
 | 1 | [Login, users, roles](phase-1-login-users.md) | Log in with phone and OTP. Owner adds users. | M | Done |
 | 2 | [Vehicles, staff, routes](phase-2-vehicles-staff-routes.md) | Add vehicles, drivers, attendants. Change who is assigned. Routes and stops. | M | Done |
 | 3 | [Students and admission](phase-3-students-admission.md) | Admit a student, edit later, add phone numbers, photo, start or change bus | L | Done |
-| 4 | [Trips and bus status](phase-4-trips-bus-status.md) | Attendant taps children. Office sees every bus. | L | In progress |
-| 5 | [SMS and WhatsApp](phase-5-sms-whatsapp.md) | Parents get Hindi SMS. Real OTP on WhatsApp or SMS. | M | Not started |
+| 4 | [Trips and bus status](phase-4-trips-bus-status.md) | Attendant taps children. Office sees every bus. | L | Done |
+| 5 | [SMS and WhatsApp](phase-5-sms-whatsapp.md) | Parents get Hindi SMS. Real OTP on WhatsApp or SMS. | M | In progress |
 | 6 | [Enquiries](phase-6-enquiries.md) | Enquiry list with stages and follow-ups | S | Not started |
 | 7 | [Fees](phase-7-fees.md) | Fee plan at admission, payments, pending amount, status | L | Not started |
 | 8 | [Analytics](phase-8-analytics.md) | Filters, graph numbers, download | M | Not started |

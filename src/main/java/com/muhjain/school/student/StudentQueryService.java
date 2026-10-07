@@ -3,7 +3,10 @@ package com.muhjain.school.student;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Collection;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,8 +27,11 @@ public class StudentQueryService {
 
 	private final TransportEnrolmentRepository enrolments;
 
-	public StudentQueryService(TransportEnrolmentRepository enrolments) {
+	private final StudentRepository students;
+
+	public StudentQueryService(TransportEnrolmentRepository enrolments, StudentRepository students) {
 		this.enrolments = enrolments;
+		this.students = students;
 	}
 
 	/** The children on the route on that day, sorted by name. */
@@ -48,6 +54,25 @@ public class StudentQueryService {
 			counts.put((Long) row[0], ((Number) row[1]).intValue());
 		}
 		return counts;
+	}
+
+	/**
+	 * For each child id: is the child ACTIVE, and on which route on that day. An id that does not exist is not in
+	 * the map. Phase 4 uses it for every tap, so one query serves the whole list.
+	 * Example: {118 → StudentBus(118, true, 4)}.
+	 */
+	@Transactional(readOnly = true)
+	public Map<Long, StudentBus> busOn(Collection<Long> studentIds, LocalDate date) {
+		if (studentIds.isEmpty()) {
+			return Map.of();
+		}
+		Map<Long, Long> routes = enrolments.coveringDay(studentIds, date)
+			.stream()
+			.collect(Collectors.toMap(TransportEnrolment::getStudentId, TransportEnrolment::getRouteId, (a, b) -> a));
+		return students.findByIdIn(studentIds)
+			.stream()
+			.collect(Collectors.toMap(Student::getId, s -> new StudentBus(s.getId(),
+					s.getStatus() == StudentStatus.ACTIVE, routes.get(s.getId()))));
 	}
 
 }

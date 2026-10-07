@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.muhjain.school.route.CreateRouteRequest;
 import com.muhjain.school.route.RouteResponse;
@@ -28,10 +29,20 @@ import com.muhjain.school.student.Gender;
 import com.muhjain.school.student.GuardianRelation;
 import com.muhjain.school.student.GuardianRequest;
 import com.muhjain.school.student.GuardianService;
+import com.muhjain.school.student.RouteChild;
 import com.muhjain.school.student.StudentFilter;
+import com.muhjain.school.student.StudentQueryService;
 import com.muhjain.school.student.StudentService;
 import com.muhjain.school.student.StudentStatus;
 import com.muhjain.school.student.UpdateStatusRequest;
+import com.muhjain.school.trip.EventType;
+import com.muhjain.school.trip.MarkRequest;
+import com.muhjain.school.trip.MarkResult;
+import com.muhjain.school.trip.MarkService;
+import com.muhjain.school.trip.Outcome;
+import com.muhjain.school.user.Permission;
+import com.muhjain.school.user.UserResponse;
+import com.muhjain.school.user.UserService;
 import com.muhjain.school.vehicle.CreateVehicleRequest;
 import com.muhjain.school.vehicle.OwnedBy;
 import com.muhjain.school.vehicle.VehicleDocumentsRequest;
@@ -65,7 +76,22 @@ import org.springframework.transaction.annotation.Transactional;
  * <li>A grandfather's phone that already belongs to a cousin is added to one child, to show one guardian row for
  * one phone.</li>
  * </ul>
- * The fleet and the students are loaded separately. Each part does nothing if its data is already there.
+ * Phase 4 adds the taps of a morning, so Bus status looks like the design when you open it at 7:48 (each route
+ * has its own stop times for this). Today, once a day:
+ * <ul>
+ * <li>Route 1, 6, 8: children tapped on time → ON_THE_WAY.</li>
+ * <li>Route 2: all tapped, REACHED_SCHOOL at 07:46.</li>
+ * <li>Route 3: no taps, first stop due 07:15 → NO_TAPS, 33 minutes.</li>
+ * <li>Route 4: first stop tapped, the next one is 26 minutes overdue → LATE. Route 5: tapped 07:40, due 07:24 →
+ * LATE, 16 minutes.</li>
+ * <li>Route 7, 9: no taps yet, first stop due 07:40 and 07:50 → NOT_STARTED.</li>
+ * </ul>
+ * The taps go in through {@link MarkService}, as an office user (the first OWNER, OFFICE_ADMIN or
+ * TRANSPORT_INCHARGE). Without such a user (set APP_OWNER_PHONE) the taps are skipped. A tap time more than 5
+ * minutes ahead of the real clock is replaced by the real time, as for a phone, so start the app after 07:45 to
+ * see the exact picture. Older databases keep their old stop times.
+ * <p>
+ * The fleet, the students and the taps are loaded separately. Each part does nothing if its data is already there.
  * <b>Only the {@code dev} profile.</b> It never runs in {@code test} or {@code prod}.
  * Phone numbers are made up. It uses services only.
  */
@@ -109,11 +135,21 @@ public class DevDataLoader implements ApplicationRunner {
 
 	private final StudentService studentService;
 
+	private final StudentQueryService studentQuery;
+
+	private final MarkService markService;
+
+	private final UserService userService;
+
 	private final Clock clock;
 
 	public DevDataLoader(VehicleService vehicleService, StaffService staffService,
 			AssignmentService assignmentService, RouteService routeService, AdmissionService admissionService,
-			GuardianService guardianService, StudentService studentService, Clock clock) {
+			GuardianService guardianService, StudentService studentService, StudentQueryService studentQuery,
+			MarkService markService, UserService userService, Clock clock) {
+		this.studentQuery = studentQuery;
+		this.markService = markService;
+		this.userService = userService;
 		this.admissionService = admissionService;
 		this.guardianService = guardianService;
 		this.studentService = studentService;
@@ -140,6 +176,7 @@ public class DevDataLoader implements ApplicationRunner {
 		else {
 			log.info("Dev data: there are students already, students not loaded");
 		}
+		loadTaps();
 	}
 
 	private void loadFleet() {
@@ -270,15 +307,87 @@ public class DevDataLoader implements ApplicationRunner {
 		return new VehicleDocumentsRequest(today.plusMonths(10), insurance, today.plusYears(1), puc);
 	}
 
-	// The first stop is at 07:10. Every next stop is 12 minutes later.
+	// Morning times of the stops of Route 1 to 9. Chosen so that at 07:48 the routes show every state (see above).
+	// Route 4 keeps the 07:10 start. Example: Route 5 stops are due 07:12, 07:24, 07:36, 07:48.
+	private static final String[][] STOP_TIMES = {
+			{ "07:30", "07:42", "07:52", "08:00" },
+			{ "07:10", "07:22", "07:34", "07:46" },
+			{ "07:15", "07:27", "07:39", "07:51" },
+			{ "07:10", "07:22", "07:34", "07:46" },
+			{ "07:12", "07:24", "07:36", "07:48" },
+			{ "07:20", "07:30", "07:40", "07:55" },
+			{ "07:40", "07:48", "07:54", "07:58" },
+			{ "07:20", "07:32", "07:42", "07:50", "07:58" },
+			{ "07:50", "07:52", "07:54", "07:56", "07:58" } };
+
 	private static List<StopRequest> stops(int route) {
 		List<StopRequest> stops = new ArrayList<>();
-		LocalTime time = LocalTime.of(7, 10);
-		for (String name : STOPS[route - 1]) {
-			stops.add(new StopRequest(null, name, time, null));
-			time = time.plusMinutes(12);
+		String[] names = STOPS[route - 1];
+		for (int i = 0; i < names.length; i++) {
+			stops.add(new StopRequest(null, names[i], LocalTime.parse(STOP_TIMES[route - 1][i]), null));
 		}
 		return stops;
+	}
+
+	// ---- taps (Phase 4) ----
+
+	// Per route: the time the first child is tapped at BOARDED_MORNING (null = no taps), and whether the bus
+	// reached school at 07:46. The next child is tapped a minute later, and the last child (when there are 3 or
+	// more) is ABSENT.
+	private static final Map<Integer, String> FIRST_TAP = Map.of(1, "07:31", 2, "07:23", 4, "07:11", 5, "07:40",
+			6, "07:41", 8, "07:33");
+
+	private static final int REACHED_SCHOOL_ROUTE = 2;
+
+	private static final String REACHED_AT = "07:46";
+
+	private void loadTaps() {
+		LocalDate today = LocalDate.now(clock);
+		if (markService.anyTapOn(today)) {
+			log.info("Dev data: there are taps today already, taps not loaded");
+			return;
+		}
+		Long officeUser = userService.list()
+			.stream()
+			.filter(u -> u.active() && u.role().has(Permission.TRIPS_RECORD_ANY))
+			.map(UserResponse::id)
+			.findFirst()
+			.orElse(null);
+		if (officeUser == null) {
+			log.info("Dev data: there is no office user yet (set APP_OWNER_PHONE), taps not loaded");
+			return;
+		}
+		List<MarkRequest> marks = new ArrayList<>();
+		for (RouteResponse route : routeService.list()) {
+			int number = routeNumber(route.name());
+			String first = FIRST_TAP.get(number);
+			if (first == null) {
+				continue;
+			}
+			List<RouteChild> children = studentQuery.onRoute(route.id(), today);
+			for (int i = 0; i < children.size(); i++) {
+				boolean absent = children.size() >= 3 && i == children.size() - 1;
+				Outcome outcome = absent ? Outcome.ABSENT : Outcome.DONE;
+				marks.add(new MarkRequest(children.get(i).studentId(), EventType.BOARDED_MORNING, outcome, today,
+						at(today, LocalTime.parse(first).plusMinutes(i))));
+				if (number == REACHED_SCHOOL_ROUTE && !absent) {
+					marks.add(new MarkRequest(children.get(i).studentId(), EventType.REACHED_SCHOOL, outcome, today,
+							at(today, LocalTime.parse(REACHED_AT))));
+				}
+			}
+		}
+		List<MarkResult> results = markService.apply(officeUser, marks);
+		log.info("Dev data loaded: {} taps for the morning of {} ({} refused)", marks.size(), today,
+				results.stream().filter(r -> !r.ok()).count());
+	}
+
+	private java.time.Instant at(LocalDate day, LocalTime time) {
+		return day.atTime(time).atZone(clock.getZone()).toInstant();
+	}
+
+	// "Route 4" → 4
+	private static int routeNumber(String name) {
+		return Integer.parseInt(name.replaceAll("\\D", ""));
 	}
 
 	// 1 April is the start of the school year.

@@ -1,6 +1,11 @@
 package com.muhjain.school.auth;
 
+import java.time.Clock;
+import java.time.LocalDate;
+
 import com.muhjain.school.common.ApiException;
+import com.muhjain.school.route.AttendantRouteService;
+import com.muhjain.school.user.AppUser;
 import com.muhjain.school.user.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -31,7 +36,14 @@ public class AuthController {
 
 	private final CurrentUser currentUser;
 
-	public AuthController(OtpService otpService, UserService userService, CurrentUser currentUser) {
+	private final AttendantRouteService attendantRoutes;
+
+	private final Clock clock;
+
+	public AuthController(OtpService otpService, UserService userService, CurrentUser currentUser,
+			AttendantRouteService attendantRoutes, Clock clock) {
+		this.attendantRoutes = attendantRoutes;
+		this.clock = clock;
 		this.otpService = otpService;
 		this.userService = userService;
 		this.currentUser = currentUser;
@@ -50,7 +62,7 @@ public class AuthController {
 	@GetMapping("/me")
 	public AuthUserResponse me() {
 		return userService.findById(currentUser.id())
-			.map(AuthUserResponse::of)
+			.map(this::withRoute)
 			.orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED", "Please log in first."));
 	}
 
@@ -58,6 +70,14 @@ public class AuthController {
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void logout() {
 		userService.logout(currentUser.id());
+	}
+
+	// The attendant's route of today, from the database (never from the client). Null if they have none.
+	private AuthUserResponse withRoute(AppUser user) {
+		AuthUserResponse.RouteInfo route = attendantRoutes.routeFor(user.getId(), LocalDate.now(clock))
+			.map(r -> new AuthUserResponse.RouteInfo(r.routeId(), r.routeName(), r.vehicleName()))
+			.orElse(null);
+		return AuthUserResponse.of(user, route);
 	}
 
 }

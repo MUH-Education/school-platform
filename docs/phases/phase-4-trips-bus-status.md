@@ -95,19 +95,19 @@ Bus status is **calculated** from taps. Nothing is stored. Put the maths in one 
 
 ## Tasks
 
-- [ ] 4.1 `V4__trips.sql`.
-- [ ] 4.2 `trip` package: `BoardingEvent` entity, enums `EventType`, `Outcome`, repository.
-- [ ] 4.3 `TripAccess`: one class that answers "may this user touch this route on this date?" (rules 1 to 3). Every trip endpoint goes through it. Unit test it.
-- [ ] 4.4 `BoardingNotifier` interface + `NoOpBoardingNotifier`.
-- [ ] 4.5 `MarkService.apply(user, marks)` (rules 4 to 10). Write the tests first.
-- [ ] 4.6 `POST /trips/marks`.
-- [ ] 4.7 `ManifestService` + `GET /trips/manifest` (rules 11 to 13).
-- [ ] 4.8 `GET /trips/my-route`: the attendant's route and the count for each of the four jobs.
-- [ ] 4.9 `BusStatusCalculator` (pure Java) with tests for every state, using the examples in rule 16.
-- [ ] 4.10 `BusStatusService` + `GET /bus-status` and `GET /bus-status/routes/{routeId}`.
-- [ ] 4.11 `AttentionService` + `GET /bus-status/attention` (rules 20 to 22).
-- [ ] 4.12 Extend the dev data loader: taps for a morning at 7:48, so Bus status looks like the design.
-- [ ] 4.13 A test with two threads sending the same tap at the same time. One row must exist at the end.
+- [x] 4.1 `V4__trips.sql`.
+- [x] 4.2 `trip` package: `BoardingEvent` entity, enums `EventType`, `Outcome`, repository.
+- [x] 4.3 `TripAccess`: one class that answers "may this user touch this route on this date?" (rules 1 to 3). Every trip endpoint goes through it. Unit test it.
+- [x] 4.4 `BoardingNotifier` interface + `NoOpBoardingNotifier`.
+- [x] 4.5 `MarkService.apply(user, marks)` (rules 4 to 10). Write the tests first.
+- [x] 4.6 `POST /trips/marks`.
+- [x] 4.7 `ManifestService` + `GET /trips/manifest` (rules 11 to 13).
+- [x] 4.8 `GET /trips/my-route`: the attendant's route and the count for each of the four jobs.
+- [x] 4.9 `BusStatusCalculator` (pure Java) with tests for every state, using the examples in rule 16.
+- [x] 4.10 `BusStatusService` + `GET /bus-status` and `GET /bus-status/routes/{routeId}`.
+- [x] 4.11 `AttentionService` + `GET /bus-status/attention` (rules 20 to 22).
+- [x] 4.12 Extend the dev data loader: taps for a morning at 7:48, so Bus status looks like the design.
+- [x] 4.13 A test with two threads sending the same tap at the same time. One row must exist at the end.
 
 ## Tests that must pass
 
