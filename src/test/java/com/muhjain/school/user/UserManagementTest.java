@@ -105,17 +105,18 @@ class UserManagementTest extends AbstractIntegrationTest {
 
 	@Test
 	void attendantUserNeedsStaffId() throws Exception {
+		long staffId = addStaff("Balwan", "ATTENDANT");
 		create(ownerToken, "{\"phone\":\"98123 40004\",\"role\":\"ATTENDANT\"}").andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.error").value("VALIDATION"))
 			.andExpect(jsonPath("$.fields.staffId").value("is required for an attendant"));
 
-		create(ownerToken, "{\"phone\":\"98123 40004\",\"role\":\"OFFICE_ADMIN\",\"staffId\":14}")
+		create(ownerToken, "{\"phone\":\"98123 40004\",\"role\":\"OFFICE_ADMIN\",\"staffId\":" + staffId + "}")
 			.andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.fields.staffId").value("is only for an attendant"));
 
-		create(ownerToken, "{\"phone\":\"98123 40004\",\"role\":\"ATTENDANT\",\"name\":\"Balwan\",\"staffId\":14}")
+		create(ownerToken, "{\"phone\":\"98123 40004\",\"role\":\"ATTENDANT\",\"name\":\"Balwan\",\"staffId\":" + staffId + "}")
 			.andExpect(status().isCreated())
-			.andExpect(jsonPath("$.staffId").value(14));
+			.andExpect(jsonPath("$.staffId").value(staffId));
 	}
 
 	@Test
