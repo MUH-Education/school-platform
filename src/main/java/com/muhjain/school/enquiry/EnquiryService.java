@@ -111,7 +111,8 @@ public class EnquiryService {
 			.collect(java.util.stream.Collectors.toSet()));
 		return rows.stream()
 			.map(f -> new FollowUpResponse(f.getId(), f.getNote(), f.getNextActionOn(),
-					f.getCreatedAt().atZone(clock.getZone()).toOffsetDateTime(), names.get(f.getCreatedBy())))
+					f.getCreatedAt().atZone(clock.getZone()).toOffsetDateTime(),
+					(f.getCreatedBy() == null) ? null : names.get(f.getCreatedBy())))
 			.toList();
 	}
 

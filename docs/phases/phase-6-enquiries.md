@@ -57,7 +57,7 @@ This phase needs only Phase 1. You can build it any time after Phase 1. The link
 - [x] 6.8 Link from admission (rule 8). Add the test to the Phase 3 admission tests.
 - [x] 6.9 `GET /enquiries/{id}/prefill`: returns the fields the admission form can copy (parent name, phone, village, class, child name). The New admission screen calls it.
 - [x] 6.10 Audit rows for create, status change and follow-up.
-- [ ] 6.11 Dev data: 29 sample enquiries across the stages.
+- [x] 6.11 Dev data: 29 sample enquiries across the stages.
 
 ## Tests that must pass
 

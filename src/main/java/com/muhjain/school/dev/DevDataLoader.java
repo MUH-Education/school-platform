@@ -8,6 +8,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.muhjain.school.enquiry.EnquiryRequest;
+import com.muhjain.school.enquiry.EnquiryResponse;
+import com.muhjain.school.enquiry.EnquiryService;
+import com.muhjain.school.enquiry.EnquirySource;
+import com.muhjain.school.enquiry.EnquiryStatus;
+import com.muhjain.school.enquiry.FollowUpRequest;
+import com.muhjain.school.enquiry.NeedsBus;
+import com.muhjain.school.enquiry.StatusRequest;
 import com.muhjain.school.route.CreateRouteRequest;
 import com.muhjain.school.route.RouteResponse;
 import com.muhjain.school.route.RouteService;
@@ -91,7 +99,9 @@ import org.springframework.transaction.annotation.Transactional;
  * minutes ahead of the real clock is replaced by the real time, as for a phone, so start the app after 07:45 to
  * see the exact picture. Older databases keep their old stop times.
  * <p>
- * The fleet, the students and the taps are loaded separately. Each part does nothing if its data is already there.
+ * Phase 6 adds 29 enquiries for the next session: 7 NEW, 6 CONTACTED, 5 VISITED, 3 APPLIED, 4 ADMITTED (linked to
+ * real students) and 4 LOST, 5 of them overdue (the CONTACTED ones with a past date). So the enquiry screens have numbers: 29 enquiries, 14% admitted.
+ * The fleet, the students, the taps and the enquiries are loaded separately. Each part does nothing if its data is already there.
  * <b>Only the {@code dev} profile.</b> It never runs in {@code test} or {@code prod}.
  * Phone numbers are made up. It uses services only.
  */
@@ -141,12 +151,15 @@ public class DevDataLoader implements ApplicationRunner {
 
 	private final UserService userService;
 
+	private final EnquiryService enquiryService;
+
 	private final Clock clock;
 
 	public DevDataLoader(VehicleService vehicleService, StaffService staffService,
 			AssignmentService assignmentService, RouteService routeService, AdmissionService admissionService,
 			GuardianService guardianService, StudentService studentService, StudentQueryService studentQuery,
-			MarkService markService, UserService userService, Clock clock) {
+			MarkService markService, UserService userService, EnquiryService enquiryService, Clock clock) {
+		this.enquiryService = enquiryService;
 		this.studentQuery = studentQuery;
 		this.markService = markService;
 		this.userService = userService;
@@ -177,6 +190,12 @@ public class DevDataLoader implements ApplicationRunner {
 			log.info("Dev data: there are students already, students not loaded");
 		}
 		loadTaps();
+		if (enquiryService.summary().total() == 0) {
+			loadEnquiries();
+		}
+		else {
+			log.info("Dev data: there are enquiries already, enquiries not loaded");
+		}
 	}
 
 	private void loadFleet() {
@@ -327,6 +346,84 @@ public class DevDataLoader implements ApplicationRunner {
 			stops.add(new StopRequest(null, names[i], LocalTime.parse(STOP_TIMES[route - 1][i]), null));
 		}
 		return stops;
+	}
+
+	// ---- enquiries (Phase 6) ----
+
+	private static final String[] PARENTS = { "Ramesh Jain", "Suresh Goyal", "Mahipal Singh", "Dharampal Garg",
+			"Jagbir Jat", "Rajender Bishnoi", "Satyawan Sharma", "Sunita Devi", "Kamla Rani", "Anil Kumar",
+			"Vijay Mehta", "Pawan Jain", "Naresh Goyal", "Dalip Singh", "Balwan Jat", "Rekha Devi", "Manoj Garg",
+			"Sanjay Bishnoi", "Pooja Rani", "Mukesh Sharma", "Ashok Kumar", "Neelam Devi", "Sandeep Jain",
+			"Rakesh Goyal", "Vinod Singh", "Surender Jat", "Hari Om Garg", "Babita Devi", "Deepak Sharma" };
+
+	private static final String[] VILLAGES = { "Jakhal", "Kanheri", "Sadhanwas", "Dhand", "Ratia", "Tohana town",
+			"Bhattu", "Model Town" };
+
+	private static final String[] CLASSES = { "Nursery", "LKG", "UKG", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+
+	private static final EnquirySource[] SOURCES = { EnquirySource.WALK_IN, EnquirySource.REFERRAL,
+			EnquirySource.FACEBOOK, EnquirySource.WHATSAPP, EnquirySource.HOARDING, EnquirySource.BUS_ENQUIRY };
+
+	// Stage of enquiry number 0 to 28: 7 NEW, 6 CONTACTED, 5 VISITED, 3 APPLIED, 4 ADMITTED, 4 LOST.
+	private static final EnquiryStatus[] STAGES = { EnquiryStatus.NEW, EnquiryStatus.NEW, EnquiryStatus.NEW,
+			EnquiryStatus.NEW, EnquiryStatus.NEW, EnquiryStatus.NEW, EnquiryStatus.NEW, EnquiryStatus.CONTACTED,
+			EnquiryStatus.CONTACTED, EnquiryStatus.CONTACTED, EnquiryStatus.CONTACTED, EnquiryStatus.CONTACTED,
+			EnquiryStatus.CONTACTED, EnquiryStatus.VISITED, EnquiryStatus.VISITED, EnquiryStatus.VISITED,
+			EnquiryStatus.VISITED, EnquiryStatus.VISITED, EnquiryStatus.APPLIED, EnquiryStatus.APPLIED,
+			EnquiryStatus.APPLIED, EnquiryStatus.ADMITTED, EnquiryStatus.ADMITTED, EnquiryStatus.ADMITTED,
+			EnquiryStatus.ADMITTED, EnquiryStatus.LOST, EnquiryStatus.LOST, EnquiryStatus.LOST,
+			EnquiryStatus.LOST };
+
+	private void loadEnquiries() {
+		LocalDate today = LocalDate.now(clock);
+		List<Long> students = studentService.list(new StudentFilter(null, null, null, null, null, null), 0, 4, null)
+			.items()
+			.stream()
+			.map(item -> item.id())
+			.toList();
+		int admitted = 0;
+		for (int i = 0; i < PARENTS.length; i++) {
+			EnquiryStatus stage = STAGES[i];
+			EnquirySource source = SOURCES[i % SOURCES.length];
+			// Enquiries 8 to 12 (all CONTACTED) have a next date in the past: 5 overdue.
+			LocalDate next = (i >= 8 && i <= 12) ? today.minusDays(1 + i % 5)
+					: (stage.isOpen() && stage != EnquiryStatus.NEW) ? today.plusDays(2 + i % 6) : null;
+			EnquiryResponse created = enquiryService.create(new EnquiryRequest(PARENTS[i],
+					"98222" + String.format("%05d", i + 1), (i % 2 == 0) ? "FATHER" : "MOTHER", VILLAGES[i % VILLAGES.length],
+					(i % 3 == 0) ? null : "Child " + (i + 1), CLASSES[i % CLASSES.length], null, null, source,
+					(source == EnquirySource.REFERRAL) ? "Dharampal Goyal" : null, null,
+					(i % 3 == 0) ? NeedsBus.YES : (i % 3 == 1) ? NeedsBus.UNKNOWN : NeedsBus.NO, next, null, null),
+					null);
+			if (stage == EnquiryStatus.NEW) {
+				continue;
+			}
+			// The path to each stage uses only moves a person may make (no stage skipped twice).
+			if (stage == EnquiryStatus.CONTACTED) {
+				move(created.id(), EnquiryStatus.CONTACTED, null);
+			}
+			else if (stage == EnquiryStatus.VISITED) {
+				move(created.id(), EnquiryStatus.VISITED, null);
+			}
+			else if (stage == EnquiryStatus.APPLIED || stage == EnquiryStatus.ADMITTED) {
+				move(created.id(), EnquiryStatus.VISITED, null);
+				move(created.id(), EnquiryStatus.APPLIED, null);
+				if (stage == EnquiryStatus.ADMITTED && admitted < students.size()) {
+					enquiryService.markAdmitted(created.id(), students.get(admitted++));
+				}
+			}
+			else if (stage == EnquiryStatus.LOST) {
+				move(created.id(), EnquiryStatus.LOST, "Joined a school near home");
+			}
+			if (stage == EnquiryStatus.VISITED && i == 15) {
+				enquiryService.addFollowUp(created.id(), new FollowUpRequest("Visited the school with the father",
+						today.plusDays(3)), null);
+			}
+		}
+		log.info("Dev data loaded: {} enquiries", PARENTS.length);
+	}
+
+	private void move(Long id, EnquiryStatus status, String lostReason) {
+		enquiryService.changeStatus(id, new StatusRequest(status, lostReason));
 	}
 
 	// ---- taps (Phase 4) ----
