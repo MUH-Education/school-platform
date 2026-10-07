@@ -80,7 +80,7 @@ All under `/api/v1`: `/vehicles`, `/vehicles/{id}`, `/vehicles/{id}/documents`, 
 ## Tasks
 
 - [x] 2.1 `V2__vehicles_staff_routes.sql`.
-- [ ] 2.2 `vehicle` package: `Vehicle`, `VehicleDocument`, enums, repositories.
+- [x] 2.2 `vehicle` package: `Vehicle`, `VehicleDocument`, enums, repositories.
 - [ ] 2.3 `VehicleService` + `VehicleController`: create, update, turn off, documents, paper status (rules 1 to 3).
 - [ ] 2.4 `staff` package: `Staff`, repository, `StaffService`, `StaffController` (rules 4, 5).
 - [ ] 2.5 `VehicleAssignment` entity and repository with the query "rows of this vehicle covering day D".
