@@ -3,7 +3,14 @@ package com.muhjain.school.student;
 import java.util.List;
 
 import com.muhjain.school.auth.CurrentUser;
+import java.io.IOException;
+
 import jakarta.validation.Valid;
+import org.springframework.http.CacheControl;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -30,10 +37,13 @@ public class StudentController {
 
 	private final TransportEnrolmentService transportService;
 
+	private final StudentPhotoService photoService;
+
 	private final CurrentUser currentUser;
 
 	public StudentController(StudentService studentService, GuardianService guardianService,
-			TransportEnrolmentService transportService, CurrentUser currentUser) {
+			TransportEnrolmentService transportService, StudentPhotoService photoService, CurrentUser currentUser) {
+		this.photoService = photoService;
 		this.studentService = studentService;
 		this.guardianService = guardianService;
 		this.transportService = transportService;
@@ -84,6 +94,32 @@ public class StudentController {
 	@PreAuthorize("hasAuthority('STUDENTS_EDIT')")
 	public TransportSaveResponse saveTransport(@PathVariable Long id, @Valid @RequestBody TransportRequest request) {
 		return transportService.save(id, request, currentUser.id());
+	}
+
+	/** Upload a photo: multipart field {@code file}, JPEG or PNG, at most 2 MB. A new photo replaces the old one. */
+	@PostMapping("/{id}/photo")
+	@PreAuthorize("hasAuthority('STUDENTS_EDIT')")
+	public PhotoResponse uploadPhoto(@PathVariable Long id, @RequestParam("file") MultipartFile file)
+			throws IOException {
+		return photoService.upload(id, file.getBytes());
+	}
+
+	/** The photo bytes. There is no public URL: the permission is checked here, on every request. */
+	@GetMapping("/{id}/photo")
+	@PreAuthorize("hasAuthority('STUDENTS_VIEW')")
+	public ResponseEntity<byte[]> photo(@PathVariable Long id) {
+		PhotoContent photo = photoService.open(id);
+		return ResponseEntity.ok()
+			.contentType(MediaType.parseMediaType(photo.contentType()))
+			.cacheControl(CacheControl.noStore())
+			.header("X-Content-Type-Options", "nosniff")
+			.body(photo.bytes());
+	}
+
+	@DeleteMapping("/{id}/photo")
+	@PreAuthorize("hasAuthority('STUDENTS_EDIT')")
+	public PhotoResponse removePhoto(@PathVariable Long id) {
+		return photoService.remove(id);
 	}
 
 }
