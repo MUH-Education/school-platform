@@ -120,6 +120,54 @@ class UserManagementTest extends AbstractIntegrationTest {
 	}
 
 	@Test
+	void attendantUserMustPointAtARealStaffMemberOfTypeAttendant() throws Exception {
+		long driver = addStaff("Jagdish", "DRIVER");
+		long helper = addStaff("Rajpal", "HELPER");
+		long attendant = addStaff("Balwan", "ATTENDANT");
+
+		// No such staff row.
+		create(ownerToken, "{\"phone\":\"98123 40004\",\"role\":\"ATTENDANT\",\"staffId\":999999}")
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.error").value("VALIDATION"))
+			.andExpect(jsonPath("$.fields.staffId").value("does not exist"));
+		// A driver and a helper are staff, but not attendants.
+		create(ownerToken, "{\"phone\":\"98123 40004\",\"role\":\"ATTENDANT\",\"staffId\":" + driver + "}")
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.fields.staffId").value("must be a staff member of type ATTENDANT"));
+		create(ownerToken, "{\"phone\":\"98123 40004\",\"role\":\"ATTENDANT\",\"staffId\":" + helper + "}")
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.fields.staffId").value("must be a staff member of type ATTENDANT"));
+		assertThat(userRepository.findByPhone("+919812340004")).isEmpty();
+
+		create(ownerToken, "{\"phone\":\"98123 40004\",\"role\":\"ATTENDANT\",\"staffId\":" + attendant + "}")
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.staffId").value(attendant));
+	}
+
+	@Test
+	void changingAnAttendantUserToAWrongStaffMemberIsRefused() throws Exception {
+		AppUser balwan = addUser("+919812340004", Role.ATTENDANT);
+		long driver = addStaff("Jagdish", "DRIVER");
+
+		update(ownerToken, balwan.getId(), "{\"phone\":\"+919812340004\",\"role\":\"ATTENDANT\",\"staffId\":"
+				+ driver + ",\"active\":true}")
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.fields.staffId").value("must be a staff member of type ATTENDANT"));
+		update(ownerToken, balwan.getId(),
+				"{\"phone\":\"+919812340004\",\"role\":\"ATTENDANT\",\"staffId\":999999,\"active\":true}")
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.fields.staffId").value("does not exist"));
+		assertThat(userRepository.findById(balwan.getId()).orElseThrow().getStaffId()).isEqualTo(balwan.getStaffId());
+
+		// Another attendant staff member is fine.
+		long other = addStaff("Hari", "ATTENDANT");
+		update(ownerToken, balwan.getId(), "{\"phone\":\"+919812340004\",\"role\":\"ATTENDANT\",\"staffId\":"
+				+ other + ",\"active\":true}")
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.staffId").value(other));
+	}
+
+	@Test
 	void changingPhoneRoleOrTurningOffEndsOldTokensAndIsAudited() throws Exception {
 		AppUser admin = addUser("+919812340002", Role.OFFICE_ADMIN);
 		int version = admin.getTokenVersion();

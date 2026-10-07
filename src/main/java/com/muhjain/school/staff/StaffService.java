@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import com.muhjain.school.common.ApiException;
 import com.muhjain.school.common.NameKeys;
@@ -49,6 +50,15 @@ public class StaffService {
 			.stream()
 			.map(s -> StaffResponse.of(s, today, places.get(s.getId())))
 			.toList();
+	}
+
+	/**
+	 * The type of a staff member, or empty if there is no such row. Used by the user feature to check that an
+	 * ATTENDANT user points at an ATTENDANT staff member.
+	 */
+	@Transactional(readOnly = true)
+	public Optional<StaffType> findType(Long staffId) {
+		return staff.findById(staffId).map(Staff::getStaffType);
 	}
 
 	/** Licences of turned-on drivers that have ended or end within 30 days, the most urgent first. */

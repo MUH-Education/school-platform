@@ -13,6 +13,8 @@ import com.muhjain.school.audit.AuditAction;
 import com.muhjain.school.audit.AuditService;
 import com.muhjain.school.common.ApiException;
 import com.muhjain.school.common.PhoneNumbers;
+import com.muhjain.school.staff.StaffService;
+import com.muhjain.school.staff.StaffType;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -31,11 +33,14 @@ public class UserService {
 
 	private final AuditService auditService;
 
+	private final StaffService staffService;
+
 	private final Clock clock;
 
-	public UserService(AppUserRepository users, AuditService auditService, Clock clock) {
+	public UserService(AppUserRepository users, AuditService auditService, StaffService staffService, Clock clock) {
 		this.users = users;
 		this.auditService = auditService;
+		this.staffService = staffService;
 		this.clock = clock;
 	}
 
@@ -175,14 +180,21 @@ public class UserService {
 		return users.findByPhoneAndActiveTrue(phone);
 	}
 
-	// An ATTENDANT must point at a staff row (so the server knows the route). Other roles have none.
-	// Phase 2 also checks that the staff row exists and is an attendant.
-	private static void checkStaffId(Role role, Long staffId) {
+	// An ATTENDANT must point at a real staff row of type ATTENDANT (so the server knows the route).
+	// Other roles have none. Example: staffId 14 is Balwan, ATTENDANT → fine. Staff 21 is a DRIVER → 400.
+	private void checkStaffId(Role role, Long staffId) {
 		if (role == Role.ATTENDANT && staffId == null) {
 			throw ApiException.validation("staffId", "is required for an attendant");
 		}
 		if (role != Role.ATTENDANT && staffId != null) {
 			throw ApiException.validation("staffId", "is only for an attendant");
+		}
+		if (role == Role.ATTENDANT) {
+			StaffType type = staffService.findType(staffId)
+				.orElseThrow(() -> ApiException.validation("staffId", "does not exist"));
+			if (type != StaffType.ATTENDANT) {
+				throw ApiException.validation("staffId", "must be a staff member of type ATTENDANT");
+			}
 		}
 	}
 
