@@ -11,6 +11,7 @@ import java.util.Set;
 
 import com.muhjain.school.audit.AuditAction;
 import com.muhjain.school.audit.AuditService;
+import com.muhjain.school.enquiry.EnquiryService;
 import com.muhjain.school.common.ApiException;
 import com.muhjain.school.common.NameKeys;
 import org.springframework.stereotype.Service;
@@ -37,11 +38,14 @@ public class AdmissionService {
 
 	private final AuditService auditService;
 
+	private final EnquiryService enquiryService;
+
 	private final Clock clock;
 
 	public AdmissionService(StudentRepository students, AdmissionNumberService numbers,
 			GuardianService guardianService, TransportEnrolmentService transportService, AuditService auditService,
-			Clock clock) {
+			EnquiryService enquiryService, Clock clock) {
+		this.enquiryService = enquiryService;
 		this.students = students;
 		this.numbers = numbers;
 		this.guardianService = guardianService;
@@ -70,6 +74,10 @@ public class AdmissionService {
 			throw ApiException.validation("guardians", "at least one parent phone is needed");
 		}
 
+		if (request.enquiryId() != null) {
+			enquiryService.requireAdmittable(request.enquiryId());
+		}
+
 		// The number is taken last among the checks above, so a bad request never touches the counter.
 		String admissionNo = numbers.next();
 		Student student = students.save(new Student(admissionNo, NameKeys.tidy(request.name()), request.dob(),
@@ -95,6 +103,11 @@ public class AdmissionService {
 			LocalDate from = (bus.fromDate() != null) ? bus.fromDate() : joinedOn;
 			warning = transportService.start(student.getId(), bus.routeId(), bus.stopId(), from, bus.busFee(), userId)
 				.warning();
+		}
+
+		if (request.enquiryId() != null) {
+			// Rule 8 of Phase 6: the enquiry becomes ADMITTED in this same transaction.
+			enquiryService.markAdmitted(request.enquiryId(), student.getId());
 		}
 
 		auditAdmission(student, request.siblingStudentId(), linked.size(), request.bus() != null);

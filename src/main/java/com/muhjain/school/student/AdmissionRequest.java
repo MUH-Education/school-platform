@@ -15,7 +15,8 @@ import jakarta.validation.constraints.Size;
  * <li>{@code guardians}: at least one phone, unless {@code siblingStudentId} is given.</li>
  * <li>{@code siblingStudentId}: a brother or sister already in this school. The new child gets every phone of
  * that child, so the clerk does not type the parents again.</li>
- * <li>{@code enquiryId}: accepted and ignored until Phase 6.</li>
+ * <li>{@code enquiryId}: the enquiry this admission comes from. It becomes ADMITTED with this child, in the same
+ * transaction (400 if it does not exist, 409 ENQUIRY_ALREADY_ADMITTED if a child was admitted from it already).</li>
  * <li>{@code joinedOn}: optional, means today.</li>
  * <li>Fee fields are ignored until Phase 7.</li>
  * </ul>

@@ -228,6 +228,37 @@ public class EnquiryService {
 				villages);
 	}
 
+	/**
+	 * Called by an admission that comes from an enquiry (rule 8), before the child is saved, so a wrong id stops the
+	 * admission at once.
+	 *
+	 * @throws ApiException 400 VALIDATION (no such enquiry), 409 ENQUIRY_ALREADY_ADMITTED
+	 */
+	@Transactional(readOnly = true)
+	public void requireAdmittable(Long enquiryId) {
+		Enquiry enquiry = enquiries.findById(enquiryId)
+			.orElseThrow(() -> ApiException.validation("enquiryId", "does not exist"));
+		if (enquiry.getStatus() == EnquiryStatus.ADMITTED) {
+			throw new ApiException(HttpStatus.CONFLICT, "ENQUIRY_ALREADY_ADMITTED",
+					"A child was admitted from this enquiry already.");
+		}
+	}
+
+	/**
+	 * Closes the enquiry: ADMITTED, with the new student. The admission calls it in its own transaction (rule 8), so
+	 * either both are saved or neither. This is the only way an enquiry becomes ADMITTED. An enquiry that was LOST
+	 * may be admitted too (the parent came back).
+	 */
+	@Transactional
+	public void markAdmitted(Long enquiryId, Long studentId) {
+		requireAdmittable(enquiryId);
+		Enquiry enquiry = find(enquiryId);
+		enquiry.setStatus(EnquiryStatus.ADMITTED);
+		enquiry.setLostReason(null);
+		enquiry.setAdmittedStudentId(studentId);
+		enquiries.saveAndFlush(enquiry);
+	}
+
 	// ---- helpers shared with the other enquiry services in this package ----
 
 	Enquiry find(Long id) {
