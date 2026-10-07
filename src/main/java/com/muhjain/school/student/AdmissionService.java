@@ -73,8 +73,8 @@ public class AdmissionService {
 		// The number is taken last among the checks above, so a bad request never touches the counter.
 		String admissionNo = numbers.next();
 		Student student = students.save(new Student(admissionNo, NameKeys.tidy(request.name()), request.dob(),
-				request.gender(), className, tidySection(request.section()), NameKeys.tidy(request.village()),
-				tidyOrNull(request.address()), request.fatherOccupation(), joinedOn, userId));
+				request.gender(), className, StudentService.tidySection(request.section()), NameKeys.tidy(request.village()),
+				StudentService.tidyOrNull(request.address()), request.fatherOccupation(), joinedOn, userId));
 
 		Set<String> linked = new HashSet<>();
 		for (GuardianRequest guardian : typed) {
@@ -125,16 +125,6 @@ public class AdmissionService {
 		parts.add("class " + student.getClassName() + ((student.getSection() != null) ? " " + student.getSection() : ""));
 		parts.add(student.getVillage());
 		auditService.record("STUDENT", student.getId(), AuditAction.CREATED, String.join(", ", parts), details);
-	}
-
-	private static String tidySection(String section) {
-		String tidy = tidyOrNull(section);
-		return (tidy == null) ? null : tidy.toUpperCase(java.util.Locale.ROOT);
-	}
-
-	private static String tidyOrNull(String text) {
-		String tidy = NameKeys.tidy(text);
-		return (tidy == null || tidy.isEmpty()) ? null : tidy;
 	}
 
 }

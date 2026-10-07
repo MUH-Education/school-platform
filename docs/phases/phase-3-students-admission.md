@@ -94,7 +94,7 @@ All under `/api/v1`: `/students` (list), `/students/{id}`, `/students/{id}/guard
 - [x] 3.4 `GuardianService.linkPhone(studentId, name, phone, relation, smsEnabled)` (rules 5, 6).
 - [x] 3.5 `TransportEnrolmentService`: `current(studentId, date)`, `start`, `change`, `stop` (rules 10 to 14). Unit test the date logic first.
 - [x] 3.6 `AdmissionService` + `POST /admissions` (rules 1 to 4).
-- [ ] 3.7 `StudentService.update` + `PUT /students/{id}` with audit summaries (rules 15, 16).
+- [x] 3.7 `StudentService.update` + `PUT /students/{id}` with audit summaries (rules 15, 16).
 - [ ] 3.8 Guardian endpoints: add, change, remove (rules 6 to 9).
 - [ ] 3.9 `PUT /students/{id}/transport` and `GET /students/{id}/transport`.
 - [ ] 3.10 `PhotoStorage` interface, `LocalFolderPhotoStorage`, the three photo endpoints (rules 18 to 21).
