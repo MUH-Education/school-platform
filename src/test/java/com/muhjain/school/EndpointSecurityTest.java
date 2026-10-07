@@ -52,6 +52,9 @@ class EndpointSecurityTest extends AbstractIntegrationTest {
 	private static final String MARKS_BODY = "{\"marks\":[{\"studentId\":1,\"eventType\":\"BOARDED_MORNING\","
 			+ "\"outcome\":\"DONE\",\"serviceDate\":\"2026-10-07\",\"occurredAt\":\"2026-10-07T07:42:10+05:30\"}]}";
 
+	private static final String ENQUIRY_BODY = "{\"parentName\":\"Ramesh Jain\",\"phone\":\"9812340208\","
+			+ "\"village\":\"Jakhal\",\"classSought\":\"3\",\"source\":\"WALK_IN\"}";
+
 	private static final String TEMPLATE_BODY = "{\"body\":\"{name} {time}\",\"active\":true}";
 
 	/** method, URL, body, a role WITHOUT the permission (null = any login is enough) */
@@ -101,7 +104,17 @@ class EndpointSecurityTest extends AbstractIntegrationTest {
 				Arguments.of("GET", "/api/v1/messages", null, Role.ATTENDANT),
 				Arguments.of("GET", "/api/v1/messages/summary", null, Role.ATTENDANT),
 				Arguments.of("GET", "/api/v1/message-templates", null, Role.ATTENDANT),
-				Arguments.of("PUT", "/api/v1/message-templates/REACHED_SCHOOL_M", TEMPLATE_BODY, Role.OFFICE_ADMIN));
+				Arguments.of("PUT", "/api/v1/message-templates/REACHED_SCHOOL_M", TEMPLATE_BODY, Role.OFFICE_ADMIN),
+				// Phase 6: enquiries need ENQUIRIES_VIEW / ENQUIRIES_EDIT (not the transport in-charge); the prefill
+				// needs ADMISSIONS_CREATE (not the transport in-charge).
+				Arguments.of("GET", "/api/v1/enquiries", null, Role.TRANSPORT_INCHARGE),
+				Arguments.of("GET", "/api/v1/enquiries/summary", null, Role.TRANSPORT_INCHARGE),
+				Arguments.of("POST", "/api/v1/enquiries", ENQUIRY_BODY, Role.TRANSPORT_INCHARGE),
+				Arguments.of("GET", "/api/v1/enquiries/1", null, Role.ATTENDANT),
+				Arguments.of("PUT", "/api/v1/enquiries/1", ENQUIRY_BODY, Role.TRANSPORT_INCHARGE),
+				Arguments.of("POST", "/api/v1/enquiries/1/follow-ups", "{\"note\":\"Called\"}", Role.ATTENDANT),
+				Arguments.of("POST", "/api/v1/enquiries/1/status", "{\"status\":\"CONTACTED\"}", Role.ATTENDANT),
+				Arguments.of("GET", "/api/v1/enquiries/1/prefill", null, Role.TRANSPORT_INCHARGE));
 	}
 
 	@ParameterizedTest(name = "{0} {1} without token → 401")
