@@ -50,7 +50,7 @@ You can build tasks 5.1 to 5.9 without the provider. Only 5.10 to 5.12 need real
 
 ## Tasks
 
-- [ ] 5.1 `V5__messaging.sql` with the 8 template rows.
+- [x] 5.1 `V5__messaging.sql` with the 8 template rows.
 - [ ] 5.2 `SmsPolicy` (pure Java) and `SmsPolicyTest` for every class from Nursery to 12.
 - [ ] 5.3 `SmsTextBuilder` (pure Java): template + child + time → text. Test the 70 character limit with a long name.
 - [ ] 5.4 `MessageOutbox` and `MessageTemplate` entities and repositories.
