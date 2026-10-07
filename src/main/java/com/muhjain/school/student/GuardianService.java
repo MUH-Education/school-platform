@@ -4,6 +4,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.muhjain.school.audit.AuditAction;
+import com.muhjain.school.audit.AuditChanges;
+import com.muhjain.school.audit.AuditService;
 import com.muhjain.school.common.ApiException;
 import com.muhjain.school.common.NameKeys;
 import com.muhjain.school.common.PhoneNumbers;
@@ -22,17 +25,22 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class GuardianService {
 
+	static final String ENTITY = "STUDENT";
+
 	private final StudentRepository students;
 
 	private final GuardianRepository guardians;
 
 	private final StudentGuardianRepository links;
 
+	private final AuditService auditService;
+
 	public GuardianService(StudentRepository students, GuardianRepository guardians,
-			StudentGuardianRepository links) {
+			StudentGuardianRepository links, AuditService auditService) {
 		this.students = students;
 		this.guardians = guardians;
 		this.links = links;
+		this.auditService = auditService;
 	}
 
 	/**
@@ -61,6 +69,91 @@ public class GuardianService {
 		boolean first = links.findByStudentIdOrderByIdAsc(studentId).isEmpty();
 		StudentGuardian link = links.save(new StudentGuardian(studentId, guardian.getId(), relation, smsEnabled, first));
 		return GuardianResponse.of(guardian, link);
+	}
+
+	/**
+	 * Rule 6 for the "add a phone" screen: {@link #linkPhone} plus a line in the change history.
+	 * Example: "Phone +91XXXXXX0208 added (Grandfather)".
+	 *
+	 * @throws ApiException 404 NOT_FOUND, 400 VALIDATION, 409 PHONE_ALREADY_LINKED
+	 */
+	@Transactional
+	public GuardianResponse add(Long studentId, GuardianRequest request) {
+		GuardianResponse saved = linkPhone(studentId, request.name(), request.phone(), request.relation(),
+				request.sms());
+		auditService.record(ENTITY, studentId, AuditAction.UPDATED,
+				"Phone " + PhoneNumbers.mask(saved.phone()) + " added (" + saved.relation().label() + ")",
+				Map.of("phone", PhoneNumbers.mask(saved.phone()), "relation", saved.relation().name()));
+		return saved;
+	}
+
+	/**
+	 * Rule 9: change name, relation or SMS of one phone of one child. The name belongs to the phone, so a new name
+	 * shows for every child who uses the number. SMS on or off is for this child only.
+	 * Example: grandfather's phone, SMS on → off for Siya. Aryan keeps SMS on.
+	 *
+	 * @throws ApiException 404 NOT_FOUND (student, or the phone is not saved for this child)
+	 */
+	@Transactional
+	public GuardianResponse update(Long studentId, Long guardianId, UpdateGuardianRequest request) {
+		StudentGuardian link = findLink(studentId, guardianId);
+		Guardian guardian = guardians.findById(guardianId).orElseThrow();
+		String masked = PhoneNumbers.mask(guardian.getPhone());
+		String name = tidyName(request.name());
+		AuditChanges changes = new AuditChanges()
+			.field("Name of " + masked, "name", guardian.getName(), name)
+			.field("Relation of " + masked, "relation", link.getRelation().label(), request.relation().label())
+			.field("SMS for " + masked, "smsEnabled", onOff(link.isSmsEnabled()), onOff(request.smsEnabled()));
+		guardian.setName(name);
+		link.setRelation(request.relation());
+		link.setSmsEnabled(request.smsEnabled());
+		guardians.save(guardian);
+		links.save(link);
+		if (!changes.isEmpty()) {
+			auditService.record(ENTITY, studentId, AuditAction.UPDATED, changes.summary(), changes.details());
+		}
+		return GuardianResponse.of(guardian, link);
+	}
+
+	/**
+	 * Rules 7 and 8. Removes the link between this child and the phone. The last phone of a child cannot go.
+	 * The guardian row stays, because another child may use it (and a later message log may point at it).
+	 * If the removed phone was the primary one, the oldest remaining phone becomes primary.
+	 *
+	 * @throws ApiException 404 NOT_FOUND, 409 LAST_GUARDIAN
+	 */
+	@Transactional
+	public void remove(Long studentId, Long guardianId) {
+		StudentGuardian link = findLink(studentId, guardianId);
+		List<StudentGuardian> all = links.findByStudentIdOrderByIdAsc(studentId);
+		if (all.size() <= 1) {
+			throw new ApiException(HttpStatus.CONFLICT, "LAST_GUARDIAN",
+					"This is the last phone number of the child. Add another one first.");
+		}
+		Guardian guardian = guardians.findById(guardianId).orElseThrow();
+		links.delete(link);
+		if (link.isPrimary()) {
+			all.stream().filter(other -> !other.getId().equals(link.getId())).findFirst().ifPresent(next -> {
+				next.setPrimary(true);
+				links.save(next);
+			});
+		}
+		auditService.record(ENTITY, studentId, AuditAction.UPDATED,
+				"Phone " + PhoneNumbers.mask(guardian.getPhone()) + " removed (" + link.getRelation().label() + ")",
+				Map.of("phone", PhoneNumbers.mask(guardian.getPhone()), "relation", link.getRelation().name()));
+	}
+
+	private StudentGuardian findLink(Long studentId, Long guardianId) {
+		if (!students.existsById(studentId)) {
+			throw new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "This student does not exist.");
+		}
+		return links.findByStudentIdAndGuardianId(studentId, guardianId)
+			.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND",
+					"This phone number is not saved for this child."));
+	}
+
+	private static String onOff(boolean on) {
+		return on ? "on" : "off";
 	}
 
 	/** The phones of one child, oldest link first. The primary phone is the one with {@code primary = true}. */

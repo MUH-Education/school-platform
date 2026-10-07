@@ -1,11 +1,15 @@
 package com.muhjain.school.student;
 
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -18,14 +22,40 @@ public class StudentController {
 
 	private final StudentService studentService;
 
-	public StudentController(StudentService studentService) {
+	private final GuardianService guardianService;
+
+	public StudentController(StudentService studentService, GuardianService guardianService) {
 		this.studentService = studentService;
+		this.guardianService = guardianService;
 	}
 
 	@PutMapping("/{id}")
 	@PreAuthorize("hasAuthority('STUDENTS_EDIT')")
 	public StudentResponse update(@PathVariable Long id, @Valid @RequestBody UpdateStudentRequest request) {
 		return studentService.update(id, request);
+	}
+
+	/** Add a phone number. A number that other children already use is reused, not copied. */
+	@PostMapping("/{id}/guardians")
+	@PreAuthorize("hasAuthority('STUDENTS_EDIT')")
+	@ResponseStatus(HttpStatus.CREATED)
+	public GuardianResponse addGuardian(@PathVariable Long id, @Valid @RequestBody GuardianRequest request) {
+		return guardianService.add(id, request);
+	}
+
+	@PutMapping("/{id}/guardians/{guardianId}")
+	@PreAuthorize("hasAuthority('STUDENTS_EDIT')")
+	public GuardianResponse updateGuardian(@PathVariable Long id, @PathVariable Long guardianId,
+			@Valid @RequestBody UpdateGuardianRequest request) {
+		return guardianService.update(id, guardianId, request);
+	}
+
+	/** Removes the link, not the phone. 409 LAST_GUARDIAN if it is the last phone of the child. */
+	@DeleteMapping("/{id}/guardians/{guardianId}")
+	@PreAuthorize("hasAuthority('STUDENTS_EDIT')")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void removeGuardian(@PathVariable Long id, @PathVariable Long guardianId) {
+		guardianService.remove(id, guardianId);
 	}
 
 }
