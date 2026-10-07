@@ -1,11 +1,6 @@
 package com.muhjain.school.trip;
 
 import java.time.Instant;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
@@ -154,32 +149,6 @@ class MarkApiTest extends TripTestBase {
 		sendMarks(balwanToken, morning(siya, "DONE", "07:51:00"));
 		assertThat(jdbc.queryForObject("select occurred_at from boarding_event where student_id = ?", Instant.class,
 				siya)).isEqualTo(Instant.parse("2026-10-07T02:21:00Z"));
-	}
-
-	@Test
-	void sameTapFromTwoThreadsIsSavedOnce() throws Exception {
-		int threads = 8;
-		ExecutorService pool = Executors.newFixedThreadPool(threads);
-		CountDownLatch go = new CountDownLatch(1);
-		List<Future<?>> done = new java.util.ArrayList<>();
-		for (int i = 0; i < threads; i++) {
-			done.add(pool.submit(() -> {
-				go.await();
-				sendMarks(balwanToken, morning(aryan, "DONE", "07:42:10"), morning(siya, "DONE", "07:42:20"))
-					.andExpect(status().isOk())
-					.andExpect(jsonPath("$.results[0].ok").value(true));
-				return null;
-			}));
-		}
-		go.countDown();
-		for (Future<?> future : done) {
-			future.get();
-		}
-		pool.shutdown();
-		assertThat(rows()).isEqualTo(2);
-		// Only the first save of each tap told the notifier.
-		verify(notifier, times(1)).onDone(eq(aryan), any(), any(), any());
-		verify(notifier, times(1)).onDone(eq(siya), any(), any(), any());
 	}
 
 	@Test

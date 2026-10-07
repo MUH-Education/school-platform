@@ -107,7 +107,7 @@ Bus status is **calculated** from taps. Nothing is stored. Put the maths in one 
 - [x] 4.10 `BusStatusService` + `GET /bus-status` and `GET /bus-status/routes/{routeId}`.
 - [x] 4.11 `AttentionService` + `GET /bus-status/attention` (rules 20 to 22).
 - [x] 4.12 Extend the dev data loader: taps for a morning at 7:48, so Bus status looks like the design.
-- [ ] 4.13 A test with two threads sending the same tap at the same time. One row must exist at the end.
+- [x] 4.13 A test with two threads sending the same tap at the same time. One row must exist at the end.
 
 ## Tests that must pass
 

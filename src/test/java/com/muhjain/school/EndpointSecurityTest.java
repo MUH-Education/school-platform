@@ -49,6 +49,9 @@ class EndpointSecurityTest extends AbstractIntegrationTest {
 
 	private static final String DOCUMENTS_BODY = "{\"insurance\":\"2026-10-28\"}";
 
+	private static final String MARKS_BODY = "{\"marks\":[{\"studentId\":1,\"eventType\":\"BOARDED_MORNING\","
+			+ "\"outcome\":\"DONE\",\"serviceDate\":\"2026-10-07\",\"occurredAt\":\"2026-10-07T07:42:10+05:30\"}]}";
+
 	/** method, URL, body, a role WITHOUT the permission (null = any login is enough) */
 	static Stream<Arguments> protectedEndpoints() {
 		return Stream.of(
@@ -83,7 +86,15 @@ class EndpointSecurityTest extends AbstractIntegrationTest {
 				Arguments.of("GET", "/api/v1/staff", null, Role.ADMISSIONS_DESK),
 				Arguments.of("POST", "/api/v1/staff", STAFF_BODY, Role.OFFICE_ADMIN),
 				Arguments.of("PUT", "/api/v1/staff/1", STAFF_UPDATE_BODY, Role.OFFICE_ADMIN),
-				Arguments.of("DELETE", "/api/v1/staff/1", null, Role.OFFICE_ADMIN));
+				Arguments.of("DELETE", "/api/v1/staff/1", null, Role.OFFICE_ADMIN),
+				// Phase 4: trips need TRIPS_RECORD or TRIPS_RECORD_ANY (not the admissions desk). my-route needs
+				// TRIPS_RECORD (not the office admin). Bus status needs BUS_STATUS_VIEW (not an attendant).
+				Arguments.of("GET", "/api/v1/trips/my-route", null, Role.OFFICE_ADMIN),
+				Arguments.of("GET", "/api/v1/trips/manifest", null, Role.ADMISSIONS_DESK),
+				Arguments.of("POST", "/api/v1/trips/marks", MARKS_BODY, Role.ADMISSIONS_DESK),
+				Arguments.of("GET", "/api/v1/bus-status", null, Role.ATTENDANT),
+				Arguments.of("GET", "/api/v1/bus-status/routes/1", null, Role.ATTENDANT),
+				Arguments.of("GET", "/api/v1/bus-status/attention", null, Role.ATTENDANT));
 	}
 
 	@ParameterizedTest(name = "{0} {1} without token → 401")
