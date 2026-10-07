@@ -100,7 +100,7 @@ Bus status is **calculated** from taps. Nothing is stored. Put the maths in one 
 - [x] 4.3 `TripAccess`: one class that answers "may this user touch this route on this date?" (rules 1 to 3). Every trip endpoint goes through it. Unit test it.
 - [x] 4.4 `BoardingNotifier` interface + `NoOpBoardingNotifier`.
 - [x] 4.5 `MarkService.apply(user, marks)` (rules 4 to 10). Write the tests first.
-- [ ] 4.6 `POST /trips/marks`.
+- [x] 4.6 `POST /trips/marks`.
 - [ ] 4.7 `ManifestService` + `GET /trips/manifest` (rules 11 to 13).
 - [ ] 4.8 `GET /trips/my-route`: the attendant's route and the count for each of the four jobs.
 - [ ] 4.9 `BusStatusCalculator` (pure Java) with tests for every state, using the examples in rule 16.
