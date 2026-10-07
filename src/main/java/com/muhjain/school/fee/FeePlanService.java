@@ -163,6 +163,12 @@ public class FeePlanService {
 				Map.of("busFeeAdded", amount, "busFee", plan.getBusFee(), "from", startsOn.toString()));
 	}
 
+	/** True when any child has a plan in the current session. The dev data uses it to load once. */
+	@Transactional(readOnly = true)
+	public boolean anyPlanExists() {
+		return !plans.findBySessionId(sessions.current().getId()).isEmpty();
+	}
+
 	/** The plan of the current session, if the child has one. */
 	@Transactional(readOnly = true)
 	public Optional<FeePlan> currentPlan(Long studentId) {
