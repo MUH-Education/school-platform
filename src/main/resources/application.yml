@@ -35,6 +35,7 @@ app:
   messaging:
     sms-provider: log              # log | msg91 | ...
     whatsapp-provider: log
+    worker-enabled: true           # the OutboxWorker runs every 5 seconds. Tests turn it off and call runOnce().
   photos:
     storage: local                 # local = a folder on this machine. prod: S3PhotoStorage comes in Phase 9.
     folder: ./data/photos          # the folder is in .gitignore
@@ -70,6 +71,8 @@ app:
     channels: log
     # TEST ONLY. Not secret. prod has no default and needs APP_OTP_SECRET.
     hash-secret: ${APP_OTP_SECRET:dev-only-otp-secret-not-for-production-0001}
+  messaging:
+    worker-enabled: false          # tests call OutboxWorker.runOnce() by hand
 
 ---
 # prod: the server.
