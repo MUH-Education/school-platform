@@ -3,6 +3,7 @@ package com.muhjain.school.staff;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 import com.muhjain.school.common.ApiException;
 import com.muhjain.school.common.NameKeys;
@@ -25,26 +26,33 @@ public class StaffService {
 
 	private final VehicleService vehicleService;
 
+	private final AssignmentService assignmentService;
+
 	private final Clock clock;
 
 	public StaffService(StaffRepository staff, VehicleAssignmentRepository assignments,
-			VehicleService vehicleService, Clock clock) {
+			VehicleService vehicleService, AssignmentService assignmentService, Clock clock) {
 		this.staff = staff;
 		this.assignments = assignments;
 		this.vehicleService = vehicleService;
+		this.assignmentService = assignmentService;
 		this.clock = clock;
 	}
 
 	@Transactional(readOnly = true)
 	public List<StaffResponse> list() {
 		LocalDate today = today();
-		return staff.findAllByOrderByIdAsc().stream().map(s -> StaffResponse.of(s, today)).toList();
+		Map<Long, Placement> places = assignmentService.placesOn(today);
+		return staff.findAllByOrderByIdAsc()
+			.stream()
+			.map(s -> StaffResponse.of(s, today, places.get(s.getId())))
+			.toList();
 	}
 
 	/** @throws ApiException 404 NOT_FOUND */
 	@Transactional(readOnly = true)
 	public StaffResponse get(Long id) {
-		return StaffResponse.of(find(id), today());
+		return toResponse(find(id));
 	}
 
 	/**
@@ -57,7 +65,7 @@ public class StaffService {
 		Staff person = new Staff(NameKeys.tidy(request.name()), PhoneNumbers.normalize(request.phone()),
 				request.staffType());
 		applyLicence(person, request.licenceNo(), request.licenceValidTill());
-		return StaffResponse.of(staff.saveAndFlush(person), today());
+		return toResponse(staff.saveAndFlush(person));
 	}
 
 	/**
@@ -81,7 +89,7 @@ public class StaffService {
 		person.setStaffType(request.staffType());
 		applyLicence(person, request.licenceNo(), request.licenceValidTill());
 		person.setActive(request.active());
-		return StaffResponse.of(staff.saveAndFlush(person), today());
+		return toResponse(staff.saveAndFlush(person));
 	}
 
 	/**
@@ -97,6 +105,12 @@ public class StaffService {
 			checkNotOnAVehicle(person);
 			person.setActive(false);
 		}
+	}
+
+	// One person with where they work today.
+	private StaffResponse toResponse(Staff person) {
+		LocalDate today = today();
+		return StaffResponse.of(person, today, assignmentService.placeOf(person.getId(), today));
 	}
 
 	/** The school day, in the school zone. */

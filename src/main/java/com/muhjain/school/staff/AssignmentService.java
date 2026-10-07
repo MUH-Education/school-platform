@@ -72,6 +72,29 @@ public class AssignmentService {
 	}
 
 	/**
+	 * Where each person works on one day. A person who is on no vehicle that day is not in the map.
+	 * A replaced permanent person is not on the vehicle that day either (rule 9).
+	 */
+	@Transactional(readOnly = true)
+	public Map<Long, Placement> placesOn(LocalDate day) {
+		Map<Long, List<VehicleAssignment>> byVehicle = assignments.coveringDay(day)
+			.stream()
+			.collect(Collectors.groupingBy(VehicleAssignment::getVehicleId));
+		Map<Long, String> vehicleNames = vehicleService.names(byVehicle.keySet());
+		Map<Long, Placement> places = new HashMap<>();
+		byVehicle.forEach((vehicleId, rows) -> AssignmentRules.crew(rows, day)
+			.forEach((duty, row) -> places.put(row.getStaffId(),
+					new Placement(vehicleId, vehicleNames.get(vehicleId), duty, row.isTemporary()))));
+		return places;
+	}
+
+	/** Same for one person. */
+	@Transactional(readOnly = true)
+	public Placement placeOf(Long staffId, LocalDate day) {
+		return placesOn(day).get(staffId);
+	}
+
+	/**
 	 * Rules 6 to 8 and 10 to 12: put a person on a duty of a vehicle.
 	 * <ul>
 	 * <li>Permanent (rule 7): the old permanent row is closed on the day before {@code fromDate}. The new row has

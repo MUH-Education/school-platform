@@ -46,6 +46,10 @@ Details: `docs/04-login-otp-jwt.md`.
 | `PUT /staff/{id}` | `VEHICLES_EDIT` | Change a person |
 | `DELETE /staff/{id}` | `VEHICLES_EDIT` | Turn off. 409 if still on a vehicle. |
 
+`GET /vehicles` and `GET /vehicles/{id}` give `driver`, `attendant` and `helper` (each a person or null). `GET /staff` gives `worksOn` (the vehicle and duty today, or null). Both answer for today. `GET /vehicles` and `GET /vehicles/{id}` also take an optional `?date=2026-10-14` and then show the people of that day. A person with `"temporary": true` is a replacement.
+
+`PUT /vehicles/{id}` and `PUT /staff/{id}` take the whole object, with `active`. `active: false` is the same as `DELETE`, `active: true` turns it on again. `PUT /vehicles/{id}/documents` takes the four dates: `{ "fitness": "2027-01-10", "insurance": "2026-10-28", "permit": null, "puc": null }`. A date that is null or left out removes that paper.
+
 Change a driver:
 
 ```json
@@ -60,7 +64,9 @@ POST /api/v1/vehicles/4/assignments
 }
 ```
 
-409 `STAFF_BUSY` if that person is on another vehicle on those days. The message names the vehicle: "Rajpal drives Van 1 on these days."
+A permanent change has no `toDate`: `{ "duty": "DRIVER", "staffId": 22, "fromDate": "2026-11-01" }`. The old permanent row ends on 31 Oct.
+
+Errors (all 409): `STAFF_BUSY` if that person is on a vehicle on those days, the message names it: "Rajpal drives Van 1 on these days." `WRONG_STAFF_TYPE` (a DRIVER duty needs a DRIVER), `LICENCE_ENDED`, `STAFF_INACTIVE`, `VEHICLE_INACTIVE`, `FROM_DATE_TOO_EARLY` (a permanent change must start after the current person started), `TEMPORARY_OVERLAP` (two replacements for the same duty on the same day).
 
 ## Routes — Phase 2
 

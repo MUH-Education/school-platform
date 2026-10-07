@@ -100,6 +100,9 @@ Add a line each time code needed a choice the docs did not cover.
 | 7 Oct 2026 | 2 | An assignment row cannot be ended without a replacement (there is no "remove" URL). One vehicle has one person per duty. | Phase 2 doc has only "change". Known limit. |
 | 7 Oct 2026 | 2 | A person's `staffType` cannot change after they have any assignment row (409 `STAFF_TYPE_IN_USE`). | Old rows would say "driver" about someone who is no driver. |
 | 7 Oct 2026 | 2 | Date text in messages: "12 Oct 2026", and for a range "12 to 16 Oct" (helper `DayText` in `common`). | The example in task 2.15 uses "12 to 16 Oct". |
+| 7 Oct 2026 | 2 | `GET /vehicles` and `GET /vehicles/{id}` take an optional `?date=2026-10-14` and show the people of that day (default today). Papers are always judged against today. | The "Done when" check needs to look at a day inside and outside a leave. Phase 4 uses `?date=` in the same way. |
+| 7 Oct 2026 | 2 | Services are layered so that no two services need each other. `VehicleService` is the low layer. `AssignmentService`, `StaffService` and `RouteService` call it. `VehicleOverviewService` (in `vehicle`) sits on top and adds people and the route. The vehicle controller calls only `VehicleOverviewService`. | Spring does not allow two beans that need each other. Package-by-feature rule from CLAUDE.md is kept: only services call services. |
+| 7 Oct 2026 | 2 | `GET /staff` answers `worksOn` (vehicle, duty, temporary) for today. A permanent person who is replaced that day has `worksOn: null`. | The API doc says "with where they work today". |
 
 ## E. What changed from the first plan document
 
