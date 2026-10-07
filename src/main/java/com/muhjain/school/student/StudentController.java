@@ -1,9 +1,13 @@
 package com.muhjain.school.student;
 
+import java.util.List;
+
+import com.muhjain.school.auth.CurrentUser;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -24,9 +28,16 @@ public class StudentController {
 
 	private final GuardianService guardianService;
 
-	public StudentController(StudentService studentService, GuardianService guardianService) {
+	private final TransportEnrolmentService transportService;
+
+	private final CurrentUser currentUser;
+
+	public StudentController(StudentService studentService, GuardianService guardianService,
+			TransportEnrolmentService transportService, CurrentUser currentUser) {
 		this.studentService = studentService;
 		this.guardianService = guardianService;
+		this.transportService = transportService;
+		this.currentUser = currentUser;
 	}
 
 	@PutMapping("/{id}")
@@ -56,6 +67,23 @@ public class StudentController {
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void removeGuardian(@PathVariable Long id, @PathVariable Long guardianId) {
 		guardianService.remove(id, guardianId);
+	}
+
+	/** The bus history of the child, newest first. */
+	@GetMapping("/{id}/transport")
+	@PreAuthorize("hasAuthority('STUDENTS_VIEW')")
+	public List<EnrolmentResponse> transport(@PathVariable Long id) {
+		return transportService.history(id);
+	}
+
+	/**
+	 * Start the bus, change route or stop, or stop the bus. The answer has a {@code warning} when the route is over
+	 * its seats. The child is saved anyway: the school decides, the software only warns.
+	 */
+	@PutMapping("/{id}/transport")
+	@PreAuthorize("hasAuthority('STUDENTS_EDIT')")
+	public TransportSaveResponse saveTransport(@PathVariable Long id, @Valid @RequestBody TransportRequest request) {
+		return transportService.save(id, request, currentUser.id());
 	}
 
 }

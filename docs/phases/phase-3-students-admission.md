@@ -96,7 +96,7 @@ All under `/api/v1`: `/students` (list), `/students/{id}`, `/students/{id}/guard
 - [x] 3.6 `AdmissionService` + `POST /admissions` (rules 1 to 4).
 - [x] 3.7 `StudentService.update` + `PUT /students/{id}` with audit summaries (rules 15, 16).
 - [x] 3.8 Guardian endpoints: add, change, remove (rules 6 to 9).
-- [ ] 3.9 `PUT /students/{id}/transport` and `GET /students/{id}/transport`.
+- [x] 3.9 `PUT /students/{id}/transport` and `GET /students/{id}/transport`.
 - [ ] 3.10 `PhotoStorage` interface, `LocalFolderPhotoStorage`, the three photo endpoints (rules 18 to 21).
 - [ ] 3.11 `GET /students` with filters and paging (rules 22, 23).
 - [ ] 3.12 `GET /students/{id}` (full profile) and `GET /students/{id}/history`.
