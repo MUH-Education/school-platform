@@ -60,4 +60,28 @@ public class AnalyticsController {
 			.paymentByOccupation(StudentFilter.of(sessionId, className, village, routeId, bus, occupation, feeStatus));
 	}
 
+	/** Children in each of the 15 classes, in school order, also classes with 0. */
+	@GetMapping("/students-by-class")
+	@PreAuthorize("hasAuthority('ANALYTICS_VIEW')")
+	public StudentsByClassResponse studentsByClass(@RequestParam(required = false) Long sessionId,
+			@RequestParam(required = false) String className, @RequestParam(required = false) String village,
+			@RequestParam(required = false) Long routeId, @RequestParam(required = false) BusFilter bus,
+			@RequestParam(required = false) FatherOccupation occupation,
+			@RequestParam(required = false) FeeStatus feeStatus) {
+		return analytics
+			.studentsByClass(StudentFilter.of(sessionId, className, village, routeId, bus, occupation, feeStatus));
+	}
+
+	/** Children per village, biggest first: the top 8 and then "others". */
+	@GetMapping("/students-by-village")
+	@PreAuthorize("hasAuthority('ANALYTICS_VIEW')")
+	public StudentsByVillageResponse studentsByVillage(@RequestParam(required = false) Long sessionId,
+			@RequestParam(required = false) String className, @RequestParam(required = false) String village,
+			@RequestParam(required = false) Long routeId, @RequestParam(required = false) BusFilter bus,
+			@RequestParam(required = false) FatherOccupation occupation,
+			@RequestParam(required = false) FeeStatus feeStatus) {
+		return analytics
+			.studentsByVillage(StudentFilter.of(sessionId, className, village, routeId, bus, occupation, feeStatus));
+	}
+
 }

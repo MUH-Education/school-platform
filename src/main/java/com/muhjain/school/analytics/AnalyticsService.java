@@ -4,12 +4,17 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.muhjain.school.fee.FeeHead;
 import com.muhjain.school.fee.FeeStatusCalculator.CoveredDue;
 import com.muhjain.school.fee.FeeStatus;
 import com.muhjain.school.fee.SessionResponse;
+import com.muhjain.school.student.ClassNames;
 import com.muhjain.school.student.FatherOccupation;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +25,8 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class AnalyticsService {
+
+	private static final int TOP_VILLAGES = 8;
 
 	private final AnalyticsBase base;
 
@@ -69,6 +76,42 @@ public class AnalyticsService {
 					countOf(of, FeeStatus.DEFAULTED), countOf(of, null), of.size()));
 		}
 		return new PaymentByOccupationResponse(session.id(), session.name(), rows);
+	}
+
+	/** Rule 7. All 15 classes in school order, also those with 0. */
+	@Transactional(readOnly = true)
+	public StudentsByClassResponse studentsByClass(StudentFilter filter) {
+		SessionResponse session = base.session(filter);
+		List<AnalyticsStudent> students = base.students(filter);
+		Map<String, Long> counts = students.stream()
+			.collect(Collectors.groupingBy(AnalyticsStudent::className, Collectors.counting()));
+		List<ClassCount> classes = ClassNames.ALL.stream()
+			.map(c -> new ClassCount(c, counts.getOrDefault(c, 0L).intValue()))
+			.toList();
+		return new StudentsByClassResponse(session.id(), session.name(), students.size(), classes);
+	}
+
+	/**
+	 * Rule 8. Villages are matched without caring for capital letters ("jakhal" and "Jakhal" are one village); the
+	 * first spelling in name order is shown. Biggest first; the same size → by name.
+	 */
+	@Transactional(readOnly = true)
+	public StudentsByVillageResponse studentsByVillage(StudentFilter filter) {
+		SessionResponse session = base.session(filter);
+		List<AnalyticsStudent> students = base.students(filter);
+		Map<String, List<AnalyticsStudent>> byVillage = students.stream()
+			.collect(Collectors.groupingBy(s -> s.village().strip().toLowerCase(Locale.ROOT)));
+		List<VillageCount> all = byVillage.values()
+			.stream()
+			.map(list -> new VillageCount(list.get(0).village().strip(), list.size()))
+			.sorted(Comparator.comparingInt(VillageCount::students)
+				.reversed()
+				.thenComparing(VillageCount::village, String.CASE_INSENSITIVE_ORDER))
+			.toList();
+		List<VillageCount> top = all.subList(0, Math.min(TOP_VILLAGES, all.size()));
+		List<VillageCount> rest = all.subList(top.size(), all.size());
+		return new StudentsByVillageResponse(session.id(), session.name(), students.size(), top,
+				new StudentsByVillageResponse.Others(rest.size(), rest.stream().mapToInt(VillageCount::students).sum()));
 	}
 
 	// status null = the children without a fee plan

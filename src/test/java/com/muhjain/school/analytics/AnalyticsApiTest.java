@@ -122,4 +122,73 @@ class AnalyticsApiTest extends AnalyticsTestBase {
 			.andExpect(jsonPath("$.occupations[0].total").value(0));
 	}
 
+	@Test
+	void classesWithNoStudentsAreReturnedAsZero() throws Exception {
+		get(owner, URL + "/students-by-class").andExpect(status().isOk())
+			.andExpect(jsonPath("$.total").value(12))
+			.andExpect(jsonPath("$.classes.length()").value(15))
+			.andExpect(jsonPath("$.classes[0].className").value("Nursery"))
+			.andExpect(jsonPath("$.classes[0].students").value(0))
+			.andExpect(jsonPath("$.classes[1].className").value("LKG"))
+			.andExpect(jsonPath("$.classes[1].students").value(2))
+			.andExpect(jsonPath("$.classes[?(@.className=='1')].students").value(2))
+			.andExpect(jsonPath("$.classes[?(@.className=='3')].students").value(2))
+			.andExpect(jsonPath("$.classes[?(@.className=='10')].students").value(1))
+			.andExpect(jsonPath("$.classes[14].className").value("12"))
+			.andExpect(jsonPath("$.classes[14].students").value(0));
+		// A group filter keeps all 15 rows; the classes outside the group are 0.
+		get(owner, URL + "/students-by-class?className=1-3").andExpect(status().isOk())
+			.andExpect(jsonPath("$.total").value(6))
+			.andExpect(jsonPath("$.classes.length()").value(15))
+			.andExpect(jsonPath("$.classes[1].students").value(0));
+	}
+
+	@Test
+	void villagesAreBiggestFirst() throws Exception {
+		get(owner, URL + "/students-by-village").andExpect(status().isOk())
+			.andExpect(jsonPath("$.total").value(12))
+			.andExpect(jsonPath("$.villages.length()").value(4))
+			.andExpect(jsonPath("$.villages[0].village").value("Jakhal"))
+			.andExpect(jsonPath("$.villages[0].students").value(4))
+			.andExpect(jsonPath("$.villages[1].village").value("Kalwa"))
+			.andExpect(jsonPath("$.villages[2].village").value("Tohana"))
+			.andExpect(jsonPath("$.villages[3].village").value("Dhand"))
+			.andExpect(jsonPath("$.others.villages").value(0))
+			.andExpect(jsonPath("$.others.students").value(0));
+	}
+
+	@Test
+	void villagesBeyondTopEightAreGroupedAsOthers() throws Exception {
+		for (String v : new String[] { "Alpur", "Badli", "Chamar", "Dabra", "Eral", "Fatehpur" }) {
+			plainChild("Kid " + v, "4", v);
+		}
+		// 10 villages: Jakhal 4, Kalwa 3, Tohana 3, Dhand 2, then six with 1 child (by name). Top 8 ends at Dabra.
+		get(owner, URL + "/students-by-village").andExpect(status().isOk())
+			.andExpect(jsonPath("$.total").value(18))
+			.andExpect(jsonPath("$.villages.length()").value(8))
+			.andExpect(jsonPath("$.villages[7].village").value("Dabra"))
+			.andExpect(jsonPath("$.others.villages").value(2))
+			.andExpect(jsonPath("$.others.students").value(2));
+	}
+
+	@Test
+	void villageSpellingWithOtherCapitalsIsOneVillage() throws Exception {
+		plainChild("Kid One", "4", "jakhal");
+		get(owner, URL + "/students-by-village").andExpect(status().isOk())
+			.andExpect(jsonPath("$.villages[0].village").value("Jakhal"))
+			.andExpect(jsonPath("$.villages[0].students").value(5));
+	}
+
+	@Test
+	void villageFilterChangesEveryEndpointTheSameWay() throws Exception {
+		String f = "?village=Jakhal";
+		get(owner, URL + "/summary" + f).andExpect(jsonPath("$.students").value(4));
+		get(owner, URL + "/students-by-class" + f).andExpect(jsonPath("$.total").value(4));
+		get(owner, URL + "/students-by-village" + f).andExpect(jsonPath("$.total").value(4))
+			.andExpect(jsonPath("$.villages.length()").value(1));
+		get(owner, URL + "/payment-by-occupation" + f).andExpect(jsonPath("$.occupations[?(@.total>0)].total").value(
+				org.hamcrest.Matchers.contains(2, 1, 1)));
+		get(owner, URL + "/fee-collection-by-month" + f).andExpect(jsonPath("$.months[0].school.due").value(4000));
+	}
+
 }
