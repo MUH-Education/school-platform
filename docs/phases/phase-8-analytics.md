@@ -61,7 +61,7 @@ None. This phase adds no table.
 - [x] 8.6 Students by class and by village (rules 7, 8).
 - [x] 8.7 List with paging and sorting (rule 9).
 - [x] 8.8 CSV download with audit (rules 10, 11).
-- [ ] 8.9 If question C4 is answered, add the "student average" endpoint the owner wants. If not, skip.
+- [x] 8.9 Skipped. The owner answered C4: "student average graph" means students in each class, which is `/analytics/students-by-class` (task 8.6). No new endpoint.
 
 ## Tests that must pass
 
