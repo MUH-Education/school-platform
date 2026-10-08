@@ -5,11 +5,15 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.muhjain.school.audit.AuditAction;
+import com.muhjain.school.audit.AuditService;
+import com.muhjain.school.auth.CurrentUser;
 import com.muhjain.school.common.ApiException;
 import com.muhjain.school.common.PageResponse;
 import com.muhjain.school.fee.FeeHead;
@@ -32,12 +36,20 @@ public class AnalyticsService {
 
 	private static final int MAX_PAGE_SIZE = 100;
 
+	static final String AUDIT_ENTITY = "ANALYTICS_CSV";
+
 	private final AnalyticsBase base;
+
+	private final AuditService audit;
+
+	private final CurrentUser currentUser;
 
 	private final Clock clock;
 
-	public AnalyticsService(AnalyticsBase base, Clock clock) {
+	public AnalyticsService(AnalyticsBase base, AuditService audit, CurrentUser currentUser, Clock clock) {
 		this.base = base;
+		this.audit = audit;
+		this.currentUser = currentUser;
 		this.clock = clock;
 	}
 
@@ -144,6 +156,39 @@ public class AnalyticsService {
 	@Transactional(readOnly = true)
 	public List<AnalyticsStudentItem> allStudents(StudentFilter filter, String sort) {
 		return rows(filter, order(sort));
+	}
+
+	/**
+	 * Rules 10 and 11. The same list as {@link #students} but all rows, as a CSV file. Each download writes one
+	 * {@code audit_log} row in the same transaction, so a file never leaves without a record.
+	 * <p>
+	 * {@code audit_log.action} knows only CREATED, UPDATED, DELETED and LOGIN and there is no migration in this phase,
+	 * so the row is {@code ANALYTICS_CSV / CREATED}, its entity id is the user who downloaded, and {@code details}
+	 * holds the filters. Example: "Students CSV downloaded: 12 rows" by Rishabh, {@code {"village":"Jakhal"}}.
+	 */
+	@Transactional
+	public CsvFile csv(StudentFilter filter, String sort) {
+		SessionResponse session = base.session(filter);
+		List<AnalyticsStudentItem> rows = rows(filter, order(sort));
+		Long userId = currentUser.id();
+		Map<String, Object> details = new LinkedHashMap<>();
+		details.put("sessionId", session.id());
+		put(details, "className", (filter.classNames() == null) ? null : String.join(",", filter.classNames()));
+		put(details, "village", filter.village());
+		put(details, "routeId", filter.routeId());
+		put(details, "bus", filter.bus());
+		put(details, "occupation", filter.occupation());
+		put(details, "feeStatus", filter.feeStatus());
+		details.put("rows", rows.size());
+		audit.record(AUDIT_ENTITY, userId, AuditAction.CREATED,
+				"Students CSV downloaded: " + rows.size() + " rows, school year " + session.name(), details);
+		return new CsvFile("students-" + LocalDate.now(clock) + ".csv", AnalyticsCsv.write(rows));
+	}
+
+	private static void put(Map<String, Object> details, String key, Object value) {
+		if (value != null) {
+			details.put(key, (value instanceof Enum<?> e) ? e.name() : value);
+		}
 	}
 
 	private List<AnalyticsStudentItem> rows(StudentFilter filter, Comparator<AnalyticsStudentItem> order) {

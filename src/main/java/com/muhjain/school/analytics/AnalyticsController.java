@@ -4,6 +4,9 @@ import com.muhjain.school.common.PageResponse;
 import com.muhjain.school.fee.FeeStatus;
 import com.muhjain.school.student.BusFilter;
 import com.muhjain.school.student.FatherOccupation;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -99,6 +102,25 @@ public class AnalyticsController {
 			@RequestParam(defaultValue = "25") int size, @RequestParam(required = false) String sort) {
 		return analytics.students(StudentFilter.of(sessionId, className, village, routeId, bus, occupation, feeStatus),
 				page, size, sort);
+	}
+
+	/**
+	 * The same list as a file for Excel: all matching rows (not one page), header first, UTF-8 with BOM. Every
+	 * download is written to the audit log.
+	 */
+	@GetMapping(value = "/students.csv", produces = "text/csv;charset=UTF-8")
+	@PreAuthorize("hasAuthority('ANALYTICS_VIEW')")
+	public ResponseEntity<byte[]> studentsCsv(@RequestParam(required = false) Long sessionId,
+			@RequestParam(required = false) String className, @RequestParam(required = false) String village,
+			@RequestParam(required = false) Long routeId, @RequestParam(required = false) BusFilter bus,
+			@RequestParam(required = false) FatherOccupation occupation,
+			@RequestParam(required = false) FeeStatus feeStatus, @RequestParam(required = false) String sort) {
+		CsvFile file = analytics.csv(StudentFilter.of(sessionId, className, village, routeId, bus, occupation, feeStatus),
+				sort);
+		return ResponseEntity.ok()
+			.contentType(MediaType.parseMediaType("text/csv;charset=UTF-8"))
+			.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.fileName() + "\"")
+			.body(file.content());
 	}
 
 }

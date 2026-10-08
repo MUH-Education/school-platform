@@ -60,7 +60,7 @@ None. This phase adds no table.
 - [x] 8.5 Payment by occupation (rule 6).
 - [x] 8.6 Students by class and by village (rules 7, 8).
 - [x] 8.7 List with paging and sorting (rule 9).
-- [ ] 8.8 CSV download with audit (rules 10, 11).
+- [x] 8.8 CSV download with audit (rules 10, 11).
 - [ ] 8.9 If question C4 is answered, add the "student average" endpoint the owner wants. If not, skip.
 
 ## Tests that must pass
