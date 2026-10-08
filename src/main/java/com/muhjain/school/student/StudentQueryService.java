@@ -149,4 +149,34 @@ public class StudentQueryService {
 		return students.findByIdIn(studentIds).stream().collect(Collectors.toMap(Student::getId, Student::getName));
 	}
 
+	/**
+	 * Every ACTIVE child that matches, for reports (Analytics). Not paged: the school has at most about 650 children.
+	 * Example: {@code classNames = [1, 2, 3], village = "Jakhal"} → the Jakhal children of classes 1 to 3.
+	 * A null part means "no condition". Sorted by name, then id.
+	 *
+	 * @param classNames the classes allowed, already checked with {@link ClassNames}
+	 * @param bus YES → on a bus on {@code day}, NO → no bus on {@code day}
+	 */
+	@Transactional(readOnly = true)
+	public List<StudentReportRow> activeMatching(java.util.List<String> classNames, String village, Long routeId,
+			BusFilter bus, FatherOccupation occupation, LocalDate day) {
+		StudentFilter conditions = new StudentFilter(null, null, village, routeId, bus, StudentStatus.ACTIVE);
+		List<Student> found = students.findAll(StudentSpecs.of(conditions, day),
+				org.springframework.data.domain.Sort.by("name").and(org.springframework.data.domain.Sort.by("id")))
+			.stream()
+			.filter(s -> classNames == null || classNames.contains(s.getClassName()))
+			.filter(s -> occupation == null || s.getFatherOccupation() == occupation)
+			.toList();
+		if (found.isEmpty()) {
+			return List.of();
+		}
+		Map<Long, Long> routes = enrolments.coveringDay(found.stream().map(Student::getId).toList(), day)
+			.stream()
+			.collect(Collectors.toMap(TransportEnrolment::getStudentId, TransportEnrolment::getRouteId, (a, b) -> a));
+		return found.stream()
+			.map(s -> new StudentReportRow(s.getId(), s.getName(), s.getClassName(), s.getSection(), s.getVillage(),
+					s.getFatherOccupation(), routes.get(s.getId())))
+			.toList();
+	}
+
 }

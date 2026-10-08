@@ -38,6 +38,15 @@ public class SessionService {
 					"No school year is current. Add one first."));
 	}
 
+	/**
+	 * The session a report is about: the one asked for, or the current one when {@code sessionId} is null.
+	 * Example: {@code resolve(null)} → 2026-27. {@code resolve(99)} → 404 NOT_FOUND.
+	 */
+	@Transactional(readOnly = true)
+	public SessionResponse resolve(Long sessionId) {
+		return SessionResponse.of((sessionId == null) ? current() : get(sessionId));
+	}
+
 	@Transactional(readOnly = true)
 	public AcademicSession get(Long id) {
 		return sessions.findById(id)
