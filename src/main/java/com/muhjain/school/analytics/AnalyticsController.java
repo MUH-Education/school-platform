@@ -1,0 +1,39 @@
+package com.muhjain.school.analytics;
+
+import com.muhjain.school.fee.FeeStatus;
+import com.muhjain.school.student.BusFilter;
+import com.muhjain.school.student.FatherOccupation;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * The Analytics screen. Every URL needs ANALYTICS_VIEW and takes the same filter in the query:
+ * {@code sessionId}, {@code className} (one class or a group like 1-5), {@code village}, {@code routeId},
+ * {@code bus=YES|NO}, {@code occupation}, {@code feeStatus}.
+ * Example: {@code GET /api/v1/analytics/summary?village=Jakhal&feeStatus=DELAYED}
+ */
+@RestController
+@RequestMapping("/api/v1/analytics")
+public class AnalyticsController {
+
+	private final AnalyticsService analytics;
+
+	public AnalyticsController(AnalyticsService analytics) {
+		this.analytics = analytics;
+	}
+
+	/** Students, on the bus, % of school and bus fee collected, children with something pending. */
+	@GetMapping("/summary")
+	@PreAuthorize("hasAuthority('ANALYTICS_VIEW')")
+	public SummaryResponse summary(@RequestParam(required = false) Long sessionId,
+			@RequestParam(required = false) String className, @RequestParam(required = false) String village,
+			@RequestParam(required = false) Long routeId, @RequestParam(required = false) BusFilter bus,
+			@RequestParam(required = false) FatherOccupation occupation,
+			@RequestParam(required = false) FeeStatus feeStatus) {
+		return analytics.summary(StudentFilter.of(sessionId, className, village, routeId, bus, occupation, feeStatus));
+	}
+
+}

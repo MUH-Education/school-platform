@@ -55,7 +55,7 @@ None. This phase adds no table.
 
 - [x] 8.1 `StudentFilter` record with validation.
 - [x] 8.2 `AnalyticsBase.students(filter)` (rules 2, 3).
-- [ ] 8.3 Summary (rule 4).
+- [x] 8.3 Summary (rule 4).
 - [ ] 8.4 `MonthlyCollectionCalculator` (pure Java) and its endpoint (rule 5).
 - [ ] 8.5 Payment by occupation (rule 6).
 - [ ] 8.6 Students by class and by village (rules 7, 8).
