@@ -84,7 +84,7 @@ Use one fixed set of about 12 students made in the test, with known fees and pay
 
 - For the same filter, the number in the summary, the sum of the class bars, and the row count of the list are equal.
 - The fee status of a student in the list is the same as on that student's own page.
-- `/check-phase 8` passes.
+- `/check-phase 8` passes. (That command does not exist in this repo. These lines were checked by hand on the running app on 8 Oct 2026, see `docs/08-decisions.md` part D.)
 
 ## Out of scope
 
