@@ -6,6 +6,7 @@ These rules hold for every feature and every phase. `CLAUDE.md` has the short li
 
 - Every controller method has `@PreAuthorize("hasAuthority('<PERMISSION>')")`, or is "any login" (needs only a valid token), or is in the short list of open URLs.
 - Open URLs: `POST /api/v1/auth/otp/request`, `POST /api/v1/auth/otp/verify`, `GET /actuator/health` (and its `liveness` / `readiness` parts). Nothing else.
+- **One exception, for the API docs:** `/v3/api-docs/**` and `/swagger-ui/**` are open **only while the docs are switched on** (`springdoc.api-docs.enabled` and `springdoc.swagger-ui.enabled` are true: `dev` and `test`). They are false by default and in `prod`, and then these two paths are not open (no token → 401, with a token → 404). The docs are only a page: every API call made from Swagger still needs a real token and still gets 401 or 403 as normal. Never add another open URL.
 - Check **permissions**, never roles. Example: `hasAuthority('VEHICLES_VIEW')`, not `hasRole('OWNER')`.
 - Hiding a button in React is not security. The React app gets the permission list only to hide menu items.
 

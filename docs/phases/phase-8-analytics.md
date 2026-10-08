@@ -62,6 +62,7 @@ None. This phase adds no table.
 - [x] 8.7 List with paging and sorting (rule 9).
 - [x] 8.8 CSV download with audit (rules 10, 11).
 - [x] 8.9 Skipped. The owner answered C4: "student average graph" means students in each class, which is `/analytics/students-by-class` (task 8.6). No new endpoint.
+- [x] 8.10 Swagger (API docs for the React developer). `springdoc-openapi-starter-webmvc-ui` 3.1.1, on in `dev` and `test` only. One `OpenApiConfig` (title, `bearerAuth`, shared `ApiError` schema), a tag, a summary and "Needs <PERMISSION>" on every endpoint, examples on the main request records, `OpenApiTest` and `OpenApiOffInProdTest`. No business logic and no URL changed.
 
 ## Tests that must pass
 

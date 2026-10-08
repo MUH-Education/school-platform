@@ -2,6 +2,8 @@ package com.muhjain.school.route;
 
 import java.util.List;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
  * The Routes screens. Reading needs ROUTES_VIEW, changing needs ROUTES_EDIT.
  * Routes are never deleted: DELETE turns one off.
  */
+@Tag(name = "Routes")
 @RestController
 @RequestMapping("/api/v1/routes")
 public class RouteController {
@@ -32,6 +35,7 @@ public class RouteController {
 		this.loadBoardService = loadBoardService;
 	}
 
+	@Operation(summary = "List routes")
 	@GetMapping
 	@PreAuthorize("hasAuthority('ROUTES_VIEW')")
 	public List<RouteResponse> list() {
@@ -39,12 +43,14 @@ public class RouteController {
 	}
 
 	/** The Routes and load screen: every active route with children, seats, load and cost, and the fleet totals. */
+	@Operation(summary = "Seats used on each route")
 	@GetMapping("/load-board")
 	@PreAuthorize("hasAuthority('ROUTES_VIEW')")
 	public LoadBoardResponse loadBoard() {
 		return loadBoardService.board();
 	}
 
+	@Operation(summary = "Add a route")
 	@PostMapping
 	@PreAuthorize("hasAuthority('ROUTES_EDIT')")
 	@ResponseStatus(HttpStatus.CREATED)
@@ -52,18 +58,21 @@ public class RouteController {
 		return routeService.create(request);
 	}
 
+	@Operation(summary = "Show one route")
 	@GetMapping("/{id}")
 	@PreAuthorize("hasAuthority('ROUTES_VIEW')")
 	public RouteResponse get(@PathVariable Long id) {
 		return routeService.get(id);
 	}
 
+	@Operation(summary = "Change a route")
 	@PutMapping("/{id}")
 	@PreAuthorize("hasAuthority('ROUTES_EDIT')")
 	public RouteResponse update(@PathVariable Long id, @Valid @RequestBody UpdateRouteRequest request) {
 		return routeService.update(id, request);
 	}
 
+	@Operation(summary = "Turn a route off")
 	@DeleteMapping("/{id}")
 	@PreAuthorize("hasAuthority('ROUTES_EDIT')")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
@@ -72,6 +81,7 @@ public class RouteController {
 	}
 
 	/** The whole ordered list of stops. The order of the list is the morning order. */
+	@Operation(summary = "Save the stops of a route")
 	@PutMapping("/{id}/stops")
 	@PreAuthorize("hasAuthority('ROUTES_EDIT')")
 	public RouteResponse saveStops(@PathVariable Long id, @RequestBody List<StopRequest> stops) {

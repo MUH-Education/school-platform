@@ -16,6 +16,14 @@ spring:
       max-file-size: 5MB
       max-request-size: 6MB
 
+# API docs (springdoc). OFF by default, so any profile except dev and test has no docs and no Swagger page.
+# SecurityConfig opens /v3/api-docs and /swagger-ui only when these are true.
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
 app:
   zone: Asia/Kolkata
   jwt:
@@ -54,6 +62,14 @@ spring:
     activate:
       on-profile: dev
 
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    # Keep the token after a page reload, so you log in once per day, not once per click.
+    persist-authorization: true
+
 app:
   jwt:
     # DEV ONLY. Not secret. prod has no default and needs APP_JWT_SECRET.
@@ -69,6 +85,12 @@ spring:
   config:
     activate:
       on-profile: test
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
 
 app:
   jwt:
@@ -90,3 +112,10 @@ spring:
   config:
     activate:
       on-profile: prod
+
+# No API docs and no Swagger page on the server. Nobody can turn them on by accident: this is also the default above.
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

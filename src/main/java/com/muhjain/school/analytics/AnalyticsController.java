@@ -4,6 +4,8 @@ import com.muhjain.school.common.PageResponse;
 import com.muhjain.school.fee.FeeStatus;
 import com.muhjain.school.student.BusFilter;
 import com.muhjain.school.student.FatherOccupation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
  * {@code bus=YES|NO}, {@code occupation}, {@code feeStatus}.
  * Example: {@code GET /api/v1/analytics/summary?village=Jakhal&feeStatus=DELAYED}
  */
+@Tag(name = "Analytics")
 @RestController
 @RequestMapping("/api/v1/analytics")
 public class AnalyticsController {
@@ -30,6 +33,7 @@ public class AnalyticsController {
 	}
 
 	/** Students, on the bus, % of school and bus fee collected, children with something pending. */
+	@Operation(summary = "Numbers for the top cards")
 	@GetMapping("/summary")
 	@PreAuthorize("hasAuthority('ANALYTICS_VIEW')")
 	public SummaryResponse summary(@RequestParam(required = false) Long sessionId,
@@ -41,6 +45,7 @@ public class AnalyticsController {
 	}
 
 	/** For each month up to this month: % of school fee and % of bus fee collected. */
+	@Operation(summary = "Fee collected % for each month")
 	@GetMapping("/fee-collection-by-month")
 	@PreAuthorize("hasAuthority('ANALYTICS_VIEW')")
 	public MonthlyCollectionResponse feeCollectionByMonth(@RequestParam(required = false) Long sessionId,
@@ -53,6 +58,7 @@ public class AnalyticsController {
 	}
 
 	/** For each father's occupation: how many children are ON_TIME, DELAYED, DEFAULTED (and how many have no plan). */
+	@Operation(summary = "On time, delayed and defaulted by father's occupation")
 	@GetMapping("/payment-by-occupation")
 	@PreAuthorize("hasAuthority('ANALYTICS_VIEW')")
 	public PaymentByOccupationResponse paymentByOccupation(@RequestParam(required = false) Long sessionId,
@@ -65,6 +71,7 @@ public class AnalyticsController {
 	}
 
 	/** Children in each of the 15 classes, in school order, also classes with 0. */
+	@Operation(summary = "Students in each class")
 	@GetMapping("/students-by-class")
 	@PreAuthorize("hasAuthority('ANALYTICS_VIEW')")
 	public StudentsByClassResponse studentsByClass(@RequestParam(required = false) Long sessionId,
@@ -77,6 +84,7 @@ public class AnalyticsController {
 	}
 
 	/** Children per village, biggest first: the top 8 and then "others". */
+	@Operation(summary = "Students in each village (top 8 and others)")
 	@GetMapping("/students-by-village")
 	@PreAuthorize("hasAuthority('ANALYTICS_VIEW')")
 	public StudentsByVillageResponse studentsByVillage(@RequestParam(required = false) Long sessionId,
@@ -92,6 +100,7 @@ public class AnalyticsController {
 	 * The students behind the graphs, paged: {@code ?page=0&size=25&sort=pendingAmount,desc}. Sort by {@code name},
 	 * {@code className} or {@code pendingAmount}.
 	 */
+	@Operation(summary = "List of students with fee status")
 	@GetMapping("/students")
 	@PreAuthorize("hasAuthority('ANALYTICS_VIEW')")
 	public PageResponse<AnalyticsStudentItem> students(@RequestParam(required = false) Long sessionId,
@@ -108,6 +117,7 @@ public class AnalyticsController {
 	 * The same list as a file for Excel: all matching rows (not one page), header first, UTF-8 with BOM. Every
 	 * download is written to the audit log.
 	 */
+	@Operation(summary = "Download the student list as a CSV file")
 	@GetMapping(value = "/students.csv", produces = "text/csv;charset=UTF-8")
 	@PreAuthorize("hasAuthority('ANALYTICS_VIEW')")
 	public ResponseEntity<byte[]> studentsCsv(@RequestParam(required = false) Long sessionId,

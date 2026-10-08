@@ -7,6 +7,7 @@ import com.muhjain.school.fee.FeeStatus;
 import com.muhjain.school.student.BusFilter;
 import com.muhjain.school.student.ClassNames;
 import com.muhjain.school.student.FatherOccupation;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * The one filter of all seven Analytics URLs (rule 1 of phase 8). Every part is optional.
@@ -20,8 +21,16 @@ import com.muhjain.school.student.FatherOccupation;
  * </ul>
  * The ids are only checked here for their shape. {@link AnalyticsBase} looks them up in the database.
  */
-public record StudentFilter(Long sessionId, List<String> classNames, String village, Long routeId, BusFilter bus,
-		FatherOccupation occupation, FeeStatus feeStatus) {
+public record StudentFilter(
+		@Schema(description = "School year. Empty means the current one.", example = "1") Long sessionId,
+		@Schema(description = "One class or a group written from-to. Nursery, LKG, UKG or 1 to 12.",
+				example = "1-5") List<String> classNames,
+		@Schema(description = "Village, capital letters do not matter.", example = "Jakhal") String village,
+		@Schema(description = "Children on this route today.", example = "4") Long routeId,
+		@Schema(description = "NO means children with no bus today. Not together with routeId.",
+				example = "NO") BusFilter bus,
+		@Schema(description = "Father's occupation.", example = "FARMER_SMALL") FatherOccupation occupation,
+		@Schema(description = "Fee status as of today.", example = "DELAYED") FeeStatus feeStatus) {
 
 	/**
 	 * @param className what the client typed, example "3" or "1-5"

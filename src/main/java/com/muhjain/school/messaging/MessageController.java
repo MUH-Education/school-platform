@@ -4,6 +4,8 @@ import java.time.LocalDate;
 import java.util.List;
 
 import com.muhjain.school.common.PageResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
  * The Messages screen. Reading needs MESSAGES_VIEW. Changing a text needs SETTINGS_EDIT (the owner), because every
  * text must match what the provider approved. Phones in answers are masked.
  */
+@Tag(name = "Messages")
 @RestController
 @RequestMapping("/api/v1")
 public class MessageController {
@@ -30,6 +33,7 @@ public class MessageController {
 	}
 
 	/** The SMS log of one day (default today), newest first. Filters: {@code status}, {@code studentId}, {@code phone}. */
+	@Operation(summary = "List parent messages")
 	@GetMapping("/messages")
 	@PreAuthorize("hasAuthority('MESSAGES_VIEW')")
 	public PageResponse<MessageResponse> messages(
@@ -40,6 +44,7 @@ public class MessageController {
 		return messageService.list(date, status, studentId, phone, page, size);
 	}
 
+	@Operation(summary = "Message counts")
 	@GetMapping("/messages/summary")
 	@PreAuthorize("hasAuthority('MESSAGES_VIEW')")
 	public MessageSummaryResponse summary(
@@ -47,12 +52,14 @@ public class MessageController {
 		return messageService.summary(date);
 	}
 
+	@Operation(summary = "List message templates")
 	@GetMapping("/message-templates")
 	@PreAuthorize("hasAuthority('MESSAGES_VIEW')")
 	public List<TemplateResponse> templates() {
 		return messageService.templates();
 	}
 
+	@Operation(summary = "Change a message template")
 	@PutMapping("/message-templates/{code}")
 	@PreAuthorize("hasAuthority('SETTINGS_EDIT')")
 	public TemplateResponse updateTemplate(@PathVariable String code, @Valid @RequestBody UpdateTemplateRequest request) {

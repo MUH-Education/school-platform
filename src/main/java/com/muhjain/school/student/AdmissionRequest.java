@@ -6,6 +6,7 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.muhjain.school.fee.AdmissionFeeRequest;
 import com.muhjain.school.fee.PaymentRequest;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -31,6 +32,7 @@ import jakarta.validation.constraints.Size;
  * "firstPayment": { "mode": "UPI", "lines": [ { "feeHead": "SCHOOL", "amount": 7500 }, { "feeHead": "BUS", "amount": 2200 } ] } }}
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
+@Schema(example = "{\"name\": \"Aryan\", \"dob\": \"2018-05-14\", \"gender\": \"M\", \"className\": \"3\", \"section\": \"B\", \"village\": \"Jakhal\", \"fatherOccupation\": \"FARMER_SMALL\", \"guardians\": [{\"name\": \"Ramesh\", \"phone\": \"98123 40208\", \"relation\": \"FATHER\"}], \"bus\": {\"routeId\": 4, \"stopId\": 18, \"busFee\": 8800}, \"fee\": {\"schoolFee\": 30000, \"busFee\": 8800, \"payFrequency\": \"QUARTERLY\"}, \"firstPayment\": {\"mode\": \"UPI\", \"lines\": [{\"feeHead\": \"SCHOOL\", \"amount\": 7500}, {\"feeHead\": \"BUS\", \"amount\": 2200}]}}")
 public record AdmissionRequest(@NotBlank @Size(max = 120) String name, @NotNull LocalDate dob, @NotNull Gender gender,
 		@NotBlank String className, @Size(max = 4) String section, @NotBlank @Size(max = 80) String village,
 		@Size(max = 200) String address, @NotNull FatherOccupation fatherOccupation, LocalDate joinedOn,

@@ -3,6 +3,8 @@ package com.muhjain.school.trip;
 import java.time.LocalDate;
 import java.util.List;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * The office screens "Bus status" and "One bus". Needs BUS_STATUS_VIEW. The web app asks again every 30 seconds.
  */
+@Tag(name = "Bus status")
 @RestController
 @RequestMapping("/api/v1/bus-status")
 public class BusStatusController {
@@ -28,6 +31,7 @@ public class BusStatusController {
 	}
 
 	/** Every route. {@code phase} default: MORNING before 12:00, EVENING after. {@code date} default: today. */
+	@Operation(summary = "Status of every bus now")
 	@GetMapping
 	@PreAuthorize("hasAuthority('BUS_STATUS_VIEW')")
 	public List<RouteStatusResponse> all(
@@ -37,6 +41,7 @@ public class BusStatusController {
 	}
 
 	/** One route: its status and every child with the four events. */
+	@Operation(summary = "Status of one bus with its children")
 	@GetMapping("/routes/{routeId}")
 	@PreAuthorize("hasAuthority('BUS_STATUS_VIEW')")
 	public RouteDetailResponse route(@PathVariable Long routeId,
@@ -46,6 +51,7 @@ public class BusStatusController {
 	}
 
 	/** Buses with no taps or late (morning), and children nobody answered for in the evening. */
+	@Operation(summary = "Buses that need attention")
 	@GetMapping("/attention")
 	@PreAuthorize("hasAuthority('BUS_STATUS_VIEW')")
 	public AttentionResponse attention(

@@ -1,6 +1,8 @@
 package com.muhjain.school.student;
 
 import com.muhjain.school.auth.CurrentUser;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 /** The New admission screen. Needs ADMISSIONS_CREATE. */
+@Tag(name = "Admissions")
 @RestController
 @RequestMapping("/api/v1/admissions")
 public class AdmissionController {
@@ -25,6 +28,7 @@ public class AdmissionController {
 	}
 
 	/** Student, parents' phones, bus, fee plan and first payment in one go. */
+	@Operation(summary = "Admit a new student (with parents, bus and fee)", description = "Needs ADMISSIONS_CREATE. If the body has a fee plan or a first payment, it also needs FEES_EDIT.")
 	@PostMapping
 	// The fee plan and the first payment need FEES_EDIT as well. Today every role with ADMISSIONS_CREATE has it.
 	@PreAuthorize("hasAuthority('ADMISSIONS_CREATE') and (#request.fee() == null and #request.firstPayment() == null "

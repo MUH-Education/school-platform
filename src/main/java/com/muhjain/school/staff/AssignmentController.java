@@ -3,6 +3,8 @@ package com.muhjain.school.staff;
 import java.util.List;
 
 import com.muhjain.school.auth.CurrentUser;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
  * {@code POST} (change) needs VEHICLES_EDIT.
  * The URL is under /vehicles, but the code lives in the staff package, next to the assignment rules.
  */
+@Tag(name = "Staff")
 @RestController
 @RequestMapping("/api/v1/vehicles/{vehicleId}/assignments")
 public class AssignmentController {
@@ -33,12 +36,14 @@ public class AssignmentController {
 	}
 
 	/** Who worked on the vehicle, newest first. */
+	@Operation(summary = "Who drove this vehicle, and when")
 	@GetMapping
 	@PreAuthorize("hasAuthority('VEHICLES_VIEW')")
 	public List<AssignmentResponse> history(@PathVariable Long vehicleId) {
 		return assignmentService.history(vehicleId);
 	}
 
+	@Operation(summary = "Change the driver or attendant of a vehicle")
 	@PostMapping
 	@PreAuthorize("hasAuthority('VEHICLES_EDIT')")
 	@ResponseStatus(HttpStatus.CREATED)
