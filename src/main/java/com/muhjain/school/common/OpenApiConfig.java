@@ -34,7 +34,8 @@ import org.springframework.web.method.HandlerMethod;
  * {@code @SecurityRequirements} with no value;</li>
  * <li>the sentence "Needs FEES_EDIT." in the description, read from {@code @PreAuthorize}, so it is always the
  * permission the server really checks;</li>
- * <li>the answers 401 and 403 with the shared {@code ApiError} body.</li>
+ * <li>the answers 401 and 403 with the shared {@code ApiError} body;</li>
+ * <li>an operation id made of the controller and the method, for example {@code analytics_summary}.</li>
  * </ul>
  * Example of what the React developer reads: "POST /students/{studentId}/payments — Record a payment. Needs FEES_EDIT."
  */
@@ -106,6 +107,11 @@ public class OpenApiConfig {
 			if (!handlerMethod.getBeanType().getName().startsWith("com.muhjain.school")) {
 				return operation;
 			}
+			// A stable, readable id for the React developer's code generator: analytics_summary, vehicle_update.
+			// (The default, update_3, changes when a controller is added.)
+			String controller = handlerMethod.getBeanType().getSimpleName().replaceFirst("Controller$", "");
+			operation.setOperationId(Character.toLowerCase(controller.charAt(0)) + controller.substring(1) + "_"
+					+ handlerMethod.getMethod().getName());
 			boolean open = handlerMethod.hasMethodAnnotation(SecurityRequirements.class);
 			String note;
 			if (open) {

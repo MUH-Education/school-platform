@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
 /**
  * Gives the filter parameters of the seven Analytics URLs a description and an example in the API docs.
  * The text is written once, with {@code @Schema} on the parts of {@link StudentFilter}; the query parameter
- * {@code className} reads the part {@code classNames}. Example in Swagger: className = 1-5.
+ * {@code className} reads the part {@code classNames}. Example in Swagger: "... Example: 1-5".
  */
 @Configuration(proxyBeanMethods = false)
 class AnalyticsOpenApi {
@@ -33,8 +33,10 @@ class AnalyticsOpenApi {
 				.filter(java.util.Objects::nonNull)
 				.findFirst()
 				.ifPresent(note -> {
-					parameter.setDescription(note.description());
-					parameter.setExample(note.example());
+					// The example goes into the text, not into the example field: Swagger would fill every field with
+					// its example on "Try it out", and the examples together (bus=NO and routeId=4) are a mix the
+					// server refuses. With empty fields the first call is the whole school.
+					parameter.setDescription(note.description() + " Example: " + note.example());
 				});
 			return parameter;
 		};

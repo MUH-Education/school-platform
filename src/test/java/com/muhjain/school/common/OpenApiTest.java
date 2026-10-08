@@ -105,6 +105,14 @@ class OpenApiTest extends AbstractIntegrationTest {
 	}
 
 	@Test
+	void operationIdsAreUniqueAndReadable() {
+		List<String> ids = new ArrayList<>();
+		paths().values().forEach(methods -> methods.values().forEach(op -> ids.add((String) op.get("operationId"))));
+		assertThat(ids).doesNotHaveDuplicates().allMatch(id -> id.matches("[a-z][A-Za-z]*_[a-z][A-Za-z]*"));
+		assertThat(ids).contains("analytics_summary", "fee_pay", "auth_verifyOtp", "vehicle_update");
+	}
+
+	@Test
 	void everyOperationHasATagASummaryAndTheNeededPermission() {
 		for (var path : paths().entrySet()) {
 			for (var op : path.getValue().entrySet()) {
@@ -153,9 +161,11 @@ class OpenApiTest extends AbstractIntegrationTest {
 		}
 		List<Map<String, Object>> parameters = castList(paths().get("/api/v1/analytics/students").get("get").get("parameters"));
 		assertThat(parameters).filteredOn(p -> "className".equals(p.get("name"))).singleElement()
-			.satisfies(p -> assertThat(p.get("example")).isEqualTo("1-5"));
+			.satisfies(p -> assertThat((String) p.get("description")).endsWith("Example: 1-5"));
 		assertThat(parameters).filteredOn(p -> "feeStatus".equals(p.get("name"))).singleElement()
-			.satisfies(p -> assertThat(p.get("example")).isEqualTo("DELAYED"));
+			.satisfies(p -> assertThat((String) p.get("description")).endsWith("Example: DELAYED"));
+		// No pre-filled value: "Try it out" must not send a filter nobody chose.
+		assertThat(parameters).noneMatch(p -> p.containsKey("example"));
 	}
 
 	@Test
