@@ -36,4 +36,16 @@ public class AnalyticsController {
 		return analytics.summary(StudentFilter.of(sessionId, className, village, routeId, bus, occupation, feeStatus));
 	}
 
+	/** For each month up to this month: % of school fee and % of bus fee collected. */
+	@GetMapping("/fee-collection-by-month")
+	@PreAuthorize("hasAuthority('ANALYTICS_VIEW')")
+	public MonthlyCollectionResponse feeCollectionByMonth(@RequestParam(required = false) Long sessionId,
+			@RequestParam(required = false) String className, @RequestParam(required = false) String village,
+			@RequestParam(required = false) Long routeId, @RequestParam(required = false) BusFilter bus,
+			@RequestParam(required = false) FatherOccupation occupation,
+			@RequestParam(required = false) FeeStatus feeStatus) {
+		return analytics
+			.feeCollectionByMonth(StudentFilter.of(sessionId, className, village, routeId, bus, occupation, feeStatus));
+	}
+
 }

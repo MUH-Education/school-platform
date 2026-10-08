@@ -147,7 +147,9 @@ class EndpointSecurityTest extends AbstractIntegrationTest {
 				Arguments.of("GET", "/api/v1/payments?from=2026-10-01&to=2026-10-07", null, Role.TRANSPORT_INCHARGE),
 				// Phase 8: every Analytics URL needs ANALYTICS_VIEW (not the transport in-charge, not the attendant).
 				Arguments.of("GET", "/api/v1/analytics/summary", null, Role.TRANSPORT_INCHARGE),
-				Arguments.of("GET", "/api/v1/analytics/summary", null, Role.ATTENDANT));
+				Arguments.of("GET", "/api/v1/analytics/summary", null, Role.ATTENDANT),
+				Arguments.of("GET", "/api/v1/analytics/fee-collection-by-month", null, Role.TRANSPORT_INCHARGE),
+				Arguments.of("GET", "/api/v1/analytics/fee-collection-by-month", null, Role.ATTENDANT));
 	}
 
 	@ParameterizedTest(name = "{0} {1} without token → 401")

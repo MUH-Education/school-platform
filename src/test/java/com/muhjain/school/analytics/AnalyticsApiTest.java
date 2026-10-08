@@ -56,4 +56,33 @@ class AnalyticsApiTest extends AnalyticsTestBase {
 		get(owner, URL + "/summary?routeId=9999").andExpect(status().isNotFound());
 	}
 
+	@Test
+	void monthlyCollectionFollowsThePaymentsOldestDueFirst() throws Exception {
+		// 11 children have a plan: ₹1,000 school a month each. Dev and Jiya paid 2 months, Bhavya, Gauri and Lata 5,
+		// the other six 7. Bus: 5 children, ₹500 a month each; Charu paid nothing, so every month is 4 of 5.
+		get(owner, URL + "/fee-collection-by-month").andExpect(status().isOk())
+			.andExpect(jsonPath("$.months.length()").value(7))
+			.andExpect(jsonPath("$.months[0].month").value("2026-04"))
+			.andExpect(jsonPath("$.months[0].school.percent").value(100.0))
+			.andExpect(jsonPath("$.months[2].school.percent").value(81.8))
+			.andExpect(jsonPath("$.months[5].school.due").value(11000))
+			.andExpect(jsonPath("$.months[5].school.collected").value(6000))
+			.andExpect(jsonPath("$.months[5].school.percent").value(54.5))
+			.andExpect(jsonPath("$.months[6].school.percent").value(54.5))
+			.andExpect(jsonPath("$.months[0].bus.percent").value(80.0))
+			.andExpect(jsonPath("$.months[6].bus.percent").value(80.0));
+	}
+
+	@Test
+	void monthlyCollectionFollowsTheSameFilter() throws Exception {
+		// Charu is the only Route A child with no bus money paid; Aarav and Lata paid all of theirs.
+		get(owner, URL + "/fee-collection-by-month?routeId=" + routeA).andExpect(status().isOk())
+			.andExpect(jsonPath("$.months[0].bus.percent").value(66.7))
+			.andExpect(jsonPath("$.months[0].school.due").value(3000));
+		get(owner, URL + "/fee-collection-by-month?className=12").andExpect(status().isOk())
+			.andExpect(jsonPath("$.months.length()").value(7))
+			.andExpect(jsonPath("$.months[0].school.due").value(0))
+			.andExpect(jsonPath("$.months[0].school.percent").doesNotExist());
+	}
+
 }

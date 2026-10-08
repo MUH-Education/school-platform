@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import com.muhjain.school.fee.FeeHead;
+import com.muhjain.school.fee.FeeStatusCalculator.CoveredDue;
 import com.muhjain.school.fee.SessionResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +39,19 @@ public class AnalyticsService {
 				CollectionMath.percent(BigDecimal.valueOf(onBus), BigDecimal.valueOf(students.size())),
 				CollectionMath.percent(collected(students, FeeHead.SCHOOL, today)),
 				CollectionMath.percent(collected(students, FeeHead.BUS, today)), withPending);
+	}
+
+	/** Rule 5. Months up to this month, each with school and bus. */
+	@Transactional(readOnly = true)
+	public MonthlyCollectionResponse feeCollectionByMonth(StudentFilter filter) {
+		SessionResponse session = base.session(filter);
+		List<CoveredDue> dues = base.students(filter)
+			.stream()
+			.filter(s -> s.fee() != null)
+			.flatMap(s -> s.fee().dues().stream())
+			.toList();
+		return new MonthlyCollectionResponse(session.id(), session.name(), MonthlyCollectionCalculator.calculate(dues,
+				session.startsOn(), session.endsOn(), LocalDate.now(clock)));
 	}
 
 	private static CollectionMath.Totals collected(List<AnalyticsStudent> students, FeeHead head, LocalDate today) {
