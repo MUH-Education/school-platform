@@ -2,6 +2,7 @@ package com.muhjain.school.fee;
 
 import java.math.BigDecimal;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
@@ -15,6 +16,7 @@ import jakarta.validation.constraints.NotNull;
  * </ul>
  * Example: {@code {"schoolFee":30000,"busFee":8800,"discount":0,"payFrequency":"QUARTERLY"}}
  */
+@Schema(example = "{\"schoolFee\": 30000, \"busFee\": 8800, \"discount\": 0, \"payFrequency\": \"QUARTERLY\"}")
 public record FeePlanRequest(
 		@NotNull @DecimalMin("0") @Digits(integer = 10, fraction = 2) BigDecimal schoolFee,
 		@DecimalMin("0") @Digits(integer = 10, fraction = 2) BigDecimal busFee,

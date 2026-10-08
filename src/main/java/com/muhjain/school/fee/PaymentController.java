@@ -3,6 +3,8 @@ package com.muhjain.school.fee;
 import java.time.LocalDate;
 
 import com.muhjain.school.common.PageResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
  * {@code GET /api/v1/payments?from=2026-10-01&to=2026-10-07&page=0&size=25} — FEES_VIEW.
  * Money received, newest first. Corrections are in the list with a negative amount.
  */
+@Tag(name = "Fees")
 @RestController
 @RequestMapping("/api/v1/payments")
 public class PaymentController {
@@ -24,6 +27,7 @@ public class PaymentController {
 		this.queryService = queryService;
 	}
 
+	@Operation(summary = "List payments in a date range")
 	@GetMapping
 	@PreAuthorize("hasAuthority('FEES_VIEW')")
 	public PageResponse<PaymentListItem> list(@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,

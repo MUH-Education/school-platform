@@ -48,12 +48,24 @@ public class FeeStatusService {
 	/** Status of each child that has a plan in the current session, as of today. */
 	@Transactional(readOnly = true)
 	public Map<Long, FeeStatus> statuses(Collection<Long> studentIds) {
+		Map<Long, FeeStatusCalculator.Summary> found = summaries(sessions.current().getId(), studentIds);
+		Map<Long, FeeStatus> result = new HashMap<>();
+		found.forEach((studentId, summary) -> result.put(studentId, summary.status()));
+		return result;
+	}
+
+	/**
+	 * The full fee numbers of each child that has a plan in that session, as of today: both heads, the dues with
+	 * the part covered, the pending amount. Analytics uses it, so a list there shows exactly what the child's own
+	 * page shows. Example: {118 → Summary(status DELAYED, pendingNow 7500)}.
+	 */
+	@Transactional(readOnly = true)
+	public Map<Long, FeeStatusCalculator.Summary> summaries(Long sessionId, Collection<Long> studentIds) {
 		if (studentIds.isEmpty()) {
 			return Map.of();
 		}
 		LocalDate today = LocalDate.now(clock);
-		AcademicSession session = sessions.current();
-		List<FeePlan> found = plans.findBySessionIdAndStudentIdIn(session.getId(), studentIds);
+		List<FeePlan> found = plans.findBySessionIdAndStudentIdIn(sessionId, studentIds);
 		if (found.isEmpty()) {
 			return Map.of();
 		}
@@ -64,18 +76,17 @@ public class FeeStatusService {
 					Collectors.mapping(d -> new DueInput(d.getId(), d.getFeeHead(), d.getDueOn(), d.getAmount()),
 							Collectors.toList())));
 		Map<Long, Map<FeeHead, BigDecimal>> paidByStudent = new HashMap<>();
-		for (Object[] row : payments.paidByStudentAndHead(session.getId(), found.stream().map(FeePlan::getStudentId).toList())) {
+		for (Object[] row : payments.paidByStudentAndHead(sessionId, found.stream().map(FeePlan::getStudentId).toList())) {
 			paidByStudent.computeIfAbsent((Long) row[0], k -> new EnumMap<>(FeeHead.class))
 				.put((FeeHead) row[1], (BigDecimal) row[2]);
 		}
 		int grace = Integer.parseInt(settings.value("fees.grace_days"));
 		int defaultedAfter = Integer.parseInt(settings.value("fees.defaulted_after_days"));
-		Map<Long, FeeStatus> result = new HashMap<>();
+		Map<Long, FeeStatusCalculator.Summary> result = new HashMap<>();
 		for (FeePlan plan : found) {
-			FeeStatusCalculator.Summary summary = FeeStatusCalculator.calculate(
-					duesByPlan.getOrDefault(plan.getId(), List.of()),
-					paidByStudent.getOrDefault(plan.getStudentId(), Map.of()), today, grace, defaultedAfter);
-			result.put(plan.getStudentId(), summary.status());
+			result.put(plan.getStudentId(),
+					FeeStatusCalculator.calculate(duesByPlan.getOrDefault(plan.getId(), List.of()),
+							paidByStudent.getOrDefault(plan.getStudentId(), Map.of()), today, grace, defaultedAfter));
 		}
 		return result;
 	}

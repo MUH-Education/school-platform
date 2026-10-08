@@ -3,6 +3,8 @@ package com.muhjain.school.vehicle;
 import java.time.LocalDate;
 import java.util.List;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
  * The Vehicles screens. Reading needs VEHICLES_VIEW, changing needs VEHICLES_EDIT.
  * Vehicles are never deleted: DELETE turns one off.
  */
+@Tag(name = "Vehicles")
 @RestController
 @RequestMapping("/api/v1/vehicles")
 public class VehicleController {
@@ -33,6 +36,7 @@ public class VehicleController {
 	}
 
 	/** {@code ?date=2026-10-14} shows the people of that day. Without it, today. */
+	@Operation(summary = "List vehicles")
 	@GetMapping
 	@PreAuthorize("hasAuthority('VEHICLES_VIEW')")
 	public List<VehicleResponse> list(
@@ -41,12 +45,14 @@ public class VehicleController {
 	}
 
 	/** Papers and licences that ended or end within 30 days. */
+	@Operation(summary = "Documents that end soon")
 	@GetMapping("/attention")
 	@PreAuthorize("hasAuthority('VEHICLES_VIEW')")
 	public List<AttentionItem> attention() {
 		return vehicleService.attention();
 	}
 
+	@Operation(summary = "Add a vehicle")
 	@PostMapping
 	@PreAuthorize("hasAuthority('VEHICLES_EDIT')")
 	@ResponseStatus(HttpStatus.CREATED)
@@ -54,6 +60,7 @@ public class VehicleController {
 		return vehicleService.create(request);
 	}
 
+	@Operation(summary = "Show one vehicle")
 	@GetMapping("/{id}")
 	@PreAuthorize("hasAuthority('VEHICLES_VIEW')")
 	public VehicleResponse get(@PathVariable Long id,
@@ -61,12 +68,14 @@ public class VehicleController {
 		return vehicleService.get(id, date);
 	}
 
+	@Operation(summary = "Change a vehicle")
 	@PutMapping("/{id}")
 	@PreAuthorize("hasAuthority('VEHICLES_EDIT')")
 	public VehicleResponse update(@PathVariable Long id, @Valid @RequestBody UpdateVehicleRequest request) {
 		return vehicleService.update(id, request);
 	}
 
+	@Operation(summary = "Turn a vehicle off")
 	@DeleteMapping("/{id}")
 	@PreAuthorize("hasAuthority('VEHICLES_EDIT')")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
@@ -74,6 +83,7 @@ public class VehicleController {
 		vehicleService.turnOff(id);
 	}
 
+	@Operation(summary = "Save the documents of a vehicle")
 	@PutMapping("/{id}/documents")
 	@PreAuthorize("hasAuthority('VEHICLES_EDIT')")
 	public VehicleResponse saveDocuments(@PathVariable Long id, @RequestBody VehicleDocumentsRequest request) {

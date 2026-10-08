@@ -3,6 +3,8 @@ package com.muhjain.school.trip;
 import java.time.LocalDate;
 
 import com.muhjain.school.auth.CurrentUser;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
  * Permission: TRIPS_RECORD (attendant) or TRIPS_RECORD_ANY (office). An attendant is also limited to their own
  * route by {@link TripAccess}.
  */
+@Tag(name = "Trips")
 @RestController
 @RequestMapping("/api/v1/trips")
 public class TripController {
@@ -39,6 +42,7 @@ public class TripController {
 	}
 
 	/** The attendant's own route today and the progress of the four jobs. No route today → {@code route: null}. */
+	@Operation(summary = "The attendant's own route today")
 	@GetMapping("/my-route")
 	@PreAuthorize("hasAuthority('TRIPS_RECORD')")
 	public MyRouteResponse myRoute() {
@@ -46,6 +50,7 @@ public class TripController {
 	}
 
 	/** Save one or many taps. Same tap twice = one row. A bad tap gets its own error, the others are saved. */
+	@Operation(summary = "Save boarding taps")
 	@PostMapping("/marks")
 	@PreAuthorize("hasAnyAuthority('TRIPS_RECORD', 'TRIPS_RECORD_ANY')")
 	public MarksResponse marks(@Valid @RequestBody MarksRequest request) {
@@ -56,6 +61,7 @@ public class TripController {
 	 * The stops and children of a route for a day. An attendant gets their own route today (the route comes from
 	 * the server; if they send another routeId the answer is 403 NOT_YOUR_ROUTE). The office gives routeId and date.
 	 */
+	@Operation(summary = "Children list of a route for today")
 	@GetMapping("/manifest")
 	@PreAuthorize("hasAnyAuthority('TRIPS_RECORD', 'TRIPS_RECORD_ANY')")
 	public ManifestResponse manifest(@RequestParam(required = false) Long routeId,

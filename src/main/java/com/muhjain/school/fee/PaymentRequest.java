@@ -3,6 +3,7 @@ package com.muhjain.school.fee;
 import java.time.LocalDate;
 import java.util.List;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -17,6 +18,7 @@ import jakarta.validation.constraints.Size;
  * </ul>
  * Example: {@code {"mode":"UPI","lines":[{"feeHead":"SCHOOL","amount":7500},{"feeHead":"BUS","amount":2200}]}}
  */
+@Schema(example = "{\"mode\": \"UPI\", \"lines\": [{\"feeHead\": \"SCHOOL\", \"amount\": 7500}, {\"feeHead\": \"BUS\", \"amount\": 2200}]}")
 public record PaymentRequest(LocalDate paidOn, @NotNull PaymentMode mode, @Size(max = 200) String note,
 		@NotEmpty @Valid List<@NotNull @Valid PaymentLine> lines) {
 

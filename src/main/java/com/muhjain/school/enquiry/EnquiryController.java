@@ -2,6 +2,8 @@ package com.muhjain.school.enquiry;
 
 import com.muhjain.school.auth.CurrentUser;
 import com.muhjain.school.common.PageResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
  * The Enquiry screens. Reading needs ENQUIRIES_VIEW, changing needs ENQUIRIES_EDIT.
  * Enquiries are never deleted: a lost one is moved to LOST.
  */
+@Tag(name = "Enquiries")
 @RestController
 @RequestMapping("/api/v1/enquiries")
 public class EnquiryController {
@@ -36,6 +39,7 @@ public class EnquiryController {
 	 * Paged list, newest first. Filters: {@code status}, {@code village}, {@code source}, {@code overdue=true},
 	 * {@code q} (name or phone).
 	 */
+	@Operation(summary = "List enquiries")
 	@GetMapping
 	@PreAuthorize("hasAuthority('ENQUIRIES_VIEW')")
 	public PageResponse<EnquiryResponse> list(@RequestParam(required = false) EnquiryStatus status,
@@ -46,6 +50,7 @@ public class EnquiryController {
 	}
 
 	/** Count per stage, overdue, admitted percent and count per village. */
+	@Operation(summary = "Enquiry counts by stage")
 	@GetMapping("/summary")
 	@PreAuthorize("hasAuthority('ENQUIRIES_VIEW')")
 	public EnquirySummaryResponse summary() {
@@ -53,6 +58,7 @@ public class EnquiryController {
 	}
 
 	/** Add an enquiry. 409 ENQUIRY_EXISTS (with {@code fields.enquiryId}) if the phone and class are open already. */
+	@Operation(summary = "Add an enquiry")
 	@PostMapping
 	@PreAuthorize("hasAuthority('ENQUIRIES_EDIT')")
 	@ResponseStatus(HttpStatus.CREATED)
@@ -61,6 +67,7 @@ public class EnquiryController {
 	}
 
 	/** One enquiry with its follow-ups, newest first. */
+	@Operation(summary = "Show one enquiry")
 	@GetMapping("/{id}")
 	@PreAuthorize("hasAuthority('ENQUIRIES_VIEW')")
 	public EnquiryResponse get(@PathVariable Long id) {
@@ -68,6 +75,7 @@ public class EnquiryController {
 	}
 
 	/** Change the details. The whole object is sent again. The stage changes only with {@code /status}. */
+	@Operation(summary = "Change an enquiry")
 	@PutMapping("/{id}")
 	@PreAuthorize("hasAuthority('ENQUIRIES_EDIT')")
 	public EnquiryResponse update(@PathVariable Long id, @Valid @RequestBody EnquiryRequest request) {
@@ -75,6 +83,7 @@ public class EnquiryController {
 	}
 
 	/** The fields the New admission screen can copy from this enquiry. Needs ADMISSIONS_CREATE. */
+	@Operation(summary = "Admission form data from an enquiry")
 	@GetMapping("/{id}/prefill")
 	@PreAuthorize("hasAuthority('ADMISSIONS_CREATE')")
 	public PrefillResponse prefill(@PathVariable Long id) {
@@ -82,6 +91,7 @@ public class EnquiryController {
 	}
 
 	/** Move to another stage. LOST needs {@code lostReason}. ADMITTED cannot be set here. */
+	@Operation(summary = "Move an enquiry to another stage")
 	@PostMapping("/{id}/status")
 	@PreAuthorize("hasAuthority('ENQUIRIES_EDIT')")
 	public EnquiryResponse changeStatus(@PathVariable Long id, @Valid @RequestBody StatusRequest request) {
@@ -89,6 +99,7 @@ public class EnquiryController {
 	}
 
 	/** Add a call or visit note. It may set the next follow-up date. Answers the enquiry with its follow-ups. */
+	@Operation(summary = "Add a follow-up note")
 	@PostMapping("/{id}/follow-ups")
 	@PreAuthorize("hasAuthority('ENQUIRIES_EDIT')")
 	@ResponseStatus(HttpStatus.CREATED)

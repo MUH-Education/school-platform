@@ -144,7 +144,22 @@ class EndpointSecurityTest extends AbstractIntegrationTest {
 				// Phase 7: reading a child's fees needs FEES_VIEW (not the transport in-charge).
 				Arguments.of("GET", "/api/v1/students/1/fees", null, Role.TRANSPORT_INCHARGE),
 				// Phase 7: the payment list needs FEES_VIEW (not the transport in-charge).
-				Arguments.of("GET", "/api/v1/payments?from=2026-10-01&to=2026-10-07", null, Role.TRANSPORT_INCHARGE));
+				Arguments.of("GET", "/api/v1/payments?from=2026-10-01&to=2026-10-07", null, Role.TRANSPORT_INCHARGE),
+				// Phase 8: every Analytics URL needs ANALYTICS_VIEW (not the transport in-charge, not the attendant).
+				Arguments.of("GET", "/api/v1/analytics/summary", null, Role.TRANSPORT_INCHARGE),
+				Arguments.of("GET", "/api/v1/analytics/summary", null, Role.ATTENDANT),
+				Arguments.of("GET", "/api/v1/analytics/fee-collection-by-month", null, Role.TRANSPORT_INCHARGE),
+				Arguments.of("GET", "/api/v1/analytics/fee-collection-by-month", null, Role.ATTENDANT),
+				Arguments.of("GET", "/api/v1/analytics/payment-by-occupation", null, Role.TRANSPORT_INCHARGE),
+				Arguments.of("GET", "/api/v1/analytics/payment-by-occupation", null, Role.ATTENDANT),
+				Arguments.of("GET", "/api/v1/analytics/students-by-class", null, Role.TRANSPORT_INCHARGE),
+				Arguments.of("GET", "/api/v1/analytics/students-by-class", null, Role.ATTENDANT),
+				Arguments.of("GET", "/api/v1/analytics/students-by-village", null, Role.TRANSPORT_INCHARGE),
+				Arguments.of("GET", "/api/v1/analytics/students-by-village", null, Role.ATTENDANT),
+				Arguments.of("GET", "/api/v1/analytics/students", null, Role.TRANSPORT_INCHARGE),
+				Arguments.of("GET", "/api/v1/analytics/students", null, Role.ATTENDANT),
+				Arguments.of("GET", "/api/v1/analytics/students.csv", null, Role.TRANSPORT_INCHARGE),
+				Arguments.of("GET", "/api/v1/analytics/students.csv", null, Role.ATTENDANT));
 	}
 
 	@ParameterizedTest(name = "{0} {1} without token → 401")

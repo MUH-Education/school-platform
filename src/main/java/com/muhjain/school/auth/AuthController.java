@@ -7,6 +7,9 @@ import com.muhjain.school.common.ApiException;
 import com.muhjain.school.route.AttendantRouteService;
 import com.muhjain.school.user.AppUser;
 import com.muhjain.school.user.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -26,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
  * <li>{@code POST /api/v1/auth/logout} — any login</li>
  * </ul>
  */
+@Tag(name = "Auth")
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
@@ -49,16 +53,21 @@ public class AuthController {
 		this.currentUser = currentUser;
 	}
 
+	@Operation(summary = "Ask for a login code")
+	@SecurityRequirements
 	@PostMapping("/otp/request")
 	public OtpRequestResponse requestOtp(@Valid @RequestBody OtpRequest request, HttpServletRequest http) {
 		return otpService.request(request.phone(), http.getRemoteAddr());
 	}
 
+	@Operation(summary = "Check the code and get a token")
+	@SecurityRequirements
 	@PostMapping("/otp/verify")
 	public LoginResponse verifyOtp(@Valid @RequestBody OtpVerifyRequest request) {
 		return otpService.verify(request.phone(), request.otp());
 	}
 
+	@Operation(summary = "Who am I and what can I do")
 	@GetMapping("/me")
 	public AuthUserResponse me() {
 		return userService.findById(currentUser.id())
@@ -66,6 +75,7 @@ public class AuthController {
 			.orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED", "Please log in first."));
 	}
 
+	@Operation(summary = "Log out (the token stops working)")
 	@PostMapping("/logout")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void logout() {

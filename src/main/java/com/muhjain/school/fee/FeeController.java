@@ -1,6 +1,8 @@
 package com.muhjain.school.fee;
 
 import com.muhjain.school.auth.CurrentUser;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
  * <li>{@code POST /api/v1/students/{id}/payment-corrections} — FEES_CORRECT (owner only)</li>
  * </ul>
  */
+@Tag(name = "Fees")
 @RestController
 @RequestMapping("/api/v1/students/{studentId}")
 public class FeeController {
@@ -42,18 +45,21 @@ public class FeeController {
 		this.currentUser = currentUser;
 	}
 
+	@Operation(summary = "Fees of one student this year")
 	@GetMapping("/fees")
 	@PreAuthorize("hasAuthority('FEES_VIEW')")
 	public FeesResponse fees(@PathVariable Long studentId) {
 		return viewService.view(studentId);
 	}
 
+	@Operation(summary = "Create or change the fee plan")
 	@PutMapping("/fee-plan")
 	@PreAuthorize("hasAuthority('FEES_EDIT')")
 	public FeePlanResponse savePlan(@PathVariable Long studentId, @Valid @RequestBody FeePlanRequest request) {
 		return planService.save(studentId, request, currentUser.id());
 	}
 
+	@Operation(summary = "Record a payment")
 	@PostMapping("/payments")
 	@ResponseStatus(HttpStatus.CREATED)
 	@PreAuthorize("hasAuthority('FEES_EDIT')")
@@ -61,6 +67,7 @@ public class FeeController {
 		return paymentService.record(studentId, request, currentUser.id());
 	}
 
+	@Operation(summary = "Correct a wrong payment (owner only)")
 	@PostMapping("/payment-corrections")
 	@ResponseStatus(HttpStatus.CREATED)
 	@PreAuthorize("hasAuthority('FEES_CORRECT')")

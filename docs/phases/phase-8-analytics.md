@@ -53,15 +53,16 @@ None. This phase adds no table.
 
 ## Tasks
 
-- [ ] 8.1 `StudentFilter` record with validation.
-- [ ] 8.2 `AnalyticsBase.students(filter)` (rules 2, 3).
-- [ ] 8.3 Summary (rule 4).
-- [ ] 8.4 `MonthlyCollectionCalculator` (pure Java) and its endpoint (rule 5).
-- [ ] 8.5 Payment by occupation (rule 6).
-- [ ] 8.6 Students by class and by village (rules 7, 8).
-- [ ] 8.7 List with paging and sorting (rule 9).
-- [ ] 8.8 CSV download with audit (rules 10, 11).
-- [ ] 8.9 If question C4 is answered, add the "student average" endpoint the owner wants. If not, skip.
+- [x] 8.1 `StudentFilter` record with validation.
+- [x] 8.2 `AnalyticsBase.students(filter)` (rules 2, 3).
+- [x] 8.3 Summary (rule 4).
+- [x] 8.4 `MonthlyCollectionCalculator` (pure Java) and its endpoint (rule 5).
+- [x] 8.5 Payment by occupation (rule 6).
+- [x] 8.6 Students by class and by village (rules 7, 8).
+- [x] 8.7 List with paging and sorting (rule 9).
+- [x] 8.8 CSV download with audit (rules 10, 11).
+- [x] 8.9 Skipped. The owner answered C4: "student average graph" means students in each class, which is `/analytics/students-by-class` (task 8.6). No new endpoint.
+- [x] 8.10 Swagger (API docs for the React developer). `springdoc-openapi-starter-webmvc-ui` 3.1.1, on in `dev` and `test` only. One `OpenApiConfig` (title, `bearerAuth`, shared `ApiError` schema), a tag, a summary and "Needs <PERMISSION>" on every endpoint, examples on the main request records, `OpenApiTest` and `OpenApiOffInProdTest`. No business logic and no URL changed.
 
 ## Tests that must pass
 
@@ -83,7 +84,7 @@ Use one fixed set of about 12 students made in the test, with known fees and pay
 
 - For the same filter, the number in the summary, the sum of the class bars, and the row count of the list are equal.
 - The fee status of a student in the list is the same as on that student's own page.
-- `/check-phase 8` passes.
+- `/check-phase 8` passes. (That command does not exist in this repo. These lines were checked by hand on the running app on 8 Oct 2026, see `docs/08-decisions.md` part D.)
 
 ## Out of scope
 

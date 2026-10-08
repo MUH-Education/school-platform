@@ -6,6 +6,8 @@ import com.muhjain.school.auth.CurrentUser;
 import java.io.IOException;
 
 import com.muhjain.school.common.PageResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
@@ -29,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
  * The Students screens. Reading needs STUDENTS_VIEW, changing needs STUDENTS_EDIT.
  * Students are never deleted: a child who leaves gets status LEFT.
  */
+@Tag(name = "Students")
 @RestController
 @RequestMapping("/api/v1/students")
 public class StudentController {
@@ -61,6 +64,7 @@ public class StudentController {
 	 * phone), {@code className}, {@code village}, {@code routeId}, {@code bus=YES|NO}. Only active students, unless
 	 * {@code status=LEFT}.
 	 */
+	@Operation(summary = "List students")
 	@GetMapping
 	@PreAuthorize("hasAuthority('STUDENTS_VIEW')")
 	public PageResponse<StudentListItem> list(@RequestParam(required = false) String q,
@@ -76,6 +80,7 @@ public class StudentController {
 	}
 
 	/** The full profile: details, parents, bus now, photo flag. */
+	@Operation(summary = "Show one student")
 	@GetMapping("/{id}")
 	@PreAuthorize("hasAuthority('STUDENTS_VIEW')")
 	public StudentResponse get(@PathVariable Long id) {
@@ -83,6 +88,7 @@ public class StudentController {
 	}
 
 	/** The change history, newest first: what changed, who did it, when. */
+	@Operation(summary = "Change history of a student")
 	@GetMapping("/{id}/history")
 	@PreAuthorize("hasAuthority('STUDENTS_VIEW')")
 	public List<HistoryItem> history(@PathVariable Long id) {
@@ -93,6 +99,7 @@ public class StudentController {
 	 * A child leaves (status LEFT) or comes back (status ACTIVE). Students are never deleted. Leaving closes the
 	 * open bus row.
 	 */
+	@Operation(summary = "Mark a student active or left")
 	@PutMapping("/{id}/status")
 	@PreAuthorize("hasAuthority('STUDENTS_EDIT')")
 	public StudentResponse setStatus(@PathVariable Long id, @Valid @RequestBody UpdateStatusRequest request) {
@@ -103,6 +110,7 @@ public class StudentController {
 	 * Import existing students from a CSV file (multipart field {@code file}). Use {@code dryRun=true} first: it checks
 	 * every line, reports the bad ones with their line number, and saves nothing.
 	 */
+	@Operation(summary = "Import students from a CSV file")
 	@PostMapping("/import")
 	@PreAuthorize("hasAuthority('STUDENTS_EDIT')")
 	public ImportResponse importStudents(@RequestParam("file") MultipartFile file,
@@ -110,6 +118,7 @@ public class StudentController {
 		return importService.importCsv(file.getBytes(), dryRun, currentUser.id());
 	}
 
+	@Operation(summary = "Change student details")
 	@PutMapping("/{id}")
 	@PreAuthorize("hasAuthority('STUDENTS_EDIT')")
 	public StudentResponse update(@PathVariable Long id, @Valid @RequestBody UpdateStudentRequest request) {
@@ -117,6 +126,7 @@ public class StudentController {
 	}
 
 	/** Add a phone number. A number that other children already use is reused, not copied. */
+	@Operation(summary = "Add a parent phone")
 	@PostMapping("/{id}/guardians")
 	@PreAuthorize("hasAuthority('STUDENTS_EDIT')")
 	@ResponseStatus(HttpStatus.CREATED)
@@ -124,6 +134,7 @@ public class StudentController {
 		return guardianService.add(id, request);
 	}
 
+	@Operation(summary = "Change a parent phone")
 	@PutMapping("/{id}/guardians/{guardianId}")
 	@PreAuthorize("hasAuthority('STUDENTS_EDIT')")
 	public GuardianResponse updateGuardian(@PathVariable Long id, @PathVariable Long guardianId,
@@ -132,6 +143,7 @@ public class StudentController {
 	}
 
 	/** Removes the link, not the phone. 409 LAST_GUARDIAN if it is the last phone of the child. */
+	@Operation(summary = "Remove a parent phone")
 	@DeleteMapping("/{id}/guardians/{guardianId}")
 	@PreAuthorize("hasAuthority('STUDENTS_EDIT')")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
@@ -140,6 +152,7 @@ public class StudentController {
 	}
 
 	/** The bus history of the child, newest first. */
+	@Operation(summary = "Bus history of a student")
 	@GetMapping("/{id}/transport")
 	@PreAuthorize("hasAuthority('STUDENTS_VIEW')")
 	public List<EnrolmentResponse> transport(@PathVariable Long id) {
@@ -150,6 +163,7 @@ public class StudentController {
 	 * Start the bus, change route or stop, or stop the bus. The answer has a {@code warning} when the route is over
 	 * its seats. The child is saved anyway: the school decides, the software only warns.
 	 */
+	@Operation(summary = "Start, change or stop the bus")
 	@PutMapping("/{id}/transport")
 	@PreAuthorize("hasAuthority('STUDENTS_EDIT')")
 	public TransportSaveResponse saveTransport(@PathVariable Long id, @Valid @RequestBody TransportRequest request) {
@@ -157,6 +171,7 @@ public class StudentController {
 	}
 
 	/** Upload a photo: multipart field {@code file}, JPEG or PNG, at most 2 MB. A new photo replaces the old one. */
+	@Operation(summary = "Upload a photo")
 	@PostMapping("/{id}/photo")
 	@PreAuthorize("hasAuthority('STUDENTS_EDIT')")
 	public PhotoResponse uploadPhoto(@PathVariable Long id, @RequestParam("file") MultipartFile file)
@@ -165,6 +180,7 @@ public class StudentController {
 	}
 
 	/** The photo bytes. There is no public URL: the permission is checked here, on every request. */
+	@Operation(summary = "Download the photo")
 	@GetMapping("/{id}/photo")
 	@PreAuthorize("hasAuthority('STUDENTS_VIEW')")
 	public ResponseEntity<byte[]> photo(@PathVariable Long id) {
@@ -176,6 +192,7 @@ public class StudentController {
 			.body(photo.bytes());
 	}
 
+	@Operation(summary = "Remove the photo")
 	@DeleteMapping("/{id}/photo")
 	@PreAuthorize("hasAuthority('STUDENTS_EDIT')")
 	public PhotoResponse removePhoto(@PathVariable Long id) {
