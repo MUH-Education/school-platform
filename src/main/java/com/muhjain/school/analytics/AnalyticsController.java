@@ -1,5 +1,6 @@
 package com.muhjain.school.analytics;
 
+import com.muhjain.school.common.PageResponse;
 import com.muhjain.school.fee.FeeStatus;
 import com.muhjain.school.student.BusFilter;
 import com.muhjain.school.student.FatherOccupation;
@@ -82,6 +83,22 @@ public class AnalyticsController {
 			@RequestParam(required = false) FeeStatus feeStatus) {
 		return analytics
 			.studentsByVillage(StudentFilter.of(sessionId, className, village, routeId, bus, occupation, feeStatus));
+	}
+
+	/**
+	 * The students behind the graphs, paged: {@code ?page=0&size=25&sort=pendingAmount,desc}. Sort by {@code name},
+	 * {@code className} or {@code pendingAmount}.
+	 */
+	@GetMapping("/students")
+	@PreAuthorize("hasAuthority('ANALYTICS_VIEW')")
+	public PageResponse<AnalyticsStudentItem> students(@RequestParam(required = false) Long sessionId,
+			@RequestParam(required = false) String className, @RequestParam(required = false) String village,
+			@RequestParam(required = false) Long routeId, @RequestParam(required = false) BusFilter bus,
+			@RequestParam(required = false) FatherOccupation occupation,
+			@RequestParam(required = false) FeeStatus feeStatus, @RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "25") int size, @RequestParam(required = false) String sort) {
+		return analytics.students(StudentFilter.of(sessionId, className, village, routeId, bus, occupation, feeStatus),
+				page, size, sort);
 	}
 
 }

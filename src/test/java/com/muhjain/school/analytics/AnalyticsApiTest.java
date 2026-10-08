@@ -191,4 +191,87 @@ class AnalyticsApiTest extends AnalyticsTestBase {
 		get(owner, URL + "/fee-collection-by-month" + f).andExpect(jsonPath("$.months[0].school.due").value(4000));
 	}
 
+	@Test
+	void listHasOneRowPerStudentWithTheColumnsOfRule9() throws Exception {
+		get(owner, URL + "/students?size=100").andExpect(status().isOk())
+			.andExpect(jsonPath("$.totalItems").value(12))
+			.andExpect(jsonPath("$.items[0].name").value("Aarav"))
+			.andExpect(jsonPath("$.items[?(@.name=='Charu')].className").value("2"))
+			.andExpect(jsonPath("$.items[?(@.name=='Charu')].village").value("Jakhal"))
+			.andExpect(jsonPath("$.items[?(@.name=='Charu')].fatherOccupation").value("GOVT_EMPLOYEE"))
+			.andExpect(jsonPath("$.items[?(@.name=='Charu')].busRoute").value("Route A"))
+			.andExpect(jsonPath("$.items[?(@.name=='Charu')].schoolFeeStatus").value("ON_TIME"))
+			.andExpect(jsonPath("$.items[?(@.name=='Charu')].busFeeStatus").value("DEFAULTED"))
+			.andExpect(jsonPath("$.items[?(@.name=='Charu')].feeStatus").value("DEFAULTED"))
+			.andExpect(jsonPath("$.items[?(@.name=='Charu')].pendingAmount").value(3500.0))
+			.andExpect(jsonPath("$.items[?(@.name=='Bhavya')].busFeeStatus").value(
+					org.hamcrest.Matchers.contains((Object) null)))
+			.andExpect(jsonPath("$.items[?(@.name=='Farhan')].schoolFeeStatus").value(
+					org.hamcrest.Matchers.contains((Object) null)))
+			.andExpect(jsonPath("$.items[?(@.name=='Farhan')].pendingAmount").value(0));
+	}
+
+	@Test
+	void listIsPagedAndSortable() throws Exception {
+		get(owner, URL + "/students?size=5&page=2").andExpect(status().isOk())
+			.andExpect(jsonPath("$.items.length()").value(2))
+			.andExpect(jsonPath("$.page").value(2))
+			.andExpect(jsonPath("$.totalPages").value(3))
+			.andExpect(jsonPath("$.totalItems").value(12));
+		// Pending: Dev 5000 and Jiya 5000 (tie by id), Charu 3500, then 2000s.
+		get(owner, URL + "/students?size=3&sort=pendingAmount,desc").andExpect(status().isOk())
+			.andExpect(jsonPath("$.items[0].name").value("Dev"))
+			.andExpect(jsonPath("$.items[1].name").value("Jiya"))
+			.andExpect(jsonPath("$.items[2].name").value("Charu"));
+		// School order: LKG, then 1, 2, 3 … 10 (not "10" before "2").
+		get(owner, URL + "/students?size=100&sort=className,asc").andExpect(status().isOk())
+			.andExpect(jsonPath("$.items[0].className").value("LKG"))
+			.andExpect(jsonPath("$.items[2].className").value("1"))
+			.andExpect(jsonPath("$.items[11].className").value("10"));
+		get(owner, URL + "/students?size=100&sort=name,desc").andExpect(jsonPath("$.items[0].name").value("Lata"));
+		get(owner, URL + "/students?page=5").andExpect(status().isOk()).andExpect(jsonPath("$.items.length()").value(0));
+	}
+
+	@Test
+	void listRejectsBadPagingAndSort() throws Exception {
+		get(owner, URL + "/students?sort=phone,asc").andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.fields.sort").exists());
+		get(owner, URL + "/students?size=0").andExpect(status().isBadRequest());
+		get(owner, URL + "/students?size=101").andExpect(status().isBadRequest());
+		get(owner, URL + "/students?page=-1").andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void feeStatusFilterUsesTheSameRuleAsTheStudentPage() throws Exception {
+		String body = get(owner, URL + "/students?size=100&feeStatus=DELAYED").andExpect(status().isOk())
+			.andExpect(jsonPath("$.totalItems").value(3))
+			.andReturn().getResponse().getContentAsString();
+		java.util.List<Integer> listed = com.jayway.jsonpath.JsonPath.read(body, "$.items[*].id");
+		for (String name : ids.keySet()) {
+			String page = get(owner, "/api/v1/students/" + ids.get(name) + "/fees").andReturn().getResponse().getContentAsString();
+			Object own = com.jayway.jsonpath.JsonPath.read(page, "$.status");
+			org.assertj.core.api.Assertions.assertThat(listed.contains(ids.get(name).intValue()))
+				.as(name).isEqualTo("DELAYED".equals(own));
+		}
+	}
+
+	@Test
+	void summaryClassBarsAndListRowCountAreEqualForTheSameFilter() throws Exception {
+		for (String f : new String[] { "", "?village=Jakhal", "?className=1-5&feeStatus=DEFAULTED", "?bus=YES",
+				"?routeId=" + routeA, "?occupation=SHOPKEEPER" }) {
+			String summary = get(owner, URL + "/summary" + f).andReturn().getResponse().getContentAsString();
+			String classes = get(owner, URL + "/students-by-class" + f).andReturn().getResponse().getContentAsString();
+			String list = get(owner, URL + "/students" + f + (f.isEmpty() ? "?" : "&") + "size=100").andReturn()
+				.getResponse().getContentAsString();
+			int fromSummary = com.jayway.jsonpath.JsonPath.read(summary, "$.students");
+			java.util.List<Integer> bars = com.jayway.jsonpath.JsonPath.read(classes, "$.classes[*].students");
+			int fromList = com.jayway.jsonpath.JsonPath.read(list, "$.totalItems");
+			int rows = ((java.util.List<?>) com.jayway.jsonpath.JsonPath.read(list, "$.items")).size();
+			org.assertj.core.api.Assertions.assertThat(bars.stream().mapToInt(Integer::intValue).sum())
+				.as(f).isEqualTo(fromSummary);
+			org.assertj.core.api.Assertions.assertThat(fromList).as(f).isEqualTo(fromSummary);
+			org.assertj.core.api.Assertions.assertThat(rows).as(f).isEqualTo(fromSummary);
+		}
+	}
+
 }

@@ -10,6 +10,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.muhjain.school.common.ApiException;
+import com.muhjain.school.common.PageResponse;
 import com.muhjain.school.fee.FeeHead;
 import com.muhjain.school.fee.FeeStatusCalculator.CoveredDue;
 import com.muhjain.school.fee.FeeStatus;
@@ -27,6 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class AnalyticsService {
 
 	private static final int TOP_VILLAGES = 8;
+
+	private static final int MAX_PAGE_SIZE = 100;
 
 	private final AnalyticsBase base;
 
@@ -112,6 +116,61 @@ public class AnalyticsService {
 		List<VillageCount> rest = all.subList(top.size(), all.size());
 		return new StudentsByVillageResponse(session.id(), session.name(), students.size(), top,
 				new StudentsByVillageResponse.Others(rest.size(), rest.stream().mapToInt(VillageCount::students).sum()));
+	}
+
+	/**
+	 * Rule 9. One page of the list.
+	 *
+	 * @param sort {@code name}, {@code className} (school order, Nursery first) or {@code pendingAmount}, then
+	 * {@code ,asc} or {@code ,desc}. Default {@code name,asc}.
+	 * @throws com.muhjain.school.common.ApiException 400 VALIDATION for page, size or sort
+	 */
+	@Transactional(readOnly = true)
+	public PageResponse<AnalyticsStudentItem> students(StudentFilter filter, int page, int size, String sort) {
+		if (page < 0) {
+			throw ApiException.validation("page", "must be 0 or more");
+		}
+		if (size < 1 || size > MAX_PAGE_SIZE) {
+			throw ApiException.validation("size", "must be between 1 and " + MAX_PAGE_SIZE);
+		}
+		Comparator<AnalyticsStudentItem> order = order(sort);
+		List<AnalyticsStudentItem> all = rows(filter, order);
+		int from = (int) Math.min((long) page * size, all.size());
+		List<AnalyticsStudentItem> items = all.subList(from, Math.min(from + size, all.size()));
+		return new PageResponse<>(items, page, size, all.size(), (all.size() + size - 1) / size);
+	}
+
+	/** Every matching child, not one page. The CSV file uses it. */
+	@Transactional(readOnly = true)
+	public List<AnalyticsStudentItem> allStudents(StudentFilter filter, String sort) {
+		return rows(filter, order(sort));
+	}
+
+	private List<AnalyticsStudentItem> rows(StudentFilter filter, Comparator<AnalyticsStudentItem> order) {
+		return base.students(filter)
+			.stream()
+			.map(s -> new AnalyticsStudentItem(s.id(), s.name(), s.className(), s.village(), s.occupation(),
+					s.routeName(), s.headStatus(FeeHead.SCHOOL), s.headStatus(FeeHead.BUS), s.feeStatus(),
+					s.pendingNow()))
+			.sorted(order.thenComparing(AnalyticsStudentItem::id))
+			.toList();
+	}
+
+	private static Comparator<AnalyticsStudentItem> order(String sort) {
+		String property = "name";
+		boolean descending = false;
+		if (sort != null && !sort.isBlank()) {
+			String[] parts = sort.split(",");
+			property = parts[0].strip();
+			descending = parts.length > 1 && "desc".equalsIgnoreCase(parts[1].strip());
+		}
+		Comparator<AnalyticsStudentItem> order = switch (property) {
+			case "name" -> Comparator.comparing(AnalyticsStudentItem::name, String.CASE_INSENSITIVE_ORDER);
+			case "className" -> Comparator.comparingInt(i -> ClassNames.ALL.indexOf(i.className()));
+			case "pendingAmount" -> Comparator.comparing(AnalyticsStudentItem::pendingAmount);
+			default -> throw ApiException.validation("sort", "can be one of name, className, pendingAmount");
+		};
+		return descending ? order.reversed() : order;
 	}
 
 	// status null = the children without a fee plan

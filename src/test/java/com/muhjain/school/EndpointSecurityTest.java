@@ -155,7 +155,9 @@ class EndpointSecurityTest extends AbstractIntegrationTest {
 				Arguments.of("GET", "/api/v1/analytics/students-by-class", null, Role.TRANSPORT_INCHARGE),
 				Arguments.of("GET", "/api/v1/analytics/students-by-class", null, Role.ATTENDANT),
 				Arguments.of("GET", "/api/v1/analytics/students-by-village", null, Role.TRANSPORT_INCHARGE),
-				Arguments.of("GET", "/api/v1/analytics/students-by-village", null, Role.ATTENDANT));
+				Arguments.of("GET", "/api/v1/analytics/students-by-village", null, Role.ATTENDANT),
+				Arguments.of("GET", "/api/v1/analytics/students", null, Role.TRANSPORT_INCHARGE),
+				Arguments.of("GET", "/api/v1/analytics/students", null, Role.ATTENDANT));
 	}
 
 	@ParameterizedTest(name = "{0} {1} without token → 401")
