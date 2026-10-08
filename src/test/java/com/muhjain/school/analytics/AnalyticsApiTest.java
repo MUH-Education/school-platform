@@ -85,4 +85,41 @@ class AnalyticsApiTest extends AnalyticsTestBase {
 			.andExpect(jsonPath("$.months[0].school.percent").doesNotExist());
 	}
 
+	@Test
+	void occupationCountsAddUpToTheTotal() throws Exception {
+		String all = get(owner, URL + "/payment-by-occupation").andExpect(status().isOk())
+			.andExpect(jsonPath("$.occupations.length()").value(10))
+			.andExpect(jsonPath("$.occupations[?(@.occupation=='FARMER_SMALL')].onTime").value(1))
+			.andExpect(jsonPath("$.occupations[?(@.occupation=='FARMER_SMALL')].delayed").value(1))
+			.andExpect(jsonPath("$.occupations[?(@.occupation=='SHOPKEEPER')].defaulted").value(1))
+			.andExpect(jsonPath("$.occupations[?(@.occupation=='SHOPKEEPER')].total").value(2))
+			.andExpect(jsonPath("$.occupations[?(@.occupation=='LABOUR')].noPlan").value(1))
+			.andExpect(jsonPath("$.occupations[?(@.occupation=='FAMILY_ABROAD')].total").value(0))
+			.andReturn()
+			.getResponse()
+			.getContentAsString();
+		com.jayway.jsonpath.DocumentContext json = com.jayway.jsonpath.JsonPath.parse(all);
+		int sum = 0;
+		for (int i = 0; i < 10; i++) {
+			int row = json.read("$.occupations[" + i + "].onTime", Integer.class)
+					+ json.read("$.occupations[" + i + "].delayed", Integer.class)
+					+ json.read("$.occupations[" + i + "].defaulted", Integer.class)
+					+ json.read("$.occupations[" + i + "].noPlan", Integer.class);
+			org.assertj.core.api.Assertions.assertThat(row).isEqualTo(json.read("$.occupations[" + i + "].total", Integer.class));
+			sum += row;
+		}
+		org.assertj.core.api.Assertions.assertThat(sum).isEqualTo(12);
+	}
+
+	@Test
+	void occupationFollowsTheFilter() throws Exception {
+		get(owner, URL + "/payment-by-occupation?village=Jakhal&feeStatus=DELAYED").andExpect(status().isOk())
+			.andExpect(jsonPath("$.occupations[?(@.occupation=='FARMER_SMALL')].delayed").value(1))
+			.andExpect(jsonPath("$.occupations[?(@.occupation=='FARMER_SMALL')].onTime").value(0))
+			.andExpect(jsonPath("$.occupations[?(@.occupation=='GOVT_EMPLOYEE')].total").value(0));
+		get(owner, URL + "/payment-by-occupation?className=12").andExpect(status().isOk())
+			.andExpect(jsonPath("$.occupations.length()").value(10))
+			.andExpect(jsonPath("$.occupations[0].total").value(0));
+	}
+
 }

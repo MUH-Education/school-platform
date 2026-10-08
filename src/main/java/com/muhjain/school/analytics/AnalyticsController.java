@@ -48,4 +48,16 @@ public class AnalyticsController {
 			.feeCollectionByMonth(StudentFilter.of(sessionId, className, village, routeId, bus, occupation, feeStatus));
 	}
 
+	/** For each father's occupation: how many children are ON_TIME, DELAYED, DEFAULTED (and how many have no plan). */
+	@GetMapping("/payment-by-occupation")
+	@PreAuthorize("hasAuthority('ANALYTICS_VIEW')")
+	public PaymentByOccupationResponse paymentByOccupation(@RequestParam(required = false) Long sessionId,
+			@RequestParam(required = false) String className, @RequestParam(required = false) String village,
+			@RequestParam(required = false) Long routeId, @RequestParam(required = false) BusFilter bus,
+			@RequestParam(required = false) FatherOccupation occupation,
+			@RequestParam(required = false) FeeStatus feeStatus) {
+		return analytics
+			.paymentByOccupation(StudentFilter.of(sessionId, className, village, routeId, bus, occupation, feeStatus));
+	}
+
 }

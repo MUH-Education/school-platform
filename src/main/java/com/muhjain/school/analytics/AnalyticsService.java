@@ -3,11 +3,14 @@ package com.muhjain.school.analytics;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.muhjain.school.fee.FeeHead;
 import com.muhjain.school.fee.FeeStatusCalculator.CoveredDue;
+import com.muhjain.school.fee.FeeStatus;
 import com.muhjain.school.fee.SessionResponse;
+import com.muhjain.school.student.FatherOccupation;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,6 +55,25 @@ public class AnalyticsService {
 			.toList();
 		return new MonthlyCollectionResponse(session.id(), session.name(), MonthlyCollectionCalculator.calculate(dues,
 				session.startsOn(), session.endsOn(), LocalDate.now(clock)));
+	}
+
+	/** Rule 6. One row for each occupation, also those with nobody. */
+	@Transactional(readOnly = true)
+	public PaymentByOccupationResponse paymentByOccupation(StudentFilter filter) {
+		SessionResponse session = base.session(filter);
+		List<AnalyticsStudent> students = base.students(filter);
+		List<OccupationRow> rows = new ArrayList<>();
+		for (FatherOccupation occupation : FatherOccupation.values()) {
+			List<AnalyticsStudent> of = students.stream().filter(s -> s.occupation() == occupation).toList();
+			rows.add(new OccupationRow(occupation, countOf(of, FeeStatus.ON_TIME), countOf(of, FeeStatus.DELAYED),
+					countOf(of, FeeStatus.DEFAULTED), countOf(of, null), of.size()));
+		}
+		return new PaymentByOccupationResponse(session.id(), session.name(), rows);
+	}
+
+	// status null = the children without a fee plan
+	private static int countOf(List<AnalyticsStudent> students, FeeStatus status) {
+		return (int) students.stream().filter(s -> s.feeStatus() == status).count();
 	}
 
 	private static CollectionMath.Totals collected(List<AnalyticsStudent> students, FeeHead head, LocalDate today) {
