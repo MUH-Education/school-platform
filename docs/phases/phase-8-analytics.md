@@ -53,7 +53,7 @@ None. This phase adds no table.
 
 ## Tasks
 
-- [ ] 8.1 `StudentFilter` record with validation.
+- [x] 8.1 `StudentFilter` record with validation.
 - [ ] 8.2 `AnalyticsBase.students(filter)` (rules 2, 3).
 - [ ] 8.3 Summary (rule 4).
 - [ ] 8.4 `MonthlyCollectionCalculator` (pure Java) and its endpoint (rule 5).
