@@ -26,7 +26,9 @@ public class AppUser extends BaseEntity {
 	@Column(nullable = false, length = 30)
 	private Role role;
 
-	// Only for ATTENDANT. Points at a staff row (Phase 2).
+	// The employee this login belongs to, or null for an office user who is not on the staff list.
+	// An ATTENDANT must have one (the route check needs it). Any other role may have one: a teacher
+	// who logs in is a staff row plus this column, never a new kind of user (decision B22).
 	@Column(name = "staff_id")
 	private Long staffId;
 

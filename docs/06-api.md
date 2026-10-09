@@ -6,6 +6,10 @@ Every URL needs a token, except the two OTP URLs. The "Permission" column is wha
 
 This file is the agreement between the backend and the React app. If you change a URL or a field, change this file in the same commit.
 
+**Swagger (try it live, dev/test only):** with the app running, open `http://localhost:8080/swagger-ui/index.html`. Raw docs: `http://localhost:8080/v3/api-docs`. Off in `prod`. See `README.md` for how to get a token and click Authorize.
+
+**Postman collection (every URL below, ready to import):** `docs/school-platform.postman_collection.json`.
+
 ## Login — Phase 1
 
 | Method and URL | Permission | What it does |
@@ -41,8 +45,9 @@ Details: `docs/04-login-otp-jwt.md`.
 | `GET /vehicles/{id}/assignments` | `VEHICLES_VIEW` | Who worked on it, newest first |
 | `POST /vehicles/{id}/assignments` | `VEHICLES_EDIT` | Change the driver, attendant or helper |
 | `GET /vehicles/attention` | `VEHICLES_VIEW` | Papers and licences ended or ending in 30 days |
-| `GET /staff` | `VEHICLES_VIEW` | All drivers, attendants, helpers, with where they work today |
+| `GET /staff` | `VEHICLES_VIEW` | Every employee, with where they work today. `?type=` filters. |
 | `POST /staff` | `VEHICLES_EDIT` | Add a person |
+| `GET /staff/{id}` | `VEHICLES_VIEW` | One person |
 | `PUT /staff/{id}` | `VEHICLES_EDIT` | Change a person |
 | `DELETE /staff/{id}` | `VEHICLES_EDIT` | Turn off. 409 if still on a vehicle. |
 
@@ -53,6 +58,42 @@ Details: `docs/04-login-otp-jwt.md`.
 `GET /vehicles/attention` is a list, the most urgent first. A paper: `{ "kind": "PAPER", "vehicleId": 4, "vehicleName": "Van 4", "docType": "INSURANCE", "validTill": "2026-10-17", "status": "ENDING_SOON", "daysLeft": 10 }`. A licence: `{ "kind": "LICENCE", "staffId": 21, "staffName": "Jagdish", "validTill": "2026-10-12", "status": "ENDING_SOON", "daysLeft": 5 }`. Only turned-on vehicles and drivers. A paper with no date is not listed. `daysLeft` is below 0 when ended.
 
 `GET /vehicles/{id}/assignments` is a list, newest first: `{ "id", "vehicleId", "staffId", "staffName", "duty", "fromDate", "toDate", "temporary", "reason", "createdBy", "createdAt" }`.
+
+## Employees and teachers — Phase 10
+
+`staff` holds every employee: DRIVER, ATTENDANT, HELPER and TEACHER.
+
+| Method and URL | Permission | What it does |
+|---|---|---|
+| `GET /staff?type=DRIVER&type=ATTENDANT&type=HELPER` | `VEHICLES_VIEW` | Only those types. No `type` means everybody. |
+| `GET /staff/{id}/salary` | `STAFF_SALARY_VIEW` | What this person is paid in a month |
+| `PUT /staff/{id}/salary` | `STAFF_SALARY_EDIT` | Set it: `{ "monthlySalary": 18500.00 }` |
+
+The Vehicles and staff screen must send `?type=DRIVER&type=ATTENDANT&type=HELPER`, or teachers will appear in the transport list.
+
+`POST /staff` and `PUT /staff/{id}` take two more parts, both optional:
+
+```json
+{
+  "name": "Sunita", "phone": "98123 40030", "staffType": "TEACHER", "active": true,
+  "details": { "joinedOn": "2024-04-01", "dateOfBirth": "1990-07-12", "gender": "FEMALE",
+               "address": "Ward 7, Tohana", "emergencyPhone": "98123 40099",
+               "idProofType": "AADHAAR", "idProofLast4": "4321" },
+  "teaching": { "qualification": "B.Ed, M.A. Hindi", "subjects": "Hindi, Social Science",
+                "classTeacherOf": "3" }
+}
+```
+
+- `gender` is MALE, FEMALE or OTHER. `idProofType` is AADHAAR, VOTER_ID, PAN or DRIVING_LICENCE.
+- `idProofType` and `idProofLast4` go together. One without the other → 400 `VALIDATION`.
+- **Only the last 4 digits of an ID are stored.** A longer number → 400 (question C11).
+- `teaching` is only for a TEACHER. Sending it for anyone else → 400 `NOT_A_TEACHER`. A TEACHER always gets a teaching file, even when `teaching` is left out.
+- `classTeacherOf` must be a class of this school, else 400. One class has one class teacher: a second teacher for the same class → 409 `CLASS_TEACHER_TAKEN`, and the message names the other teacher.
+- `PUT` sends the whole person. A field left out of `details` or `teaching` is **cleared**, so the edit form must send back everything it loaded.
+- Changing the type away from TEACHER removes the teaching file. Changing it to TEACHER starts an empty one.
+- A teacher can never be put on a vehicle: there is no TEACHER duty, so `POST /vehicles/{id}/assignments` answers 409 `WRONG_STAFF_TYPE`.
+
+The salary is **never** part of `GET /staff` or `GET /staff/{id}`. It has its own URL because the staff list is open to `VEHICLES_VIEW`, which the transport in-charge has. `GET /staff/{id}/salary` answers `{ "staffId": 31, "monthlySalary": 18500.00, "updatedBy": 1, "updatedAt": "2026-10-09T05:10:00Z" }`, or 404 `NOT_FOUND` when no salary is saved yet. Setting it again replaces the number; the old number stays in the audit log.
 
 Change a driver:
 

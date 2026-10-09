@@ -60,6 +60,8 @@ This matches the "Users and roles" screen in the design.
 | `ROUTES_EDIT` | yes | | yes | | |
 | `VEHICLES_VIEW` | yes | yes | yes | | |
 | `VEHICLES_EDIT` | yes | | yes | | |
+| `STAFF_SALARY_VIEW` | yes | | | | |
+| `STAFF_SALARY_EDIT` | yes | | | | |
 | `STUDENTS_VIEW` | yes | yes | yes | yes | |
 | `STUDENTS_EDIT` | yes | yes | | | |
 | `ADMISSIONS_CREATE` | yes | yes | | yes | |
@@ -78,6 +80,7 @@ Examples:
 - Priya (Admissions desk) calls `GET /api/v1/vehicles`. She has no `VEHICLES_VIEW`. Answer: 403.
 - Jaswant (Transport in-charge) calls `GET /api/v1/enquiries`. No `ENQUIRIES_VIEW`. Answer: 403.
 - Balwan (Attendant) calls `GET /api/v1/students`. No `STUDENTS_VIEW`. Answer: 403. He sees children only through his own route's manifest.
+- Jaswant (Transport in-charge) calls `GET /api/v1/staff/31/salary`. He has `VEHICLES_VIEW`, so he can see the staff list, but he has no `STAFF_SALARY_VIEW`. Answer: 403. Only the owner sees a salary.
 
 ## The attendant has one more check
 

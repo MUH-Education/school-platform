@@ -180,6 +180,9 @@ public abstract class AbstractIntegrationTest {
 		jdbc.update("delete from route");
 		jdbc.update("delete from vehicle_assignment");
 		jdbc.update("delete from vehicle_document");
+		// Before app_user: staff_salary.updated_by points at the user who typed the salary.
+		jdbc.update("delete from teacher_profile");
+		jdbc.update("delete from staff_salary");
 		jdbc.update("update app_setting set updated_by = null");
 		jdbc.update("delete from audit_log");
 		jdbc.update("delete from otp_code");

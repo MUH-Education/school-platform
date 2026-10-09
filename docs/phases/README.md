@@ -1,6 +1,6 @@
 # Phases
 
-The backend is built in 10 phases. Each phase ends with something you can run and show.
+The backend is built in 11 phases. Each phase ends with something you can run and show. Phases 0 to 9 are the launch. Phase 10 comes after it.
 
 ## Status
 
@@ -18,6 +18,9 @@ Change the Status column as you go: **Not started** → **In progress** → **Do
 | 7 | [Fees](phase-7-fees.md) | Fee plan at admission, payments, pending amount, status | L | Done |
 | 8 | [Analytics](phase-8-analytics.md) | Filters, graph numbers, download | M | Done |
 | 9 | [Go live](phase-9-go-live.md) | Running on a server in India with backups | M | In progress |
+| 10 | [Employees and teachers](phase-10-staff-and-teachers.md) | `staff` holds every employee. Teachers, basic details, salary for the owner only. | S | In progress |
+
+**Two phases are open at the same time right now.** The owner asked for the Phase 10 code on 9 Oct 2026, before Phase 9 was finished. All Phase 10 tasks are ticked and `./gradlew test` is green, but the "Done when" list of Phase 10 has not been checked on the running app yet. Phase 9 (go live) is still the work that matters first.
 
 Size: **S** is about one week, **M** about one and a half weeks, **L** about two weeks. This assumes about 10 to 12 hours a week with Claude Code doing most of the typing. It is a guess, not a promise.
 
@@ -34,6 +37,7 @@ Size: **S** is about one week, **M** about one and a half weeks, **L** about two
 - Phase 6 (enquiries) needs only Phase 1. You can do it any time after Phase 1, for example in a quiet week.
 - Phase 7 (fees) needs Phase 3. Phase 8 (analytics) needs Phase 7.
 - Phase 9 can be done in two parts: a first go-live after Phase 5, and again after Phase 8.
+- Phase 10 is **after** the launch. It needs only Phase 2. Nothing in Phases 0 to 9 waits for it.
 
 Example plan: if you start on 8 October and keep the pace above, Phases 0 to 5 take about 9 to 10 weeks, so the transport system is ready around the middle of December. Phases 6 to 8 then follow in December and January.
 

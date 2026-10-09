@@ -1,11 +1,12 @@
 package com.muhjain.school.staff;
 
 /**
- * What a staff member is. Also the duty they can have on a vehicle: a DRIVER duty needs a DRIVER (rule 11).
- * Question C6 in docs/08-decisions.md: these three are enough for now.
+ * What an employee of the school is. The first three are also the duties on a vehicle: a DRIVER duty needs a
+ * DRIVER (rule 11). TEACHER has no duty in {@link Duty}, so a teacher can never be put on a bus.
+ * Question C6 in docs/08-decisions.md was answered on 9 Oct 2026: TEACHER was added.
  */
 public enum StaffType {
 
-	DRIVER, ATTENDANT, HELPER
+	DRIVER, ATTENDANT, HELPER, TEACHER
 
 }

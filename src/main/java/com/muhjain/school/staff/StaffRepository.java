@@ -1,6 +1,7 @@
 package com.muhjain.school.staff;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -13,6 +14,9 @@ import org.springframework.data.repository.query.Param;
 public interface StaffRepository extends JpaRepository<Staff, Long> {
 
 	List<Staff> findAllByOrderByIdAsc();
+
+	/** Only some types. Example: DRIVER, ATTENDANT and HELPER for the Vehicles and staff screen. */
+	List<Staff> findByStaffTypeInOrderByIdAsc(Collection<StaffType> types);
 
 	/** Turned-on drivers whose licence ends on or before a day. Used for the "needs attention" list. */
 	List<Staff> findByStaffTypeAndActiveTrueAndLicenceValidTillLessThanEqualOrderByLicenceValidTillAscIdAsc(

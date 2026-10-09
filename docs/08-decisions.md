@@ -14,6 +14,8 @@ This file is the memory of the project. When something is decided, write one lin
 | A6 | No parent app. Parents get SMS only. | 7 Oct 2026 |
 | A7 | One admin web app holds bus status, routes, vehicles and staff, students, admissions with fees, enquiries, analytics, users and roles. | 7 Oct 2026 |
 | A8 | Bus attendants use a phone app in Hindi. | 7 Oct 2026 |
+| A9 | `staff` means every employee, not only transport people. A teacher is a staff type. Basic employee details (joining day, date of birth, address, emergency phone, ID proof, salary) are stored. | 9 Oct 2026 |
+| A10 | Launch the simple application first. Teacher login, class attendance, scanned papers and exam papers are planned but not built. | 9 Oct 2026 |
 
 ## B. Decided while planning (change any of these if you disagree)
 
@@ -42,6 +44,9 @@ Each one has the reason and what it would cost to change later.
 | B19 | Student `class_name` is one current value. Promotion to the next class each April is a later task. | Keeps Phase 3 small. | Medium |
 | B20 | In the evening, the attendant must answer for every child before the trip can start. The server reports missing children on Bus status. | Child safety. | Low |
 | B21 | A wrong payment is fixed by a correction row, by the owner only. Payments are never edited. | Money records must keep their history. | — |
+| B22 | `app_user` stays "a login account". It does **not** become a person table that `student`, `staff` and `visitor` hang off. | `app_user.phone` is unique, so two children sharing their mother's phone cannot both be users. A driver whose son studies here would need two rows. A visitor would be almost a login account. The three kinds share only name and phone, and no screen asks for "one list of all people". | High before launch: `app_user`, auth, OTP, JWT and most tests. |
+| B23 | A teacher is a `staff` row with `staff_type = TEACHER`. Shared employee columns go on `staff`; only teaching extras go in `teacher_profile`. A visitor is not a person record but an event, and gets its own feature later. | The person-table idea is right at the **employee** level: every employee really does share name, phone, joining day, address, ID. Of the four types only DRIVER and TEACHER have extra fields, so one small table is enough. `Duty` maps each duty to one `StaffType`, so a teacher can never be put on a bus without any new rule. | Low |
+| B24 | Salary lives in its own table `staff_salary` with its own permission `STAFF_SALARY_VIEW`, not as a column on `staff`. | `GET /api/v1/staff` is open to `VEHICLES_VIEW`, which `TRANSPORT_INCHARGE` has. A salary column on `staff` would show every teacher's salary on the Vehicles and staff screen, and one careless edit to `StaffResponse` would leak it. | Low |
 
 ## C. Open questions for the owner
 
@@ -54,11 +59,12 @@ Nothing in Phase 0 to 4 is blocked by these. Each one says which phase needs the
 | C3 | Is it fine that Analytics shows a child's name next to fee status and father's occupation? | Phase 8 | Default: yes, but only OWNER, OFFICE_ADMIN and ADMISSIONS_DESK can open it. |
 | C4 | What does "student average graph" mean: marks, attendance, or fee per student? | Phase 8 | Default: students in each class. |
 | C5 | Bus fee when a child starts mid-year: typed by the office, or calculated (fee ÷ months × months left)? | Phase 7 | Default: typed by the office. |
-| C6 | Staff types: are DRIVER, ATTENDANT and HELPER enough? | Phase 2 | Default: these three. |
+| ~~C6~~ | ~~Staff types: are DRIVER, ATTENDANT and HELPER enough?~~ | — | **Answered 9 Oct 2026: no. TEACHER is added in Phase 10. See A9 and B23.** |
 | C7 | After how many days late is a fee "delayed", and when "defaulted"? | Phase 7 | Default: 10 days and 60 days. |
 | C8 | Where will it run (which server company)? Data must stay in India. | Phase 9 | — |
 | C9 | Should a parent get an SMS when the child is marked absent? | Phase 5 | Default: no. A wrong tap would scare a parent. |
 | C10 | Should the attendant's phone show parents' phone numbers? | Phase 4 | Default: no. The office calls the parent. |
+| C11 | Does the office need the **full** Aadhaar number of an employee, or are the last 4 digits enough? | Phase 10 | Default: last 4 digits only (`id_proof_last4`). A full Aadhaar number is protected by Indian law, and a stolen database would be a serious problem. If the full number is really needed, say so and it must be encrypted and behind its own permission. |
 
 ## D. Decisions made while building
 
@@ -194,6 +200,14 @@ Add a line each time code needed a choice the docs did not cover.
 | 8 Oct 2026 | 8 | Docs text: `OpenApiConfig` adds the lock (`bearerAuth`), the answers 401 and 403 (shared `ApiError` body) and the sentence "Needs FEES_EDIT." to every operation. The sentence is read from `@PreAuthorize`, so it is always the permission the server really checks (any login → "Needs a valid token (any role)."; the admission has its own text). The two open login URLs carry `@SecurityRequirements` and show no lock. The summary of each endpoint is written by hand in `@Operation`. Analytics filter descriptions and examples are `@Schema` on the parts of `StudentFilter`. | One place for the permission text, so it cannot drift from the code. |
 | 8 Oct 2026 | 8 | Swagger: the Analytics filter examples are written in the parameter description ("Example: 1-5"), not in the `example` field. Swagger's "Try it out" fills every field with its example, and together they (`bus=NO` with `routeId=4`) are a mix the server refuses with 400, so the first click would fail. Found when the Done-when check was run in a browser. Operation ids are `controller_method` (`analytics_summary`), not `summary_2`, so the React code generator gets stable names. | Found while checking the page by hand. |
 | 8 Oct 2026 | 8 | Phase 8 "Done when" was checked by hand (no `/check-phase` in this repo) on the jar with PostgreSQL in Docker and the dev data (39 active children, fee plans in all three statuses): (1) for 8 different filters summary = sum of class bars = sum of villages = sum of occupations = list rows; (2) all 39 rows of the list have the same status and pending amount as `GET /students/{id}/fees`; (3) Swagger opens in dev, Authorize with an owner token works, `GET /analytics/summary` gave 200 from the page; (4) the same jar with the two prod values (`springdoc.*.enabled=false`) gives 401 without a token and 404 with one, never the page. The real `prod` profile cannot start yet because there is no `ProviderApi` class (question C1, Phase 5 guard `ProdMessagingCheck`), so the prod part of `application.yml` is proven by `ApplicationYamlDocsTest`. | Phase 9 needs the provider before the first real start. |
+| 9 Oct 2026 | 10 | Phase 10 was built **before** Phase 9 was finished, because the owner asked for it. Two phases are open at the same time; `docs/phases/README.md` says so. Phase 10 is not "Done": its tasks are ticked and the tests are green, but the "Done when" list has not been checked on the running app. | Owner's instruction. CLAUDE.md's "one phase at a time" is broken here on purpose, written down so nobody is surprised. |
+| 9 Oct 2026 | 10 | `teacher_profile` and `staff_salary` have `staff_id` as the primary key, like `app_setting` uses `key`. One employee therefore has at most one of each, and the database proves it, not the Java code. | No `id` column is needed when the row belongs to exactly one person. |
+| 9 Oct 2026 | 10 | One class has at most one class teacher: a partial unique index on `teacher_profile(class_teacher_of)` plus 409 `CLASS_TEACHER_TAKEN` from the service, with the other teacher's name in the message. A teacher with no class is not counted. | Same shape as 409 `STAFF_BUSY` and `VEHICLE_HAS_ROUTE`. The index means it holds even if the service has a bug. |
+| 9 Oct 2026 | 10 | `PUT /staff/{id}` sends the whole person: a field left out of `details` or `teaching` is **cleared**, not kept. | The same rule the screen already follows for `active` and the licence. One rule for the React developer. |
+| 9 Oct 2026 | 10 | ID proof is stored as a type plus the **last 4 digits only** (`id_proof_type`, `id_proof_last4`), with a database check that refuses anything longer. Question C11 asks the owner whether the full Aadhaar number is really needed. | A stolen database must not hand over the staff's Aadhaar numbers. The office only needs to match a paper in the file. |
+| 9 Oct 2026 | 10 | `address`, `qualification` and `subjects` go through `NameKeys.tidy()`, and `emergency_phone` through `PhoneNumbers.normalize()`. The emergency phone is written to the audit log **masked** (`+91XXXXXX4321`). | Security rule 5: never log a full phone number. |
+| 9 Oct 2026 | 10 | `GET /staff` with no `type` still returns everybody, so nothing built before Phase 10 breaks. The React Vehicles and staff screen must start sending `?type=DRIVER&type=ATTENDANT&type=HELPER`, or teachers will show up in the transport list. | An old screen keeps working; the new filter is opt-in. |
+| 9 Oct 2026 | 10 | `RolesControllerTest` now compares against `Permission.values().length` instead of the number 19. | Two new permissions broke a hard-coded count. `RolePermissionMatrixTest` already checks the list against `docs/05-roles-permissions.md`, so the count here added nothing. |
 
 ## E. What changed from the first plan document
 

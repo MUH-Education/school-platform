@@ -347,7 +347,7 @@ public class DevDataLoader implements ApplicationRunner {
 	private Long addStaff(String name, StaffType type, int phoneNumber, String licenceNo, LocalDate licenceTill) {
 		// Made-up numbers: 9876543201, 9876543202, ...
 		StaffResponse person = staffService.create(new CreateStaffRequest(name, "98765432" + String.format("%02d",
-				phoneNumber), type, licenceNo, licenceTill));
+				phoneNumber), type, licenceNo, licenceTill, null, null));
 		return person.id();
 	}
 

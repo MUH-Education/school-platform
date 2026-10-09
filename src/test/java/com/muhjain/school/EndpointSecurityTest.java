@@ -38,6 +38,8 @@ class EndpointSecurityTest extends AbstractIntegrationTest {
 
 	private static final String STAFF_UPDATE_BODY = STAFF_BODY.replace("}", ",\"active\":true}");
 
+	private static final String SALARY_BODY = "{\"monthlySalary\":18500}";
+
 	private static final String ASSIGNMENT_BODY = "{\"duty\":\"DRIVER\",\"staffId\":1,\"fromDate\":\"2026-10-12\","
 			+ "\"toDate\":\"2026-10-16\",\"temporary\":true}";
 
@@ -104,8 +106,13 @@ class EndpointSecurityTest extends AbstractIntegrationTest {
 				Arguments.of("PUT", "/api/v1/routes/1/stops", STOPS_BODY, Role.OFFICE_ADMIN),
 				Arguments.of("GET", "/api/v1/staff", null, Role.ADMISSIONS_DESK),
 				Arguments.of("POST", "/api/v1/staff", STAFF_BODY, Role.OFFICE_ADMIN),
+				Arguments.of("GET", "/api/v1/staff/1", null, Role.ADMISSIONS_DESK),
 				Arguments.of("PUT", "/api/v1/staff/1", STAFF_UPDATE_BODY, Role.OFFICE_ADMIN),
 				Arguments.of("DELETE", "/api/v1/staff/1", null, Role.OFFICE_ADMIN),
+				// Phase 10: a salary needs STAFF_SALARY_VIEW or STAFF_SALARY_EDIT. The transport in-charge can
+				// see the staff list but not what anyone is paid.
+				Arguments.of("GET", "/api/v1/staff/1/salary", null, Role.TRANSPORT_INCHARGE),
+				Arguments.of("PUT", "/api/v1/staff/1/salary", SALARY_BODY, Role.TRANSPORT_INCHARGE),
 				// Phase 4: trips need TRIPS_RECORD or TRIPS_RECORD_ANY (not the admissions desk). my-route needs
 				// TRIPS_RECORD (not the office admin). Bus status needs BUS_STATUS_VIEW (not an attendant).
 				Arguments.of("GET", "/api/v1/trips/my-route", null, Role.OFFICE_ADMIN),

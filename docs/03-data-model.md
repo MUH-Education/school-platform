@@ -422,6 +422,52 @@ Example on 7 Oct: dues were ₹7,500 on 1 Apr, 1 Jul, 1 Oct. The family paid ₹
 
 ---
 
+## Phase 10 tables
+
+Phase 10 turns `staff` from "transport people" into "every employee of the school". A teacher is a `staff` row with `staff_type = TEACHER`, not a new entity (decision B22).
+
+### `staff` — new columns
+
+`V8__staff_employee.sql` adds these. All are nullable: the rows added in Phase 2 have none of this filled in.
+
+| Column | Type | Notes |
+|---|---|---|
+| `joined_on` | date, null | First working day. Example: 2024-04-01. |
+| `date_of_birth` | date, null | |
+| `gender` | varchar(10), null | MALE, FEMALE, OTHER |
+| `address` | varchar(300), null | One box, as the office writes it. |
+| `emergency_phone` | varchar(13), null | Whom to call. `+91XXXXXXXXXX`, same check as `phone`. |
+| `id_proof_type` | varchar(20), null | AADHAAR, VOTER_ID, PAN, DRIVING_LICENCE |
+| `id_proof_last4` | varchar(4), null | **Only the last 4 digits.** See question C11. |
+
+`staff_type_ck` is dropped and added again with `TEACHER` in the list. The licence check does not change: a teacher has no licence, and the existing constraint already allows that.
+
+### `teacher_profile` — only what a teacher has
+
+| Column | Type | Notes |
+|---|---|---|
+| `staff_id` | → `staff`, primary key | One teacher = one `staff` row + one row here. |
+| `qualification` | varchar(120), null | "B.Ed, M.A. Hindi" |
+| `subjects` | varchar(200), null | "Hindi, Social Science". One text box, not a table. |
+| `class_teacher_of` | varchar(20), null | A class name from `ClassNames`, or null. |
+
+DRIVER keeps its two licence columns on `staff`. ATTENDANT and HELPER have no extra table, because they have no extra information.
+
+### `staff_salary` — kept apart on purpose
+
+| Column | Type | Notes |
+|---|---|---|
+| `staff_id` | → `staff`, primary key | |
+| `monthly_salary` | numeric(12,2) | Never `double`. |
+| `updated_by` | → `app_user` | |
+| `updated_at` | timestamptz | |
+
+This is a separate table, not a column on `staff`, for one reason: `GET /api/v1/staff` is open to `VEHICLES_VIEW`, which `TRANSPORT_INCHARGE` has. A salary column on `staff` would show every teacher's salary on the Vehicles and staff screen. Salary has its own endpoint and its own permission `STAFF_SALARY_VIEW`, given to `OWNER` only.
+
+Only the current salary is stored. A history of raises is out of scope.
+
+---
+
 ## Three queries used everywhere
 
 Write each one once, in a service, and reuse it.

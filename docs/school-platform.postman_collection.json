@@ -1,0 +1,563 @@
+{
+  "info": {
+    "name": "School Admin Backend — MUH Jain Global School",
+    "description": "Every URL from docs/06-api.md. Base URL points at a local ./gradlew bootRun. Run 'Login > 1. Request OTP' then 'Login > 2. Verify OTP' first — the second call saves the token into the {{token}} collection variable automatically, and every other request sends it as a Bearer token.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "apiBase", "value": "{{baseUrl}}/api/v1" },
+    { "key": "token", "value": "" },
+    { "key": "phone", "value": "+919999999999" },
+    { "key": "otpCode", "value": "123456" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "Login",
+      "item": [
+        {
+          "name": "1. Request OTP",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"phone\": \"{{phone}}\"\n}" },
+            "url": { "raw": "{{apiBase}}/auth/otp/request", "host": ["{{apiBase}}"], "path": ["auth", "otp", "request"] },
+            "description": "Open URL. Same answer for a known or unknown phone. In dev/test the code is printed in the app console log (LogOtpSender)."
+          }
+        },
+        {
+          "name": "2. Verify OTP",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  if (body.token) { pm.collectionVariables.set('token', body.token); }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"phone\": \"{{phone}}\",\n  \"code\": \"{{otpCode}}\"\n}" },
+            "url": { "raw": "{{apiBase}}/auth/otp/verify", "host": ["{{apiBase}}"], "path": ["auth", "otp", "verify"] },
+            "description": "Open URL. On 200, saves the JWT into the {{token}} collection variable for every other request."
+          }
+        },
+        {
+          "name": "Who am I",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{apiBase}}/auth/me", "host": ["{{apiBase}}"], "path": ["auth", "me"] },
+            "description": "Any login. Role, permissions, route."
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{apiBase}}/auth/logout", "host": ["{{apiBase}}"], "path": ["auth", "logout"] },
+            "description": "Any login. Bumps token_version, kills every token for this user."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users and roles",
+      "item": [
+        { "name": "List users", "request": { "method": "GET", "url": { "raw": "{{apiBase}}/users", "host": ["{{apiBase}}"], "path": ["users"] }, "description": "USERS_MANAGE" } },
+        {
+          "name": "Add user",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"phone\": \"+919876543210\",\n  \"role\": \"OWNER\",\n  \"name\": \"Example Name\",\n  \"staffId\": null\n}" },
+            "url": { "raw": "{{apiBase}}/users", "host": ["{{apiBase}}"], "path": ["users"] },
+            "description": "USERS_MANAGE"
+          }
+        },
+        {
+          "name": "Change user",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"phone\": \"+919876543210\",\n  \"name\": \"Example Name\",\n  \"role\": \"OWNER\",\n  \"active\": true\n}" },
+            "url": { "raw": "{{apiBase}}/users/1", "host": ["{{apiBase}}"], "path": ["users", "1"] },
+            "description": "USERS_MANAGE"
+          }
+        },
+        { "name": "Role and permission table", "request": { "method": "GET", "url": { "raw": "{{apiBase}}/roles", "host": ["{{apiBase}}"], "path": ["roles"] }, "description": "USERS_MANAGE" } },
+        { "name": "Get settings", "request": { "method": "GET", "url": { "raw": "{{apiBase}}/settings", "host": ["{{apiBase}}"], "path": ["settings"] }, "description": "Any login" } },
+        {
+          "name": "Change settings",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"values\": {\n    \"transport.bus_fee_per_year\": \"9000\"\n  }\n}" },
+            "url": { "raw": "{{apiBase}}/settings", "host": ["{{apiBase}}"], "path": ["settings"] },
+            "description": "SETTINGS_EDIT. Only existing keys."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vehicles and staff",
+      "item": [
+        { "name": "List vehicles", "request": { "method": "GET", "url": { "raw": "{{apiBase}}/vehicles?date=", "host": ["{{apiBase}}"], "path": ["vehicles"], "query": [{ "key": "date", "value": "", "description": "optional, default today" }] }, "description": "VEHICLES_VIEW" } },
+        {
+          "name": "Add vehicle",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Van 5\",\n  \"type\": \"SMALL_VAN\",\n  \"seats\": 14\n}" },
+            "url": { "raw": "{{apiBase}}/vehicles", "host": ["{{apiBase}}"], "path": ["vehicles"] },
+            "description": "VEHICLES_EDIT"
+          }
+        },
+        { "name": "One vehicle", "request": { "method": "GET", "url": { "raw": "{{apiBase}}/vehicles/1", "host": ["{{apiBase}}"], "path": ["vehicles", "1"] }, "description": "VEHICLES_VIEW" } },
+        {
+          "name": "Change vehicle",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Van 5\",\n  \"type\": \"SMALL_VAN\",\n  \"seats\": 14,\n  \"active\": true\n}" },
+            "url": { "raw": "{{apiBase}}/vehicles/1", "host": ["{{apiBase}}"], "path": ["vehicles", "1"] },
+            "description": "VEHICLES_EDIT"
+          }
+        },
+        { "name": "Turn off vehicle", "request": { "method": "DELETE", "url": { "raw": "{{apiBase}}/vehicles/1", "host": ["{{apiBase}}"], "path": ["vehicles", "1"] }, "description": "VEHICLES_EDIT. 409 VEHICLE_IN_USE if it runs a route." } },
+        {
+          "name": "Save vehicle documents",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"fitness\": \"2027-01-10\",\n  \"insurance\": \"2026-10-28\",\n  \"permit\": null,\n  \"puc\": null\n}" },
+            "url": { "raw": "{{apiBase}}/vehicles/1/documents", "host": ["{{apiBase}}"], "path": ["vehicles", "1", "documents"] },
+            "description": "VEHICLES_EDIT. A date that is null or left out removes that paper."
+          }
+        },
+        { "name": "Vehicle assignment history", "request": { "method": "GET", "url": { "raw": "{{apiBase}}/vehicles/1/assignments", "host": ["{{apiBase}}"], "path": ["vehicles", "1", "assignments"] }, "description": "VEHICLES_VIEW" } },
+        {
+          "name": "Change driver/attendant/helper",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"duty\": \"DRIVER\",\n  \"staffId\": 21,\n  \"fromDate\": \"2026-10-12\",\n  \"toDate\": \"2026-10-16\",\n  \"temporary\": true,\n  \"reason\": \"ON_LEAVE\"\n}" },
+            "url": { "raw": "{{apiBase}}/vehicles/1/assignments", "host": ["{{apiBase}}"], "path": ["vehicles", "1", "assignments"] },
+            "description": "VEHICLES_EDIT. 409s: STAFF_BUSY, WRONG_STAFF_TYPE, LICENCE_ENDED, STAFF_INACTIVE, VEHICLE_INACTIVE, FROM_DATE_TOO_EARLY, TEMPORARY_OVERLAP."
+          }
+        },
+        { "name": "Papers and licences ending soon", "request": { "method": "GET", "url": { "raw": "{{apiBase}}/vehicles/attention", "host": ["{{apiBase}}"], "path": ["vehicles", "attention"] }, "description": "VEHICLES_VIEW" } },
+        { "name": "List staff", "request": { "method": "GET", "url": { "raw": "{{apiBase}}/staff", "host": ["{{apiBase}}"], "path": ["staff"] }, "description": "VEHICLES_VIEW" } },
+        {
+          "name": "Add staff",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Example Name\",\n  \"type\": \"DRIVER\",\n  \"phone\": \"+919876500000\",\n  \"licenceValidTill\": \"2027-05-01\"\n}" },
+            "url": { "raw": "{{apiBase}}/staff", "host": ["{{apiBase}}"], "path": ["staff"] },
+            "description": "VEHICLES_EDIT"
+          }
+        },
+        {
+          "name": "Change staff",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Example Name\",\n  \"type\": \"DRIVER\",\n  \"phone\": \"+919876500000\",\n  \"active\": true\n}" },
+            "url": { "raw": "{{apiBase}}/staff/1", "host": ["{{apiBase}}"], "path": ["staff", "1"] },
+            "description": "VEHICLES_EDIT"
+          }
+        },
+        { "name": "Turn off staff", "request": { "method": "DELETE", "url": { "raw": "{{apiBase}}/staff/1", "host": ["{{apiBase}}"], "path": ["staff", "1"] }, "description": "VEHICLES_EDIT. 409 if still on a vehicle." } }
+      ]
+    },
+    {
+      "name": "Routes",
+      "item": [
+        { "name": "List routes", "request": { "method": "GET", "url": { "raw": "{{apiBase}}/routes", "host": ["{{apiBase}}"], "path": ["routes"] }, "description": "ROUTES_VIEW" } },
+        {
+          "name": "Add route",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Route 4\",\n  \"vehicleId\": 4\n}" },
+            "url": { "raw": "{{apiBase}}/routes", "host": ["{{apiBase}}"], "path": ["routes"] },
+            "description": "ROUTES_EDIT. vehicleId is optional."
+          }
+        },
+        { "name": "One route", "request": { "method": "GET", "url": { "raw": "{{apiBase}}/routes/1", "host": ["{{apiBase}}"], "path": ["routes", "1"] }, "description": "ROUTES_VIEW" } },
+        {
+          "name": "Change route",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Route 4\",\n  \"vehicleId\": 4,\n  \"active\": true\n}" },
+            "url": { "raw": "{{apiBase}}/routes/1", "host": ["{{apiBase}}"], "path": ["routes", "1"] },
+            "description": "ROUTES_EDIT. 409s: VEHICLE_HAS_ROUTE, VEHICLE_INACTIVE, ROUTE_NAME_ALREADY_USED."
+          }
+        },
+        { "name": "Turn off route", "request": { "method": "DELETE", "url": { "raw": "{{apiBase}}/routes/1", "host": ["{{apiBase}}"], "path": ["routes", "1"] }, "description": "ROUTES_EDIT. 409 ROUTE_HAS_STUDENTS if children are on it." } },
+        {
+          "name": "Save route stops",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "[\n  { \"id\": 11, \"name\": \"Sadhanwas\", \"morningTime\": \"07:25\" },\n  { \"id\": 12, \"name\": \"Jakhal\", \"morningTime\": \"07:40\" },\n  { \"name\": \"New stop\", \"morningTime\": \"07:48\" }\n]" },
+            "url": { "raw": "{{apiBase}}/routes/1/stops", "host": ["{{apiBase}}"], "path": ["routes", "1", "stops"] },
+            "description": "ROUTES_EDIT. Sends the whole ordered list. A stop missing from the list is removed (409 STOP_HAS_STUDENTS if children board there)."
+          }
+        },
+        { "name": "Routes and load board", "request": { "method": "GET", "url": { "raw": "{{apiBase}}/routes/load-board", "host": ["{{apiBase}}"], "path": ["routes", "load-board"] }, "description": "ROUTES_VIEW" } }
+      ]
+    },
+    {
+      "name": "Students",
+      "item": [
+        {
+          "name": "List students",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/students?q=&className=&village=&routeId=&bus=",
+              "host": ["{{apiBase}}"], "path": ["students"],
+              "query": [
+                { "key": "q", "value": "", "description": "name search" },
+                { "key": "className", "value": "" },
+                { "key": "village", "value": "" },
+                { "key": "routeId", "value": "" },
+                { "key": "bus", "value": "", "description": "YES or NO" }
+              ]
+            },
+            "description": "STUDENTS_VIEW. Paged list."
+          }
+        },
+        { "name": "One student", "request": { "method": "GET", "url": { "raw": "{{apiBase}}/students/1", "host": ["{{apiBase}}"], "path": ["students", "1"] }, "description": "STUDENTS_VIEW. Details, parents, bus now, photo flag." } },
+        {
+          "name": "Change student",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Example Name\",\n  \"className\": \"5\",\n  \"section\": \"A\",\n  \"village\": \"Tohana\"\n}" },
+            "url": { "raw": "{{apiBase}}/students/1", "host": ["{{apiBase}}"], "path": ["students", "1"] },
+            "description": "STUDENTS_EDIT"
+          }
+        },
+        {
+          "name": "Add guardian phone",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Example Father\",\n  \"relation\": \"FATHER\",\n  \"phone\": \"+919876500001\",\n  \"smsOn\": true\n}" },
+            "url": { "raw": "{{apiBase}}/students/1/guardians", "host": ["{{apiBase}}"], "path": ["students", "1", "guardians"] },
+            "description": "STUDENTS_EDIT"
+          }
+        },
+        {
+          "name": "Change guardian",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Example Father\",\n  \"relation\": \"FATHER\",\n  \"smsOn\": false\n}" },
+            "url": { "raw": "{{apiBase}}/students/1/guardians/1", "host": ["{{apiBase}}"], "path": ["students", "1", "guardians", "1"] },
+            "description": "STUDENTS_EDIT"
+          }
+        },
+        { "name": "Remove guardian", "request": { "method": "DELETE", "url": { "raw": "{{apiBase}}/students/1/guardians/1", "host": ["{{apiBase}}"], "path": ["students", "1", "guardians", "1"] }, "description": "STUDENTS_EDIT. 409 if it is the last phone." } },
+        { "name": "Bus history", "request": { "method": "GET", "url": { "raw": "{{apiBase}}/students/1/transport", "host": ["{{apiBase}}"], "path": ["students", "1", "transport"] }, "description": "STUDENTS_VIEW" } },
+        {
+          "name": "Start/change/stop bus",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"usesBus\": true,\n  \"routeId\": 9,\n  \"stopId\": 44,\n  \"fromDate\": \"2026-11-02\",\n  \"busFee\": 4000\n}" },
+            "url": { "raw": "{{apiBase}}/students/1/transport", "host": ["{{apiBase}}"], "path": ["students", "1", "transport"] },
+            "description": "STUDENTS_EDIT. To stop the bus send { \"usesBus\": false, \"fromDate\": \"2026-12-01\" }. Answer may include a ROUTE_FULL warning (not an error)."
+          }
+        },
+        {
+          "name": "Upload student photo",
+          "request": {
+            "method": "POST",
+            "body": { "mode": "formdata", "formdata": [{ "key": "file", "type": "file", "src": "" }] },
+            "url": { "raw": "{{apiBase}}/students/1/photo", "host": ["{{apiBase}}"], "path": ["students", "1", "photo"] },
+            "description": "STUDENTS_EDIT. Multipart, JPEG or PNG, max 2 MB."
+          }
+        },
+        { "name": "Get student photo", "request": { "method": "GET", "url": { "raw": "{{apiBase}}/students/1/photo", "host": ["{{apiBase}}"], "path": ["students", "1", "photo"] }, "description": "STUDENTS_VIEW" } },
+        { "name": "Remove student photo", "request": { "method": "DELETE", "url": { "raw": "{{apiBase}}/students/1/photo", "host": ["{{apiBase}}"], "path": ["students", "1", "photo"] }, "description": "STUDENTS_EDIT" } },
+        { "name": "Student change history", "request": { "method": "GET", "url": { "raw": "{{apiBase}}/students/1/history", "host": ["{{apiBase}}"], "path": ["students", "1", "history"] }, "description": "STUDENTS_VIEW. From the audit log." } },
+        {
+          "name": "Import students CSV",
+          "request": {
+            "method": "POST",
+            "body": { "mode": "formdata", "formdata": [{ "key": "file", "type": "file", "src": "" }] },
+            "url": { "raw": "{{apiBase}}/students/import", "host": ["{{apiBase}}"], "path": ["students", "import"] },
+            "description": "STUDENTS_EDIT. CSV of existing students."
+          }
+        },
+        {
+          "name": "New admission",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"student\": {\n    \"name\": \"Example Child\",\n    \"className\": \"1\",\n    \"section\": \"A\",\n    \"village\": \"Tohana\"\n  },\n  \"guardians\": [\n    { \"name\": \"Example Father\", \"relation\": \"FATHER\", \"phone\": \"+919876500002\", \"smsOn\": true }\n  ],\n  \"transport\": { \"usesBus\": true, \"routeId\": 9, \"stopId\": 44, \"busFee\": 4000 }\n}" },
+            "url": { "raw": "{{apiBase}}/admissions", "host": ["{{apiBase}}"], "path": ["admissions"] },
+            "description": "ADMISSIONS_CREATE. Student + parents + bus (+ fee plan from Phase 7) in one go."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Trips and bus status",
+      "item": [
+        { "name": "My route today", "request": { "method": "GET", "url": { "raw": "{{apiBase}}/trips/my-route", "host": ["{{apiBase}}"], "path": ["trips", "my-route"] }, "description": "TRIPS_RECORD. The attendant's own route." } },
+        {
+          "name": "Route manifest",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{apiBase}}/trips/manifest?routeId=4&date=2026-10-09", "host": ["{{apiBase}}"], "path": ["trips", "manifest"], "query": [{ "key": "routeId", "value": "4" }, { "key": "date", "value": "2026-10-09" }] },
+            "description": "TRIPS_RECORD (own route only) or TRIPS_RECORD_ANY."
+          }
+        },
+        {
+          "name": "Send taps",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"marks\": [\n    { \"studentId\": 118, \"eventType\": \"BOARDED_MORNING\", \"outcome\": \"DONE\",\n      \"serviceDate\": \"2026-10-07\", \"occurredAt\": \"2026-10-07T07:42:10+05:30\" },\n    { \"studentId\": 131, \"eventType\": \"BOARDED_MORNING\", \"outcome\": \"ABSENT\",\n      \"serviceDate\": \"2026-10-07\", \"occurredAt\": \"2026-10-07T07:43:02+05:30\" }\n  ]\n}" },
+            "url": { "raw": "{{apiBase}}/trips/marks", "host": ["{{apiBase}}"], "path": ["trips", "marks"] },
+            "description": "TRIPS_RECORD or TRIPS_RECORD_ANY. One or many taps; one bad tap does not stop the others. outcome: DONE, ABSENT, NOT_TRAVELLING (evening only), CLEARED (undo)."
+          }
+        },
+        {
+          "name": "Bus status (all routes)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{apiBase}}/bus-status?date=2026-10-09", "host": ["{{apiBase}}"], "path": ["bus-status"], "query": [{ "key": "date", "value": "2026-10-09" }] },
+            "description": "BUS_STATUS_VIEW"
+          }
+        },
+        {
+          "name": "Bus status (one route)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{apiBase}}/bus-status/routes/4?date=2026-10-09", "host": ["{{apiBase}}"], "path": ["bus-status", "routes", "4"], "query": [{ "key": "date", "value": "2026-10-09" }] },
+            "description": "BUS_STATUS_VIEW. Every child with the four events."
+          }
+        },
+        {
+          "name": "Bus status attention",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{apiBase}}/bus-status/attention?date=2026-10-09", "host": ["{{apiBase}}"], "path": ["bus-status", "attention"], "query": [{ "key": "date", "value": "2026-10-09" }] },
+            "description": "BUS_STATUS_VIEW. No taps, late buses, children missing in the evening."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Messages",
+      "item": [
+        {
+          "name": "Message log",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/messages?date=&status=&studentId=&phone=",
+              "host": ["{{apiBase}}"], "path": ["messages"],
+              "query": [{ "key": "date", "value": "" }, { "key": "status", "value": "" }, { "key": "studentId", "value": "" }, { "key": "phone", "value": "" }]
+            },
+            "description": "MESSAGES_VIEW. Paged."
+          }
+        },
+        { "name": "Message summary", "request": { "method": "GET", "url": { "raw": "{{apiBase}}/messages/summary?date=2026-10-09", "host": ["{{apiBase}}"], "path": ["messages", "summary"], "query": [{ "key": "date", "value": "2026-10-09" }] }, "description": "MESSAGES_VIEW. Queued, sent, failed counts." } },
+        { "name": "List message templates", "request": { "method": "GET", "url": { "raw": "{{apiBase}}/message-templates", "host": ["{{apiBase}}"], "path": ["message-templates"] }, "description": "MESSAGES_VIEW" } },
+        {
+          "name": "Change message template",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"text\": \"Your child boarded the bus at {{time}}.\",\n  \"providerTemplateId\": \"abcd1234\"\n}" },
+            "url": { "raw": "{{apiBase}}/message-templates/BOARDED_MORNING", "host": ["{{apiBase}}"], "path": ["message-templates", "BOARDED_MORNING"] },
+            "description": "SETTINGS_EDIT"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Enquiries",
+      "item": [
+        {
+          "name": "List enquiries",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/enquiries?status=&village=&source=&overdue=&q=",
+              "host": ["{{apiBase}}"], "path": ["enquiries"],
+              "query": [{ "key": "status", "value": "" }, { "key": "village", "value": "" }, { "key": "source", "value": "" }, { "key": "overdue", "value": "" }, { "key": "q", "value": "" }]
+            },
+            "description": "ENQUIRIES_VIEW. Paged."
+          }
+        },
+        { "name": "Enquiry summary", "request": { "method": "GET", "url": { "raw": "{{apiBase}}/enquiries/summary", "host": ["{{apiBase}}"], "path": ["enquiries", "summary"] }, "description": "ENQUIRIES_VIEW. Count per stage, overdue count, admitted %." } },
+        {
+          "name": "Add enquiry",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"childName\": \"Example Child\",\n  \"village\": \"Tohana\",\n  \"source\": \"WALK_IN\",\n  \"phone\": \"+919876500003\"\n}" },
+            "url": { "raw": "{{apiBase}}/enquiries", "host": ["{{apiBase}}"], "path": ["enquiries"] },
+            "description": "ENQUIRIES_EDIT"
+          }
+        },
+        { "name": "One enquiry", "request": { "method": "GET", "url": { "raw": "{{apiBase}}/enquiries/1", "host": ["{{apiBase}}"], "path": ["enquiries", "1"] }, "description": "ENQUIRIES_VIEW. With its follow-ups." } },
+        {
+          "name": "Change enquiry",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"childName\": \"Example Child\",\n  \"village\": \"Tohana\"\n}" },
+            "url": { "raw": "{{apiBase}}/enquiries/1", "host": ["{{apiBase}}"], "path": ["enquiries", "1"] },
+            "description": "ENQUIRIES_EDIT"
+          }
+        },
+        {
+          "name": "Add follow-up",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"note\": \"Called, asked to visit next week\",\n  \"nextDate\": \"2026-10-16\"\n}" },
+            "url": { "raw": "{{apiBase}}/enquiries/1/follow-ups", "host": ["{{apiBase}}"], "path": ["enquiries", "1", "follow-ups"] },
+            "description": "ENQUIRIES_EDIT"
+          }
+        },
+        {
+          "name": "Change enquiry status",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"LOST\",\n  \"reason\": \"Chose another school\"\n}" },
+            "url": { "raw": "{{apiBase}}/enquiries/1/status", "host": ["{{apiBase}}"], "path": ["enquiries", "1", "status"] },
+            "description": "ENQUIRIES_EDIT. LOST needs a reason."
+          }
+        },
+        { "name": "Admission prefill", "request": { "method": "GET", "url": { "raw": "{{apiBase}}/enquiries/1/prefill", "host": ["{{apiBase}}"], "path": ["enquiries", "1", "prefill"] }, "description": "ADMISSIONS_CREATE. Fields the admission form can copy." } }
+      ]
+    },
+    {
+      "name": "Fees",
+      "item": [
+        { "name": "List sessions", "request": { "method": "GET", "url": { "raw": "{{apiBase}}/sessions", "host": ["{{apiBase}}"], "path": ["sessions"] }, "description": "Any login" } },
+        {
+          "name": "Add session",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"2026-27\",\n  \"startDate\": \"2026-04-01\",\n  \"endDate\": \"2027-03-31\"\n}" },
+            "url": { "raw": "{{apiBase}}/sessions", "host": ["{{apiBase}}"], "path": ["sessions"] },
+            "description": "SETTINGS_EDIT"
+          }
+        },
+        { "name": "Class fees for a session", "request": { "method": "GET", "url": { "raw": "{{apiBase}}/sessions/1/class-fees", "host": ["{{apiBase}}"], "path": ["sessions", "1", "class-fees"] }, "description": "FEES_VIEW" } },
+        {
+          "name": "Save class fees",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "[\n  { \"className\": \"1\", \"yearlyFee\": 18000 },\n  { \"className\": \"2\", \"yearlyFee\": 19000 }\n]" },
+            "url": { "raw": "{{apiBase}}/sessions/1/class-fees", "host": ["{{apiBase}}"], "path": ["sessions", "1", "class-fees"] },
+            "description": "SETTINGS_EDIT"
+          }
+        },
+        { "name": "Student fees", "request": { "method": "GET", "url": { "raw": "{{apiBase}}/students/1/fees", "host": ["{{apiBase}}"], "path": ["students", "1", "fees"] }, "description": "FEES_VIEW. Plan, dues, payments, pending now, status." } },
+        {
+          "name": "Create/change fee plan",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"schoolFee\": 18000,\n  \"busFee\": 4000,\n  \"installments\": \"QUARTERLY\"\n}" },
+            "url": { "raw": "{{apiBase}}/students/1/fee-plan", "host": ["{{apiBase}}"], "path": ["students", "1", "fee-plan"] },
+            "description": "FEES_EDIT. For the current session."
+          }
+        },
+        {
+          "name": "Record payment",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"amount\": 4500,\n  \"mode\": \"CASH\",\n  \"paidOn\": \"2026-10-09\"\n}" },
+            "url": { "raw": "{{apiBase}}/students/1/payments", "host": ["{{apiBase}}"], "path": ["students", "1", "payments"] },
+            "description": "FEES_EDIT. Returns the receipt number."
+          }
+        },
+        {
+          "name": "Correct a payment",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"amount\": -4500,\n  \"note\": \"Wrong amount entered, reversing\"\n}" },
+            "url": { "raw": "{{apiBase}}/students/1/payment-corrections", "host": ["{{apiBase}}"], "path": ["students", "1", "payment-corrections"] },
+            "description": "FEES_CORRECT. Owner only. Negative row + note."
+          }
+        },
+        {
+          "name": "List payments",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{apiBase}}/payments?from=2026-10-01&to=2026-10-31", "host": ["{{apiBase}}"], "path": ["payments"], "query": [{ "key": "from", "value": "2026-10-01" }, { "key": "to", "value": "2026-10-31" }] },
+            "description": "FEES_VIEW. Paged."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Summary",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/analytics/summary?sessionId=&className=&village=&routeId=&occupation=&feeStatus=",
+              "host": ["{{apiBase}}"], "path": ["analytics", "summary"],
+              "query": [{ "key": "sessionId", "value": "" }, { "key": "className", "value": "" }, { "key": "village", "value": "" }, { "key": "routeId", "value": "" }, { "key": "occupation", "value": "" }, { "key": "feeStatus", "value": "" }]
+            },
+            "description": "ANALYTICS_VIEW"
+          }
+        },
+        { "name": "Fee collection by month", "request": { "method": "GET", "url": { "raw": "{{apiBase}}/analytics/fee-collection-by-month?sessionId=", "host": ["{{apiBase}}"], "path": ["analytics", "fee-collection-by-month"], "query": [{ "key": "sessionId", "value": "" }] }, "description": "ANALYTICS_VIEW" } },
+        { "name": "Payment by occupation", "request": { "method": "GET", "url": { "raw": "{{apiBase}}/analytics/payment-by-occupation?sessionId=", "host": ["{{apiBase}}"], "path": ["analytics", "payment-by-occupation"], "query": [{ "key": "sessionId", "value": "" }] }, "description": "ANALYTICS_VIEW" } },
+        { "name": "Students by class", "request": { "method": "GET", "url": { "raw": "{{apiBase}}/analytics/students-by-class?sessionId=", "host": ["{{apiBase}}"], "path": ["analytics", "students-by-class"], "query": [{ "key": "sessionId", "value": "" }] }, "description": "ANALYTICS_VIEW" } },
+        { "name": "Students by village", "request": { "method": "GET", "url": { "raw": "{{apiBase}}/analytics/students-by-village?sessionId=", "host": ["{{apiBase}}"], "path": ["analytics", "students-by-village"], "query": [{ "key": "sessionId", "value": "" }] }, "description": "ANALYTICS_VIEW" } },
+        { "name": "Students list (with fee status)", "request": { "method": "GET", "url": { "raw": "{{apiBase}}/analytics/students?sessionId=", "host": ["{{apiBase}}"], "path": ["analytics", "students"], "query": [{ "key": "sessionId", "value": "" }] }, "description": "ANALYTICS_VIEW. Paged." } },
+        { "name": "Students list (CSV download)", "request": { "method": "GET", "url": { "raw": "{{apiBase}}/analytics/students.csv?sessionId=", "host": ["{{apiBase}}"], "path": ["analytics", "students.csv"], "query": [{ "key": "sessionId", "value": "" }] }, "description": "ANALYTICS_VIEW. Opens in Excel." } }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": { "raw": "{{baseUrl}}/actuator/health", "host": ["{{baseUrl}}"], "path": ["actuator", "health"] },
+            "description": "Open URL. Not under /api/v1."
+          }
+        }
+      ]
+    }
+  ]
+}
