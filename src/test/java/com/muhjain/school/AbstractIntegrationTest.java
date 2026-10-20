@@ -183,9 +183,10 @@ public abstract class AbstractIntegrationTest {
 		redisTemplate.getConnectionFactory().getConnection().flushAll();
 		// Children first, because of the foreign keys. academic_session has no is_current flag any more:
 		// "current" is whichever row's dates cover today, so the seeded 2026-27 row just needs to stay.
-		jdbc.update("delete from fee_payment");
+		// TRUNCATE, not DELETE: fee_payment and family_credit_entry rows can never be changed or
+		// deleted (a trigger stops it) — TRUNCATE skips that per-row trigger entirely.
+		jdbc.execute("truncate table fee_payment, family_credit_entry");
 		jdbc.update("delete from receipt");
-		jdbc.update("delete from family_credit_entry");
 		jdbc.update("delete from fee_due");
 		jdbc.update("delete from fee_plan");
 		// Keep the seeded row of the base session: like bus_sms_rule, nothing re-inserts it after a delete.
@@ -220,6 +221,9 @@ public abstract class AbstractIntegrationTest {
 		jdbc.update("delete from teacher_profile");
 		jdbc.update("delete from staff_salary");
 		jdbc.update("update app_setting set updated_by = null");
+		// message_template is seeded reference data (like bus_sms_rule): a test may approve one and
+		// set updated_by, but the row itself is never deleted, so the pointer must be cleared here too.
+		jdbc.update("update message_template set updated_by = null");
 		jdbc.update("delete from audit_log");
 		jdbc.update("delete from user_session");
 		jdbc.update("delete from otp_whitelist");

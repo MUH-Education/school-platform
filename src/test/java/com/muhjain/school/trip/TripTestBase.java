@@ -106,9 +106,10 @@ abstract class TripTestBase extends AbstractIntegrationTest {
 		long id = jdbc.queryForObject("insert into student (admission_no, name, dob, gender, class_name, village, "
 				+ "father_occupation, joined_on, created_by) values (?, ?, '2018-05-14', ?, '3', 'Jakhal', 'OTHER', "
 				+ "'2026-04-01', ?) returning id", Long.class,
-				"A-2026-" + (100 + (System.nanoTime() % 1_000_000_000L)), name, gender, userId);
-		jdbc.update("insert into transport_enrolment (student_id, uses_bus, route_id, stop_id, from_date, created_by) "
-				+ "values (?, true, ?, ?, ?::date, ?)", id, routeId, stopId, from, userId);
+				"A-2026-" + (100 + (Math.abs(System.nanoTime()) % 1_000_000_000L)), name, gender, userId);
+		jdbc.update("insert into transport_enrolment (student_id, uses_bus, route_id, stop_id, bus_fee_per_month, "
+				+ "from_date, created_by) values (?, true, ?, ?, 500.00, ?::date, ?)", id, routeId, stopId, from,
+				userId);
 		return id;
 	}
 

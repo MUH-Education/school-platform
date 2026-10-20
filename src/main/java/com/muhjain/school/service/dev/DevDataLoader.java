@@ -415,7 +415,8 @@ public class DevDataLoader implements ApplicationRunner {
 	}
 
 	private void assign(Long vehicleId, Duty duty, Long staffId, LocalDate from) {
-		assignmentService.change(vehicleId, new ChangeAssignmentRequest(duty, staffId, from, null, false, null), null);
+		assignmentService.change(vehicleId, new ChangeAssignmentRequest(duty, staffId, from, null, false, null),
+				systemUserId());
 	}
 
 	// All papers valid for months. Two exceptions, to fill the "needs attention" list.

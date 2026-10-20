@@ -92,8 +92,9 @@ abstract class AnalyticsTestBase extends AbstractIntegrationTest {
 				village, occupation, userId);
 		ids.put(name, id);
 		if (route != null) {
-			jdbc.update("insert into transport_enrolment (student_id, uses_bus, route_id, stop_id, from_date, "
-					+ "created_by) values (?, true, ?, ?, date '2026-04-01', ?)", id, route[0], route[1], userId);
+			jdbc.update("insert into transport_enrolment (student_id, uses_bus, route_id, stop_id, "
+					+ "bus_fee_per_month, from_date, created_by) values (?, true, ?, ?, 500.00, date '2026-04-01', "
+					+ "?)", id, route[0], route[1], userId);
 		}
 		if (schoolPaid < 0) {
 			return;

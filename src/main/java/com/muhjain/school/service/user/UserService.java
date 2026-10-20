@@ -253,8 +253,8 @@ public class UserService {
 	@SuppressWarnings("unchecked")
 	private static String summary(Map<String, Object> changes) {
 		StringBuilder text = new StringBuilder();
-		changes.forEach((field, value) -> {
-			Map<String, Object> pair = (Map<String, Object>) value;
+		changes.forEach((field, value1) -> {
+			Map<String, Object> pair = (Map<String, Object>) value1;
 			if (field.equals("active")) {
 				text.append(Boolean.TRUE.equals(pair.get("new")) ? "Turned on. " : "Turned off. ");
 			}
