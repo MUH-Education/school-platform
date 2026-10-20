@@ -203,7 +203,7 @@ class AnalyticsApiTest extends AnalyticsTestBase {
 			.andExpect(jsonPath("$.items[?(@.name=='Charu')].schoolFeeStatus").value("ON_TIME"))
 			.andExpect(jsonPath("$.items[?(@.name=='Charu')].busFeeStatus").value("DEFAULTED"))
 			.andExpect(jsonPath("$.items[?(@.name=='Charu')].feeStatus").value("DEFAULTED"))
-			.andExpect(jsonPath("$.items[?(@.name=='Charu')].pendingAmount").value(3500.0))
+			.andExpect(jsonPath("$.items[?(@.name=='Charu')].pendingAmount").value(3000.0))
 			.andExpect(jsonPath("$.items[?(@.name=='Bhavya')].busFeeStatus").value(
 					org.hamcrest.Matchers.contains((Object) null)))
 			.andExpect(jsonPath("$.items[?(@.name=='Farhan')].schoolFeeStatus").value(
@@ -218,7 +218,7 @@ class AnalyticsApiTest extends AnalyticsTestBase {
 			.andExpect(jsonPath("$.page").value(2))
 			.andExpect(jsonPath("$.totalPages").value(3))
 			.andExpect(jsonPath("$.totalItems").value(12));
-		// Pending: Dev 5000 and Jiya 5000 (tie by id), Charu 3500, then 2000s.
+		// Pending: Dev 5000 and Jiya 5000 (tie by id), Charu 3000, then 2000s.
 		get(owner, URL + "/students?size=3&sort=pendingAmount,desc").andExpect(status().isOk())
 			.andExpect(jsonPath("$.items[0].name").value("Dev"))
 			.andExpect(jsonPath("$.items[1].name").value("Jiya"))

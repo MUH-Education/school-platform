@@ -31,7 +31,7 @@ class FeePermissionTest extends FeeTestBase {
 				Arguments.of("POST", "/api/v1/students/1/payments",
 						"{\"mode\":\"UPI\",\"lines\":[{\"feeHead\":\"SCHOOL\",\"amount\":100}]}"),
 				Arguments.of("POST", "/api/v1/students/1/payment-corrections",
-						"{\"receiptNo\":\"R-2026-0001\",\"feeHead\":\"SCHOOL\",\"amount\":-1,\"note\":\"x\"}"),
+						"{\"receiptNo\":\"R-2026-0001\",\"reason\":\"WRONG_AMOUNT\",\"note\":\"x\"}"),
 				Arguments.of("GET", "/api/v1/payments", null));
 	}
 

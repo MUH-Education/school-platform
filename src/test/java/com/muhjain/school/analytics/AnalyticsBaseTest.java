@@ -39,7 +39,8 @@ class AnalyticsBaseTest extends AnalyticsTestBase {
 
 	@Test
 	void aChildWhoLeftIsNotCounted() {
-		jdbc.update("update student set status = 'LEFT', left_on = date '2026-09-01' where name = 'Dev'");
+		jdbc.update("update student set status = 'LEFT', left_on = date '2026-09-01', left_reason = 'OTHER' "
+				+ "where name = 'Dev'");
 		assertThat(names(AnalyticsStudentFilter.none())).hasSize(11).doesNotContain("Dev");
 	}
 
@@ -73,7 +74,8 @@ class AnalyticsBaseTest extends AnalyticsTestBase {
 		assertThat(charu.routeName()).isEqualTo("Route A");
 		assertThat(charu.feeStatus()).isEqualTo(FeeStatus.DEFAULTED);
 		assertThat(charu.headStatus(com.muhjain.school.model.enums.FeeHead.SCHOOL)).isEqualTo(FeeStatus.ON_TIME);
-		assertThat(charu.pendingNow()).isEqualByComparingTo("3500");
+		// Charu never pays bus: Apr-Oct due, minus June (no bus fee that month) = 6 x 500.
+		assertThat(charu.pendingNow()).isEqualByComparingTo("3000");
 		AnalyticsStudent farhan = base.students(AnalyticsStudentFilter.none()).stream().filter(s -> s.name().equals("Farhan")).findFirst().get();
 		assertThat(farhan.fee()).isNull();
 		assertThat(farhan.pendingNow()).isEqualByComparingTo("0");

@@ -39,7 +39,7 @@ class AnalyticsCsvTest extends AnalyticsTestBase {
 		assertThat(lines.get(0)).isEqualTo("Name,Class,Village,Father's occupation,Bus route,School fee status,"
 				+ "Bus fee status,Pending amount");
 		assertThat(lines.get(1)).isEqualTo("Aarav,1,Jakhal,FARMER_SMALL,Route A,ON_TIME,ON_TIME,0.00");
-		assertThat(lines).contains("Charu,2,Jakhal,GOVT_EMPLOYEE,Route A,ON_TIME,DEFAULTED,3500.00",
+		assertThat(lines).contains("Charu,2,Jakhal,GOVT_EMPLOYEE,Route A,ON_TIME,DEFAULTED,3000.00",
 				"Bhavya,1,Jakhal,FARMER_SMALL,,DELAYED,,2000.00", "Farhan,3,Dhand,LABOUR,,,,0.00");
 	}
 

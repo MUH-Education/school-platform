@@ -19,7 +19,7 @@ class FeesViewApiTest extends FeeTestBase {
 	void addChildWithPlan() throws Exception {
 		clock.setInstant(Instant.parse("2026-04-01T04:30:00Z"));
 		aryan = addStudent("A-2026-101", "2026-04-01");
-		put(office, "/api/v1/students/" + aryan + "/fee-plan", FeePlanApiTest.QUARTERLY).andExpect(status().isOk());
+		put(office, "/api/v1/students/" + aryan + "/fee-plan", FeePlanApiTest.STANDARD_PLAN).andExpect(status().isOk());
 	}
 
 	private void pay(String school, String bus) throws Exception {

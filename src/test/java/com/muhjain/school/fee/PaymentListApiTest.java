@@ -15,7 +15,7 @@ class PaymentListApiTest extends FeeTestBase {
 	@BeforeEach
 	void threePaymentsOnThreeDays() throws Exception {
 		aryan = addStudent("A-2026-101", "2026-04-01");
-		put(office, "/api/v1/students/" + aryan + "/fee-plan", FeePlanApiTest.QUARTERLY).andExpect(status().isOk());
+		put(office, "/api/v1/students/" + aryan + "/fee-plan", FeePlanApiTest.STANDARD_PLAN).andExpect(status().isOk());
 		for (String day : new String[] { "2026-10-01", "2026-10-05", "2026-10-07" }) {
 			post(office, "/api/v1/students/" + aryan + "/payments", "{\"mode\":\"CASH\",\"paidOn\":\"" + day
 					+ "\",\"lines\":[{\"feeHead\":\"SCHOOL\",\"amount\":1000}]}").andExpect(status().isCreated());

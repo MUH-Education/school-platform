@@ -26,7 +26,7 @@ class PaymentApiTest extends FeeTestBase {
 	@BeforeEach
 	void addChildWithPlan() throws Exception {
 		aryan = addStudent("A-2026-101", "2026-04-01");
-		put(office, "/api/v1/students/" + aryan + "/fee-plan", FeePlanApiTest.QUARTERLY).andExpect(status().isOk());
+		put(office, "/api/v1/students/" + aryan + "/fee-plan", FeePlanApiTest.STANDARD_PLAN).andExpect(status().isOk());
 	}
 
 	private String payments() {
@@ -260,7 +260,7 @@ class PaymentApiTest extends FeeTestBase {
 	void aReceiptOfAnotherChildCannotBeCorrected() throws Exception {
 		post(office, payments(), upi("7500", null)).andExpect(status().isCreated());
 		long ishaan = addStudent("A-2026-102", "2026-04-01");
-		put(office, "/api/v1/students/" + ishaan + "/fee-plan", FeePlanApiTest.QUARTERLY).andExpect(status().isOk());
+		put(office, "/api/v1/students/" + ishaan + "/fee-plan", FeePlanApiTest.STANDARD_PLAN).andExpect(status().isOk());
 
 		post(owner, "/api/v1/students/" + ishaan + "/payment-corrections",
 				correction("R-2026-0001", "SCHOOL", "-500", "x")).andExpect(status().isBadRequest());

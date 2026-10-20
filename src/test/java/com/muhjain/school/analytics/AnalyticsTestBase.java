@@ -15,8 +15,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * The fixed school of the Phase 8 tests: 12 children with known fees. Today is 7 Oct 2026, 10:00 school time.
- * Every plan is MONTHLY: school ₹12,000 (₹1,000 a month), bus ₹6,000 (₹500 a month, from 1 Apr). By 7 Oct seven dues
- * have come (Apr to Oct), so school is ₹7,000 due so far and bus ₹3,500.
+ * Every plan is MONTHLY: school ₹1,000 a month, bus ₹500 a month (from 1 Apr). By 7 Oct seven dues have come
+ * (Apr to Oct), so school is ₹7,000 due so far and bus ₹3,500.
  * <pre>
  * name    class village  occupation        bus      school paid  bus paid  → status
  * Aarav   1     Jakhal   FARMER_SMALL      Route A  7000         3500      ON_TIME
@@ -91,6 +91,7 @@ abstract class AnalyticsTestBase extends AbstractIntegrationTest {
 				+ "date '2026-04-01', ?) returning id", Long.class, "A-2026-" + (++admissionSeq), name, className,
 				village, occupation, userId);
 		ids.put(name, id);
+		addPrimaryGuardian(id, name);
 		if (route != null) {
 			jdbc.update("insert into transport_enrolment (student_id, uses_bus, route_id, stop_id, "
 					+ "bus_fee_per_month, from_date, created_by) values (?, true, ?, ?, 500.00, date '2026-04-01', "
@@ -99,8 +100,9 @@ abstract class AnalyticsTestBase extends AbstractIntegrationTest {
 		if (schoolPaid < 0) {
 			return;
 		}
-		put(office, "/api/v1/students/" + id + "/fee-plan", "{\"schoolFee\":12000,\"busFee\":"
-				+ ((route != null) ? 6000 : 0) + ",\"payFrequency\":\"MONTHLY\"}").andExpect(status().isOk());
+		// FeePlanRequest.schoolFee is a month's figure, not a year's (db-design): 1000, not the old 12000.
+		put(office, "/api/v1/students/" + id + "/fee-plan", "{\"schoolFee\":1000,\"payFrequency\":\"MONTHLY\"}")
+			.andExpect(status().isOk());
 		String lines = "";
 		if (schoolPaid > 0) {
 			lines += "{\"feeHead\":\"SCHOOL\",\"amount\":" + schoolPaid + "}";
@@ -112,6 +114,15 @@ abstract class AnalyticsTestBase extends AbstractIntegrationTest {
 			post(office, "/api/v1/students/" + id + "/payments", "{\"mode\":\"CASH\",\"lines\":[" + lines + "]}")
 				.andExpect(status().isCreated());
 		}
+	}
+
+	// A receipt needs a family (receipt.family_guardian_id), so every child that may get a payment needs one.
+	private void addPrimaryGuardian(long studentId, String name) {
+		long guardianId = jdbc.queryForObject(
+				"insert into guardian (name, phone) values (?, ?) returning id", Long.class, name + "'s parent",
+				"+9198" + String.format("%08d", admissionSeq));
+		jdbc.update("insert into student_guardian (student_id, guardian_id, relation, is_primary) "
+				+ "values (?, ?, 'FATHER', true)", studentId, guardianId);
 	}
 
 	/** Adds a child with no plan and no bus, straight into the database. */

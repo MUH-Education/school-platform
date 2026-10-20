@@ -10,10 +10,10 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** Rules 3 to 7 of phase 7: the plan makes the dues, a change makes them again and keeps the payments. */
+/** Rules 3 to 7 of phase 7: the plan makes a due for every month of the session, a change keeps paid months. */
 class FeePlanApiTest extends FeeTestBase {
 
-	static final String QUARTERLY = "{\"schoolFee\":30000,\"busFee\":8800,\"payFrequency\":\"QUARTERLY\"}";
+	static final String STANDARD_PLAN = "{\"schoolFee\":2500,\"payFrequency\":\"QUARTERLY\"}";
 
 	long aryan;
 
@@ -27,45 +27,47 @@ class FeePlanApiTest extends FeeTestBase {
 	}
 
 	@Test
-	void quarterlyPlanMakesEightDues() throws Exception {
-		put(office, url(), QUARTERLY).andExpect(status().isOk())
+	void planMakesADueForEveryMonthOfTheSession() throws Exception {
+		put(office, url(), STANDARD_PLAN).andExpect(status().isOk())
 			.andExpect(jsonPath("$.sessionName").value("2026-27"))
-			.andExpect(jsonPath("$.netSchoolFee").value(30000.0))
-			.andExpect(jsonPath("$.dues", hasSize(8)))
-			.andExpect(jsonPath("$.dues[0].dueOn").value("2026-04-01"))
-			.andExpect(jsonPath("$.dues[0].feeHead").value("SCHOOL"))
-			.andExpect(jsonPath("$.dues[0].amount").value(7500.0))
-			.andExpect(jsonPath("$.dues[1].feeHead").value("BUS"))
-			.andExpect(jsonPath("$.dues[1].amount").value(2200.0));
+			.andExpect(jsonPath("$.netSchoolFeePerMonth").value(2500.0))
+			.andExpect(jsonPath("$.dues", hasSize(12)))
+			.andExpect(jsonPath("$.dues[0].month").value("2026-04-01"))
+			.andExpect(jsonPath("$.dues[0].schoolAmount").value(2500.0))
+			.andExpect(jsonPath("$.dues[0].busAmount").value(0.0))
+			.andExpect(jsonPath("$.dues[0].total").value(2500.0))
+			.andExpect(jsonPath("$.dues[11].month").value("2027-03-01"));
 	}
 
 	@Test
-	void childWhoJoinsInNovemberHasDuesFromJoiningDay() throws Exception {
+	void childWhoJoinsInNovemberHasDuesFromJoiningMonth() throws Exception {
 		long ishaan = addStudent("A-2026-102", "2026-11-02");
-		put(desk, "/api/v1/students/" + ishaan + "/fee-plan",
-				"{\"schoolFee\":12000,\"payFrequency\":\"QUARTERLY\"}").andExpect(status().isOk())
-			.andExpect(jsonPath("$.dues", hasSize(2)))
-			.andExpect(jsonPath("$.dues[0].dueOn").value("2026-11-02"))
-			.andExpect(jsonPath("$.dues[0].amount").value(6000.0))
-			.andExpect(jsonPath("$.dues[1].dueOn").value("2027-01-01"));
+		put(desk, "/api/v1/students/" + ishaan + "/fee-plan", "{\"schoolFee\":1000,\"payFrequency\":\"QUARTERLY\"}")
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.dues", hasSize(5)))
+			.andExpect(jsonPath("$.dues[0].month").value("2026-11-01"))
+			.andExpect(jsonPath("$.dues[0].total").value(1000.0))
+			.andExpect(jsonPath("$.dues[4].month").value("2027-03-01"));
 	}
 
 	@Test
 	void discountIsTakenOffTheSchoolFee() throws Exception {
-		put(office, url(), "{\"schoolFee\":30000,\"discount\":2000,\"discountReason\":\"SIBLING\","
+		put(office, url(), "{\"schoolFee\":2500,\"discount\":200,\"discountReason\":\"SIBLING\","
 				+ "\"payFrequency\":\"YEARLY\"}").andExpect(status().isOk())
-			.andExpect(jsonPath("$.netSchoolFee").value(28000.0))
-			.andExpect(jsonPath("$.dues", hasSize(1)))
-			.andExpect(jsonPath("$.dues[0].amount").value(28000.0));
+			.andExpect(jsonPath("$.netSchoolFeePerMonth").value(2300.0))
+			.andExpect(jsonPath("$.dues", hasSize(12)))
+			.andExpect(jsonPath("$.dues[0].schoolAmount").value(2500.0))
+			.andExpect(jsonPath("$.dues[0].discountAmount").value(200.0))
+			.andExpect(jsonPath("$.dues[0].total").value(2300.0));
 	}
 
 	@Test
 	void discountWithoutReasonIsRejected() throws Exception {
-		put(office, url(), "{\"schoolFee\":30000,\"discount\":2000,\"payFrequency\":\"YEARLY\"}")
+		put(office, url(), "{\"schoolFee\":2500,\"discount\":200,\"payFrequency\":\"YEARLY\"}")
 			.andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.error").value("VALIDATION"))
 			.andExpect(jsonPath("$.fields.discountReason").exists());
-		put(office, url(), "{\"schoolFee\":30000,\"discount\":2000,\"discountReason\":\"NONE\","
+		put(office, url(), "{\"schoolFee\":2500,\"discount\":200,\"discountReason\":\"NONE\","
 				+ "\"payFrequency\":\"YEARLY\"}").andExpect(status().isBadRequest());
 		assertThat(jdbc.queryForObject("select count(*) from fee_plan", Integer.class)).isZero();
 	}
@@ -81,49 +83,60 @@ class FeePlanApiTest extends FeeTestBase {
 	}
 
 	@Test
-	void changingPlanKeepsPayments() throws Exception {
-		put(office, url(), QUARTERLY).andExpect(status().isOk());
-		jdbc.update("insert into fee_payment (student_id, session_id, fee_head, amount, paid_on, mode, receipt_no) "
-				+ "values (?, ?, 'SCHOOL', 7500, date '2026-04-01', 'UPI', 'R-2026-0001')", aryan,
-				currentSessionId());
-		long planId = jdbc.queryForObject("select id from fee_plan", Long.class);
-		Long firstDueId = jdbc.queryForObject("select min(id) from fee_due", Long.class);
+	void changingPlanKeepsPaidMonths() throws Exception {
+		put(office, url(), STANDARD_PLAN).andExpect(status().isOk());
+		// April (the oldest unpaid month) is paid in full.
+		post(office, "/api/v1/students/" + aryan + "/payments",
+				"{\"mode\":\"UPI\",\"lines\":[{\"feeHead\":\"SCHOOL\",\"amount\":2500}]}")
+			.andExpect(status().isCreated());
+		long firstDueId = jdbc.queryForObject(
+				"select id from fee_due where student_id = ? and month = date '2026-04-01'", Long.class, aryan);
 
-		// Yearly now, and a discount. The 8 dues go, one new due is made, the payment stays.
-		put(office, url(), "{\"schoolFee\":30000,\"discount\":1000,\"discountReason\":\"STAFF_CHILD\","
+		// A new slice from today (7 Oct, so "today's month" is October): May-Sep still follow the April
+		// slice (2500, untouched), October-March follow the new one (3000, discount 500).
+		put(office, url(), "{\"schoolFee\":3000,\"discount\":500,\"discountReason\":\"STAFF_CHILD\","
 				+ "\"payFrequency\":\"YEARLY\"}").andExpect(status().isOk())
-			.andExpect(jsonPath("$.dues", hasSize(1)));
+			.andExpect(jsonPath("$.dues", hasSize(12)));
 
-		assertThat(jdbc.queryForObject("select count(*) from fee_due where fee_plan_id = ?", Integer.class, planId))
-			.isEqualTo(1);
-		assertThat(jdbc.queryForObject("select count(*) from fee_due where id = ?", Integer.class, firstDueId))
-			.isZero();
-		assertThat(jdbc.queryForObject("select count(*) from fee_plan", Integer.class)).isEqualTo(1);
-		assertThat(jdbc.queryForObject("select sum(amount) from fee_payment", BigDecimal.class))
-			.isEqualByComparingTo("7500");
+		// Old rows are never changed: both plan slices stay, and April's paid due is the same row, untouched.
+		assertThat(jdbc.queryForObject("select count(*) from fee_plan where student_id = ?", Integer.class, aryan))
+			.isEqualTo(2);
+		assertThat(jdbc.queryForObject("select school_amount from fee_due where id = ?", BigDecimal.class,
+				firstDueId)).isEqualByComparingTo("2500");
+		assertThat(jdbc.queryForObject(
+				"select school_amount from fee_due where student_id = ? and month = date '2026-05-01'",
+				BigDecimal.class, aryan)).isEqualByComparingTo("2500");
+		assertThat(jdbc.queryForObject(
+				"select school_amount from fee_due where student_id = ? and month = date '2026-10-01'",
+				BigDecimal.class, aryan)).isEqualByComparingTo("3000");
+		assertThat(jdbc.queryForObject(
+				"select discount_amount from fee_due where student_id = ? and month = date '2026-10-01'",
+				BigDecimal.class, aryan)).isEqualByComparingTo("500");
+		assertThat(jdbc.queryForObject("select sum(amount) from fee_payment where student_id = ?", BigDecimal.class,
+				aryan)).isEqualByComparingTo("2500");
 	}
 
 	@Test
 	void unknownChildIs404() throws Exception {
-		put(office, "/api/v1/students/99999/fee-plan", QUARTERLY).andExpect(status().isNotFound());
+		put(office, "/api/v1/students/99999/fee-plan", STANDARD_PLAN).andExpect(status().isNotFound());
 	}
 
 	@Test
 	void everyPlanSaveIsWrittenToTheChangeHistory() throws Exception {
-		put(office, url(), QUARTERLY).andExpect(status().isOk());
-		put(office, url(), QUARTERLY.replace("30000", "31000")).andExpect(status().isOk());
+		put(office, url(), STANDARD_PLAN).andExpect(status().isOk());
+		put(office, url(), STANDARD_PLAN.replace("2500", "2600")).andExpect(status().isOk());
 
 		assertThat(jdbc.queryForList("select action, summary from audit_log where entity_type = 'STUDENT' "
 				+ "and entity_id = ? order by id", aryan))
 			.extracting(r -> r.get("action") + ": " + r.get("summary"))
-			.containsExactly("CREATED: Fee plan set: school ₹30,000, bus ₹8,800, QUARTERLY",
-					"UPDATED: Fee plan changed from school ₹30,000, bus ₹8,800, QUARTERLY to school ₹31,000, "
-							+ "bus ₹8,800, QUARTERLY");
+			.containsExactly("CREATED: Fee plan set: school ₹2,500 a month, from 2026-04-01, QUARTERLY",
+					"UPDATED: Fee plan changed from school ₹2,500 a month, from 2026-04-01, QUARTERLY to school "
+							+ "₹2,600 a month, from 2026-10-01, QUARTERLY");
 	}
 
 	@Test
 	void transportInchargeCannotSavePlan() throws Exception {
-		put(transport, url(), QUARTERLY).andExpect(status().isForbidden());
+		put(transport, url(), STANDARD_PLAN).andExpect(status().isForbidden());
 	}
 
 }

@@ -24,6 +24,8 @@ abstract class FeeTestBase extends AbstractIntegrationTest {
 
 	String transport;
 
+	private int guardianSeq;
+
 	@BeforeEach
 	void addPeople() {
 		clock.setInstant(Instant.parse("2026-10-07T04:30:00Z"));
@@ -39,11 +41,16 @@ abstract class FeeTestBase extends AbstractIntegrationTest {
 				"select id from academic_session where date '2026-10-07' between starts_on and ends_on", Long.class);
 	}
 
-	/** Adds a child of class 3 straight into the database. */
+	/** Adds a child of class 3, with a primary guardian (a receipt needs one), straight into the database. */
 	long addStudent(String admissionNo, String joinedOn) {
-		return jdbc.queryForObject("insert into student (admission_no, name, dob, gender, class_name, village, "
+		long id = jdbc.queryForObject("insert into student (admission_no, name, dob, gender, class_name, village, "
 				+ "father_occupation, joined_on, created_by) values (?, 'Aryan', date '2018-05-14', 'M', '3', 'Jakhal', "
 				+ "'OTHER', ?::date, ?) returning id", Long.class, admissionNo, joinedOn, anyUserId());
+		long guardianId = jdbc.queryForObject("insert into guardian (name, phone) values ('Ramesh', ?) returning id",
+				Long.class, "+9198" + String.format("%08d", ++guardianSeq));
+		jdbc.update("insert into student_guardian (student_id, guardian_id, relation, is_primary) "
+				+ "values (?, ?, 'FATHER', true)", id, guardianId);
+		return id;
 	}
 
 	/** Adds a van, a route and one stop straight into the database. Returns {routeId, stopId}. */
