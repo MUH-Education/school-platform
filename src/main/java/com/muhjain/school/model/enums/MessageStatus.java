@@ -1,8 +1,12 @@
 package com.muhjain.school.model.enums;
 
-/** QUEUED waits for the worker. SENT: the provider accepted it. FAILED: tried 3 times or too old. TEST_ONLY: written to the log in test mode, nothing left the server. */
+/**
+ * QUEUED waits for the worker. SENT: the provider accepted it. DELIVERED: the provider confirmed the phone got
+ * it. FAILED: tried 3 times or too old. CANCELLED: the receipt it was about was cancelled. TEST_ONLY: written to
+ * the log in test mode, nothing left the server.
+ */
 public enum MessageStatus {
 
-	QUEUED, SENT, FAILED, TEST_ONLY
+	QUEUED, SENT, DELIVERED, FAILED, CANCELLED, TEST_ONLY
 
 }

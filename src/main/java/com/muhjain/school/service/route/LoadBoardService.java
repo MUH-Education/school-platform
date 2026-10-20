@@ -22,8 +22,8 @@ import com.muhjain.school.util.LoadBoardCalculator;
 /**
  * The Routes and load screen (rule 16). This class only collects the numbers. The maths is in
  * {@link LoadBoardCalculator}.
- * Settings used: {@code transport.months_operated}, {@code transport.bus_fee_per_year},
- * {@code transport.collection_pct}.
+ * Settings used: {@code transport.months_operated}, {@code transport.collection_pct}. The bus fee is not a
+ * setting any more: it is the sum of each enrolled child's own {@code transport_enrolment.bus_fee_per_month}.
  */
 @Service
 public class LoadBoardService {
@@ -52,7 +52,6 @@ public class LoadBoardService {
 	public LoadBoardResponse board() {
 		LocalDate today = LocalDate.now(clock);
 		int months = Integer.parseInt(settings.value("transport.months_operated"));
-		BigDecimal fee = new BigDecimal(settings.value("transport.bus_fee_per_year"));
 		BigDecimal pct = new BigDecimal(settings.value("transport.collection_pct"));
 
 		List<Route> active = routes.findByActiveTrueOrderByIdAsc();
@@ -64,8 +63,9 @@ public class LoadBoardService {
 		for (Route route : active) {
 			VehicleSummary vehicle = vehicles.get(route.getVehicleId());
 			int children = studentCounts.childrenOnRoute(route.getId(), today);
+			BigDecimal busFee = studentCounts.busFeePerMonthOnRoute(route.getId(), today);
 			LoadBoardCalculator.RouteLoad load = LoadBoardCalculator.route((vehicle != null) ? vehicle.seats() : null,
-					(vehicle != null) ? vehicle.monthlyCost() : null, children, months, fee, pct);
+					(vehicle != null) ? vehicle.monthlyCost() : null, children, months, busFee, pct);
 			loads.add(load);
 			rows.add(LoadBoardRow.of(route, vehicle, load));
 		}

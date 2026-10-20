@@ -10,18 +10,16 @@ import com.muhjain.school.model.enums.DiscountReason;
 import com.muhjain.school.model.enums.PayFrequency;
 
 /**
- * The fee part of an admission (part 4 "Fees" of screen 6).
+ * The fee part of an admission (part 4 "Fees" of screen 6). The bus fee is not here: it is on the bus part of
+ * the admission.
  * <ul>
- * <li>{@code schoolFee}: optional. Empty means the standard fee of the class in the current session
- * (400 if the office has not set it).</li>
- * <li>{@code busFee}: optional. Empty means the {@code busFee} of the {@code bus} part, or 0 for no bus.</li>
+ * <li>{@code schoolFee}: a month, optional. Empty means the standard fee of the class in the current session.</li>
  * <li>{@code discount} and {@code discountReason}: as in {@link FeePlanRequest}.</li>
  * </ul>
- * Example: {@code {"schoolFee":30000,"busFee":8800,"payFrequency":"QUARTERLY"}}
+ * Example: {@code {"schoolFee":2500,"payFrequency":"MONTHLY"}}
  */
-@Schema(example = "{\"schoolFee\": 30000, \"busFee\": 8800, \"payFrequency\": \"QUARTERLY\"}")
+@Schema(example = "{\"schoolFee\": 2500, \"payFrequency\": \"MONTHLY\"}")
 public record AdmissionFeeRequest(@DecimalMin("0") @Digits(integer = 10, fraction = 2) BigDecimal schoolFee,
-		@DecimalMin("0") @Digits(integer = 10, fraction = 2) BigDecimal busFee,
 		@DecimalMin("0") @Digits(integer = 10, fraction = 2) BigDecimal discount, DiscountReason discountReason,
 		@NotNull PayFrequency payFrequency) {
 

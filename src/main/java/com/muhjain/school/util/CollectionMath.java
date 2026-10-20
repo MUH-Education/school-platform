@@ -6,11 +6,10 @@ import java.time.LocalDate;
 import java.util.Collection;
 
 import com.muhjain.school.model.enums.FeeHead;
-import com.muhjain.school.util.FeeStatusCalculator.CoveredDue;
+import com.muhjain.school.util.FeeStatusCalculator.MonthInput;
 
 /**
- * The one place that turns "dues and the part covered" into "percent collected". Pure Java: no Spring, no clock.
- * The covering itself (payments cover the oldest dues first) is done by {@code FeeStatusCalculator}, not here.
+ * The one place that turns "due and the part covered" into "percent collected". Pure Java: no Spring, no clock.
  * Example: dues ₹10,00,000, covered ₹9,60,000 → 96.0.
  */
 public final class CollectionMath {
@@ -21,7 +20,7 @@ public final class CollectionMath {
 		public static final Totals ZERO = new Totals(BigDecimal.ZERO, BigDecimal.ZERO);
 
 		public Totals plus(Totals other) {
-		return new Totals(due.add(other.due), covered.add(other.covered));
+			return new Totals(due.add(other.due), covered.add(other.covered));
 		}
 
 	}
@@ -30,29 +29,36 @@ public final class CollectionMath {
 	}
 
 	/**
-	 * The dues of one head that fall on or before {@code lastDay}.
+	 * The dues of one head whose due date falls on or before {@code lastDay}.
 	 * Example on 7 Oct: dues of 1,000 on 1 Apr … 1 Mar, the first 7 covered → due 7,000, covered 7,000.
 	 */
-	public static Totals upTo(Collection<CoveredDue> dues, FeeHead head, LocalDate lastDay) {
-	return between(dues, head, LocalDate.MIN, lastDay);
+	public static Totals upTo(Collection<MonthInput> months, FeeHead head, LocalDate lastDay) {
+		return between(months, head, LocalDate.MIN, lastDay);
 	}
 
 	/** The dues of one head with a due date from {@code first} to {@code last}, both days included. */
-	public static Totals between(Collection<CoveredDue> dues, FeeHead head, LocalDate first, LocalDate last) {
+	public static Totals between(Collection<MonthInput> months, FeeHead head, LocalDate first, LocalDate last) {
 		BigDecimal due = BigDecimal.ZERO;
 		BigDecimal covered = BigDecimal.ZERO;
-		for (CoveredDue d : dues) {
-		if (d.head() == head && !d.dueOn().isBefore(first) && !d.dueOn().isAfter(last)) {
-				due = due.add(d.amount());
-				covered = covered.add(d.covered());
+		for (MonthInput m : months) {
+			if (m.dueDate().isBefore(first) || m.dueDate().isAfter(last)) {
+				continue;
+			}
+			if (head == FeeHead.SCHOOL) {
+				due = due.add(m.schoolAmount().subtract(m.discountAmount()));
+				covered = covered.add(m.paidSchool());
+			}
+			else if (head == FeeHead.BUS) {
+				due = due.add(m.busAmount());
+				covered = covered.add(m.paidBus());
 			}
 		}
-	return new Totals(due, covered);
+		return new Totals(due, covered);
 	}
 
 	/** Covered ÷ due as a percent with one decimal, rounded half up. Nothing due → 0. */
 	public static BigDecimal percent(Totals totals) {
-	return percent(totals.covered(), totals.due());
+		return percent(totals.covered(), totals.due());
 	}
 
 	public static BigDecimal percent(BigDecimal part, BigDecimal whole) {

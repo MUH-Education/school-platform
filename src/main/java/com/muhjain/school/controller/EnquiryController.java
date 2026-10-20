@@ -105,7 +105,7 @@ public class EnquiryController {
 	@PostMapping("/{id}/status")
 	@PreAuthorize("hasAuthority('ENQUIRIES_EDIT')")
 	public EnquiryResponse changeStatus(@PathVariable Long id, @Valid @RequestBody StatusRequest request) {
-		return enquiryService.changeStatus(id, request);
+		return enquiryService.changeStatus(id, request, currentUser.id());
 	}
 
 	/** Add a call or visit note. It may set the next follow-up date. Answers the enquiry with its follow-ups. */

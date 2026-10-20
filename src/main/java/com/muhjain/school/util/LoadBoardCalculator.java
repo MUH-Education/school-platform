@@ -46,7 +46,7 @@ public final class LoadBoardCalculator {
 	 * @param spare seats nobody uses, else 0
 	 * @param yearlyCost vehicle monthly cost × months operated, null if no vehicle
 	 * @param costPerChild yearly cost ÷ children, null if no vehicle or no children
-	 * @param feeGot children × bus fee per year × collection percent ÷ 100
+	 * @param feeGot sum of the children's monthly bus fee × months operated × collection percent ÷ 100
 	 * @param surplus fee got − yearly cost, null if no vehicle
 	 */
 	public record RouteLoad(Integer seats, int children, BigDecimal load, int overBy, int spare,
@@ -78,12 +78,13 @@ public final class LoadBoardCalculator {
 	 * @param monthlyCost monthly cost of the vehicle, or null if no vehicle
 	 * @param children children on the route today
 	 * @param monthsOperated setting {@code transport.months_operated}, example 11
-	 * @param busFeePerYear setting {@code transport.bus_fee_per_year}, example 8800
+	 * @param sumBusFeePerMonth the sum of the enrolled children's own monthly bus fee (from
+	 * {@code transport_enrolment}), example 8800 for one child with no siblings on the route
 	 * @param collectionPct setting {@code transport.collection_pct}, example 95
 	 */
 	public static RouteLoad route(Integer seats, BigDecimal monthlyCost, int children, int monthsOperated,
-			BigDecimal busFeePerYear, BigDecimal collectionPct) {
-		BigDecimal feeGot = feeGot(children, busFeePerYear, collectionPct);
+			BigDecimal sumBusFeePerMonth, BigDecimal collectionPct) {
+		BigDecimal feeGot = feeGot(sumBusFeePerMonth, monthsOperated, collectionPct);
 		if (seats == null) {
 			return new RouteLoad(null, children, null, 0, 0, null, null, feeGot, null, Verdict.NO_VEHICLE);
 		}
@@ -115,9 +116,8 @@ public final class LoadBoardCalculator {
 		return monthlyCost.multiply(BigDecimal.valueOf(monthsOperated)).setScale(MONEY_SCALE, RoundingMode.HALF_UP);
 	}
 
-	private static BigDecimal feeGot(int children, BigDecimal busFeePerYear, BigDecimal collectionPct) {
-		return BigDecimal.valueOf(children)
-			.multiply(busFeePerYear)
+	private static BigDecimal feeGot(BigDecimal sumBusFeePerMonth, int monthsOperated, BigDecimal collectionPct) {
+		return sumBusFeePerMonth.multiply(BigDecimal.valueOf(monthsOperated))
 			.multiply(collectionPct)
 			.divide(HUNDRED, MONEY_SCALE, RoundingMode.HALF_UP);
 	}

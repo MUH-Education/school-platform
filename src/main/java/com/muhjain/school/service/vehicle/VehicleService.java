@@ -92,9 +92,14 @@ public class VehicleService {
 		Vehicle vehicle = new Vehicle(name, registrationNo, request.vehicleType(), request.seats(),
 				request.monthlyCost().setScale(2), request.ownedBy());
 		vehicle = save(vehicle);
+		// db-design makes the 4 paper rows right away, valid_till empty, instead of waiting for a date.
+		List<VehicleDocument> papers = new ArrayList<>();
+		for (DocType type : DocType.values()) {
+			papers.add(documents.save(new VehicleDocument(vehicle.getId(), type, null)));
+		}
 		auditService.record(ENTITY, vehicle.getId(), AuditAction.CREATED,
 				"Vehicle " + name + " (" + registrationNo + ") added", null);
-		return toResponse(vehicle, List.of(), today());
+		return toResponse(vehicle, papers, today());
 	}
 
 	/**
@@ -142,8 +147,9 @@ public class VehicleService {
 	}
 
 	/**
-	 * Saves the four paper dates. A date that is null removes the paper.
-	 * Example: insurance 28 Oct 2026, the others null → one row left in {@code vehicle_document}.
+	 * Saves the four paper dates. The row for each paper always exists (made when the vehicle was
+	 * added); a date of null just means the paper is MISSING again, the row stays.
+	 * Example: insurance set to 28 Oct 2026, the others left null.
 	 */
 	@Transactional
 	public VehicleResponse saveDocuments(Long id, VehicleDocumentsRequest request) {
@@ -155,18 +161,16 @@ public class VehicleService {
 		for (DocType type : DocType.values()) {
 			LocalDate date = request.dateOf(type);
 			VehicleDocument row = existing.get(type);
-			changes.field(label(type) + " valid till", type.name().toLowerCase(Locale.ROOT),
-					(row != null) ? row.getValidTill() : null, date);
-			if (date == null && row != null) {
-				documents.delete(row);
-			}
-			else if (date != null && row == null) {
+			if (row == null) {
+				// Defensive: every vehicle gets all 4 rows at creation, but an older row may be missing one.
+				changes.field(label(type) + " valid till", type.name().toLowerCase(Locale.ROOT), null, date);
 				now.add(documents.save(new VehicleDocument(id, type, date)));
+				continue;
 			}
-			else if (date != null) {
-				row.setValidTill(date);
-				now.add(row);
-			}
+			changes.field(label(type) + " valid till", type.name().toLowerCase(Locale.ROOT), row.getValidTill(),
+					date);
+			row.setValidTill(date);
+			now.add(row);
 		}
 		documents.flush();
 		if (!changes.isEmpty()) {
@@ -256,17 +260,19 @@ public class VehicleService {
 		}
 	}
 
-	// The checks above can miss a vehicle saved at the same moment. The unique indexes still catch it.
+	// The checks above can miss a vehicle saved at the same moment. The unique columns still catch it.
+	// db-design's name/registration_no are plain "unique" columns, so Postgres names the constraints
+	// vehicle_name_key/vehicle_registration_no_key itself (not the old vehicle_name_uk).
 	private Vehicle save(Vehicle vehicle) {
 		try {
 			return vehicles.saveAndFlush(vehicle);
 		}
 		catch (DataIntegrityViolationException ex) {
 			String cause = String.valueOf(NestedExceptionUtils.getMostSpecificCause(ex).getMessage());
-			if (cause.contains("vehicle_registration_no_uk")) {
+			if (cause.contains("vehicle_registration_no_key")) {
 				throw registrationUsed();
 			}
-			if (cause.contains("vehicle_name_uk")) {
+			if (cause.contains("vehicle_name_key")) {
 				throw nameUsed();
 			}
 			throw ex;

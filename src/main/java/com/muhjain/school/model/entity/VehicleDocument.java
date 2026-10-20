@@ -12,7 +12,8 @@ import com.muhjain.school.model.enums.DocType;
 
 /**
  * One paper of one vehicle. Example: Van 4, INSURANCE, valid till 28 Oct 2026.
- * Only the date is stored. The status (VALID, ENDING_SOON, ENDED) is calculated from it and today.
+ * The server makes all 4 rows when a vehicle is added, {@code validTill} empty. The status
+ * (MISSING, VALID, ENDING_SOON, ENDED) is calculated from the date and today.
  */
 @Entity
 @Table(name = "vehicle_document")
@@ -25,8 +26,8 @@ public class VehicleDocument extends BaseEntity {
 	@Column(name = "doc_type", nullable = false, length = 20)
 	private DocType docType;
 
-	// The last valid day.
-	@Column(name = "valid_till", nullable = false)
+	// The last valid day. Empty until the office fills it in.
+	@Column(name = "valid_till")
 	private LocalDate validTill;
 
 	protected VehicleDocument() {

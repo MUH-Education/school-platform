@@ -27,7 +27,13 @@ public record AnalyticsStudent(Long id, String name, String className, String se
 
 	/** Status of one head; null with no fee plan, or when the plan has no dues for that head (a child with no bus). */
 	public FeeStatus headStatus(FeeHead head) {
-		if (fee == null || fee.dues().stream().noneMatch(d -> d.head() == head)) {
+		if (fee == null) {
+			return null;
+		}
+		boolean anyDue = fee.dues()
+			.stream()
+			.anyMatch(d -> (head == FeeHead.SCHOOL) ? d.schoolAmount().signum() > 0 : d.busAmount().signum() > 0);
+		if (!anyDue) {
 			return null;
 		}
 		return fee.heads().get(head).status();

@@ -103,7 +103,7 @@ class AdmissionFeeTest extends FeeTestBase {
 			.andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.fields['fee.schoolFee']").exists());
 		assertThat(count("student")).isZero();
-		assertThat(count("admission_counter")).isZero();
+		assertThat(count("number_counter")).isZero();
 	}
 
 	@Test
@@ -127,8 +127,7 @@ class AdmissionFeeTest extends FeeTestBase {
 		assertThat(count("fee_plan")).isZero();
 		assertThat(count("fee_due")).isZero();
 		assertThat(count("fee_payment")).isZero();
-		assertThat(count("admission_counter")).isZero();
-		assertThat(count("receipt_counter")).isZero();
+		assertThat(count("number_counter")).isZero();
 	}
 
 	@Test

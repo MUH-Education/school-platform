@@ -1,6 +1,9 @@
 package com.muhjain.school.service.fee;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -9,11 +12,11 @@ import java.util.stream.Collectors;
 import com.muhjain.school.exception.ApiException;
 import com.muhjain.school.model.dto.response.PageResponse;
 import com.muhjain.school.model.dto.response.StudentBasics;
+import com.muhjain.school.model.entity.Receipt;
+import com.muhjain.school.model.repository.ReceiptRepository;
 import com.muhjain.school.service.student.StudentQueryService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.muhjain.school.model.dto.response.PaymentListItem;
@@ -22,7 +25,8 @@ import com.muhjain.school.model.repository.FeePaymentRepository;
 
 /**
  * The payment list (rule "GET /payments with date filter and paging"). Newest first.
- * Example: {@code from = 2026-10-01, to = 2026-10-07} → every payment and correction typed on those days.
+ * Example: {@code from = 2026-10-01, to = 2026-10-07} → every payment and correction whose receipt was made
+ * on those days.
  */
 @Service
 public class PaymentQueryService {
@@ -31,11 +35,18 @@ public class PaymentQueryService {
 
 	private final FeePaymentRepository payments;
 
+	private final ReceiptRepository receipts;
+
 	private final StudentQueryService students;
 
-	public PaymentQueryService(FeePaymentRepository payments, StudentQueryService students) {
+	private final Clock clock;
+
+	public PaymentQueryService(FeePaymentRepository payments, ReceiptRepository receipts,
+			StudentQueryService students, Clock clock) {
 		this.payments = payments;
+		this.receipts = receipts;
 		this.students = students;
+		this.clock = clock;
 	}
 
 	/**
@@ -55,25 +66,23 @@ public class PaymentQueryService {
 		if (from != null && to != null && from.isAfter(to)) {
 			throw ApiException.validation("from", "must not be after the end date");
 		}
-		Specification<FeePayment> filter = (root, query, cb) -> cb.conjunction();
-		if (from != null) {
-			filter = filter.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("paidOn"), from));
-		}
-		if (to != null) {
-			filter = filter.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("paidOn"), to));
-		}
-		if (sessionId != null) {
-			filter = filter.and((root, query, cb) -> cb.equal(root.get("sessionId"), sessionId));
-		}
-		Page<FeePayment> found = payments.findAll(filter, PageRequest.of(page, size,
-				Sort.by(Sort.Order.desc("paidOn"), Sort.Order.desc("id"))));
-		Set<Long> ids = found.getContent().stream().map(FeePayment::getStudentId).collect(Collectors.toSet());
-		Map<Long, StudentBasics> byId = students.basics(ids);
+		ZoneId zone = clock.getZone();
+		Instant fromAt = (from != null) ? from.atStartOfDay(zone).toInstant() : Instant.EPOCH;
+		Instant toAt = (to != null) ? to.plusDays(1).atStartOfDay(zone).toInstant() : Instant.now(clock).plusSeconds(1);
+		Page<FeePayment> found = payments.search(fromAt, toAt, sessionId, PageRequest.of(page, size));
+		Set<Long> studentIds = found.getContent().stream().map(FeePayment::getStudentId).collect(Collectors.toSet());
+		Set<Long> receiptIds = found.getContent().stream().map(FeePayment::getReceiptId).collect(Collectors.toSet());
+		Map<Long, StudentBasics> byStudent = students.basics(studentIds);
+		Map<Long, Receipt> byReceipt = receipts.findAllById(receiptIds)
+			.stream()
+			.collect(Collectors.toMap(Receipt::getId, r -> r));
 		List<PaymentListItem> items = found.getContent().stream().map(p -> {
-			StudentBasics s = byId.get(p.getStudentId());
-			return new PaymentListItem(p.getId(), p.getReceiptNo(), p.getStudentId(), (s != null) ? s.name() : null,
-					(s != null) ? s.admissionNo() : null, (s != null) ? s.className() : null, p.getFeeHead(),
-					p.getAmount(), p.getPaidOn(), p.getMode(), p.getNote());
+			StudentBasics s = byStudent.get(p.getStudentId());
+			Receipt r = byReceipt.get(p.getReceiptId());
+			return new PaymentListItem(p.getId(), (r != null) ? r.getReceiptNo() : null, p.getStudentId(),
+					(s != null) ? s.name() : null, (s != null) ? s.admissionNo() : null,
+					(s != null) ? s.className() : null, p.getMonth(), p.getFeeHead(), p.getAmount(),
+					(r != null) ? r.getPaidOn() : null, (r != null) ? r.getMode() : null);
 		}).toList();
 		return new PageResponse<>(items, found.getNumber(), found.getSize(), found.getTotalElements(),
 				found.getTotalPages());

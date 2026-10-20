@@ -20,15 +20,16 @@ Backend for MUH Jain Global School (Tohana, Haryana). One Spring Boot app serves
 | Schema changes | Flyway SQL files only |
 | Data access | Spring Data JPA (Hibernate), `ddl-auto=validate` |
 | Login | Phone number + OTP (WhatsApp or SMS), then one JWT |
+| Sessions / OTP cache | Redis — OTP state and login sessions (docs/08-decisions.md); not used for anything else |
 | JSON | Jackson 3 (package `tools.jackson`, not `com.fasterxml.jackson`) |
-| Tests | JUnit 5, MockMvc, Testcontainers PostgreSQL |
+| Tests | JUnit 5, MockMvc, Testcontainers PostgreSQL and Redis |
 
-Not used: Lombok, MapStruct, Kafka, Redis, microservices, H2.
+Not used: Lombok, MapStruct, Kafka, microservices, H2.
 
 ## Commands
 
 ```bash
-./gradlew bootRun          # start the app (starts PostgreSQL from compose.yaml, needs Docker)
+./gradlew bootRun          # start the app (starts PostgreSQL and Redis from compose.yaml, needs Docker)
 ./gradlew test             # all tests (needs Docker for Testcontainers)
 ./gradlew test --tests "*AuthFlowTest"   # one test class
 ./gradlew build            # compile + test + jar

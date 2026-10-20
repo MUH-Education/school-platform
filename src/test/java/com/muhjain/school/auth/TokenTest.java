@@ -28,19 +28,22 @@ class TokenTest extends AbstractIntegrationTest {
 
 	@Test
 	void tokenOfTurnedOffUserGives401() throws Exception {
+		AppUser owner = addUser("+919812340001", Role.OWNER);
 		AppUser user = addUser(PHONE, Role.OFFICE_ADMIN);
 		String token = login(PHONE);
 		me(token).andExpect(status().isOk());
 
-		user = userRepository.findById(user.getId()).orElseThrow();
-		user.setActive(false);
-		userRepository.saveAndFlush(user);
+		mockMvc
+			.perform(put("/api/v1/users/" + user.getId()).header("Authorization", bearer(tokenFor(owner)))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"phone\":\"" + PHONE + "\",\"role\":\"OFFICE_ADMIN\",\"active\":false}"))
+			.andExpect(status().isOk());
 
 		me(token).andExpect(status().isUnauthorized()).andExpect(jsonPath("$.error").value("UNAUTHENTICATED"));
 	}
 
 	@Test
-	void oldTokenAfterLogoutGives401() throws Exception {
+	void logoutEndsOnlyThatOneSessionNotEveryDevice() throws Exception {
 		addUser(PHONE, Role.OFFICE_ADMIN);
 		String phoneToken = login(PHONE);
 		String laptopToken = login(PHONE);
@@ -49,8 +52,8 @@ class TokenTest extends AbstractIntegrationTest {
 			.andExpect(status().isNoContent());
 
 		me(laptopToken).andExpect(status().isUnauthorized()).andExpect(jsonPath("$.error").value("UNAUTHENTICATED"));
-		me(phoneToken).andExpect(status().isUnauthorized());
-		me(login(PHONE)).andExpect(status().isOk());
+		// The phone was never logged out: it is a different session.
+		me(phoneToken).andExpect(status().isOk());
 	}
 
 	@Test
@@ -67,7 +70,7 @@ class TokenTest extends AbstractIntegrationTest {
 				.content("{\"phone\":\"" + PHONE + "\",\"role\":\"OWNER\",\"active\":true}"))
 			.andExpect(status().isOk());
 
-		// Rule 6: the old token stops at once. After a new login the new role works.
+		// Rule 6: the old session ends at once. After a new login the new role works.
 		mockMvc.perform(get("/api/v1/users").header("Authorization", bearer(oldToken)))
 			.andExpect(status().isUnauthorized());
 		mockMvc.perform(get("/api/v1/users").header("Authorization", bearer(login(PHONE))))
@@ -75,14 +78,31 @@ class TokenTest extends AbstractIntegrationTest {
 	}
 
 	@Test
-	void expiredTokenGives401() throws Exception {
+	void idleSessionExpiresAfterFifteenMinutes() throws Exception {
 		AppUser user = addUser(PHONE, Role.OFFICE_ADMIN);
 		String token = tokenFor(user);
 		me(token).andExpect(status().isOk());
 
-		clock.advance(Duration.ofDays(31));
+		clock.advance(Duration.ofMinutes(16));
 
 		me(token).andExpect(status().isUnauthorized()).andExpect(jsonPath("$.error").value("UNAUTHENTICATED"));
+	}
+
+	@Test
+	void activeSessionSlidesAndNeverGoesPastTheTwelveHourCap() throws Exception {
+		AppUser user = addUser(PHONE, Role.OFFICE_ADMIN);
+		String token = tokenFor(user);
+
+		// A request every 10 minutes (inside the 15-minute idle timeout) keeps the session alive
+		// well past what a single, un-refreshed 15-minute window would allow.
+		for (int i = 0; i < 50; i++) {
+			clock.advance(Duration.ofMinutes(10));
+			me(token).andExpect(status().isOk());
+		}
+
+		// But it can never outlive the 12-hour hard cap from login, no matter how active it stayed.
+		clock.advance(Duration.ofHours(12));
+		me(token).andExpect(status().isUnauthorized());
 	}
 
 	@Test

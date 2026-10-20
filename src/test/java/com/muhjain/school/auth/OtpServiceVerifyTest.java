@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.muhjain.school.model.dto.response.LoginResponse;
 import com.muhjain.school.service.auth.OtpService;
+import com.muhjain.school.service.auth.RedisOtpStore;
 
 class OtpServiceVerifyTest extends AbstractIntegrationTest {
 
@@ -22,12 +23,15 @@ class OtpServiceVerifyTest extends AbstractIntegrationTest {
 	@Autowired
 	private OtpService otpService;
 
+	@Autowired
+	private RedisOtpStore otpStore;
+
 	@Test
 	void rightCodeGivesTokenSetsLastLoginAndWritesAudit() {
 		AppUser user = addUser(PHONE, Role.OFFICE_ADMIN);
 		otpService.request(PHONE, "10.0.0.1");
 
-		LoginResponse login = otpService.verify("98123 40002", lastCodeSentTo(PHONE));
+		LoginResponse login = otpService.verify("98123 40002", lastCodeSentTo(PHONE), "10.0.0.1");
 
 		assertThat(login.token()).isNotBlank();
 		assertThat(login.expiresAt().getOffset()).isEqualTo(ZoneOffset.ofHoursMinutes(5, 30));
@@ -39,21 +43,22 @@ class OtpServiceVerifyTest extends AbstractIntegrationTest {
 		assertThat(jdbc.queryForObject("select count(*) from audit_log where action = 'LOGIN' and changed_by = ?",
 				Integer.class, user.getId()))
 			.isEqualTo(1);
-		assertThat(jdbc.queryForObject("select consumed_at is not null from otp_code", Boolean.class)).isTrue();
+		// A right code cannot be used twice: it is gone from Redis.
+		assertThat(otpStore.find(PHONE)).isEmpty();
 	}
 
 	@Test
-	void wrongTriesAreSavedAndTheFifthLocksTheCode() {
+	void wrongTriesAreSavedAndTheThirdLocksTheCode() {
 		addUser(PHONE, Role.OFFICE_ADMIN);
 		otpService.request(PHONE, "10.0.0.1");
 		String right = lastCodeSentTo(PHONE);
 		String wrong = right.equals("000000") ? "111111" : "000000";
 
-		for (int i = 0; i < 5; i++) {
-			assertCode(() -> otpService.verify(PHONE, wrong), "OTP_INVALID");
+		for (int i = 0; i < 3; i++) {
+			assertCode(() -> otpService.verify(PHONE, wrong, "10.0.0.1"), "OTP_INVALID");
 		}
-		assertThat(jdbc.queryForObject("select attempts from otp_code", Integer.class)).isEqualTo(5);
-		assertCode(() -> otpService.verify(PHONE, right), "OTP_LOCKED");
+		assertThat(otpStore.find(PHONE)).get().extracting(RedisOtpStore.ActiveCode::attempts).isEqualTo(3);
+		assertCode(() -> otpService.verify(PHONE, right, "10.0.0.1"), "OTP_LOCKED");
 	}
 
 	@Test
@@ -62,7 +67,7 @@ class OtpServiceVerifyTest extends AbstractIntegrationTest {
 		otpService.request(PHONE, "10.0.0.1");
 		clock.advance(Duration.ofMinutes(5));
 
-		assertCode(() -> otpService.verify(PHONE, lastCodeSentTo(PHONE)), "OTP_INVALID");
+		assertCode(() -> otpService.verify(PHONE, lastCodeSentTo(PHONE), "10.0.0.1"), "OTP_INVALID");
 	}
 
 	@Test
@@ -72,7 +77,7 @@ class OtpServiceVerifyTest extends AbstractIntegrationTest {
 		user.setActive(false);
 		userRepository.saveAndFlush(user);
 
-		assertCode(() -> otpService.verify(PHONE, lastCodeSentTo(PHONE)), "OTP_INVALID");
+		assertCode(() -> otpService.verify(PHONE, lastCodeSentTo(PHONE), "10.0.0.1"), "OTP_INVALID");
 	}
 
 	private static void assertCode(Runnable call, String code) {

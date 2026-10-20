@@ -18,8 +18,8 @@ class SettingsTest extends AbstractIntegrationTest {
 
 	@AfterEach
 	void putStartValuesBack() {
-		jdbc.update("update app_setting set value = '8800', updated_by = null where key = 'transport.bus_fee_per_year'");
-		jdbc.update("update app_setting set value = 'MUH Jain School', updated_by = null where key = 'school.name'");
+		jdbc.update("update app_setting set value = '11', updated_by = null where key = 'transport.months_operated'");
+		jdbc.update("update app_setting set value = 'MUH Jain Global School', updated_by = null where key = 'school.name'");
 	}
 
 	@Test
@@ -28,45 +28,56 @@ class SettingsTest extends AbstractIntegrationTest {
 
 		mockMvc.perform(get("/api/v1/settings").header("Authorization", bearer(token)))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.length()").value(7))
-			.andExpect(jsonPath("$[?(@.key == 'transport.bus_fee_per_year')].value").value("8800"));
+			.andExpect(jsonPath("$.length()").value(11))
+			.andExpect(jsonPath("$[?(@.key == 'transport.months_operated')].value").value("11"));
 	}
 
 	@Test
 	void ownerChangesAValueAndItIsAudited() throws Exception {
 		AppUser owner = addUser("+919812340001", Role.OWNER);
 
-		update(tokenFor(owner), "{\"values\":{\"transport.bus_fee_per_year\":\" 9000 \",\"school.name\":\"MUH Jain School\"}}")
+		update(tokenFor(owner),
+				"{\"values\":{\"transport.months_operated\":\" 10 \",\"school.name\":\"MUH Jain Global School\"}}")
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$[?(@.key == 'transport.bus_fee_per_year')].value").value("9000"))
-			.andExpect(jsonPath("$[?(@.key == 'transport.bus_fee_per_year')].updatedBy").value(owner.getId().intValue()));
+			.andExpect(jsonPath("$[?(@.key == 'transport.months_operated')].value").value("10"))
+			.andExpect(jsonPath("$[?(@.key == 'transport.months_operated')].updatedBy").value(owner.getId().intValue()));
 
 		assertThat(jdbc.queryForList("select summary from audit_log where entity_type = 'SETTING'", String.class))
-			.containsExactly("transport.bus_fee_per_year changed from 8800 to 9000");
+			.containsExactly("transport.months_operated changed from 11 to 10");
 	}
 
 	@Test
 	void badValueOrUnknownKeySavesNothing() throws Exception {
 		String token = tokenFor(addUser("+919812340001", Role.OWNER));
 
-		update(token, "{\"values\":{\"transport.bus_fee_per_year\":\"9000\",\"transport.collection_pct\":\"120\"}}")
+		update(token, "{\"values\":{\"transport.months_operated\":\"10\",\"transport.collection_pct\":\"120\"}}")
 			.andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.error").value("VALIDATION"))
 			.andExpect(jsonPath("$['fields']['transport.collection_pct']").value("must be at most 100"));
 		update(token, "{\"values\":{\"bus.colour\":\"yellow\"}}").andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$['fields']['bus.colour']").value("is not a setting"));
-		update(token, "{\"values\":{\"fees.grace_days\":\"ten\"}}").andExpect(status().isBadRequest());
+		update(token, "{\"values\":{\"fees.defaulted_after_days\":\"ten\"}}").andExpect(status().isBadRequest());
+		update(token, "{\"values\":{\"school.office_phone\":\"123\"}}").andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$['fields']['school.office_phone']").exists());
 
-		assertThat(jdbc.queryForObject("select value from app_setting where key = 'transport.bus_fee_per_year'",
+		assertThat(jdbc.queryForObject("select value from app_setting where key = 'transport.months_operated'",
 				String.class))
-			.isEqualTo("8800");
+			.isEqualTo("11");
+	}
+
+	@Test
+	void optionalTextSettingsMayBeLeftBlank() throws Exception {
+		String token = tokenFor(addUser("+919812340001", Role.OWNER));
+
+		update(token, "{\"values\":{\"school.principal_name\":\"\"}}").andExpect(status().isOk())
+			.andExpect(jsonPath("$[?(@.key == 'school.principal_name')].value").value(""));
 	}
 
 	@Test
 	void officeAdminCannotChangeSettings() throws Exception {
 		String token = tokenFor(addUser("+919812340002", Role.OFFICE_ADMIN));
 
-		update(token, "{\"values\":{\"transport.bus_fee_per_year\":\"9000\"}}").andExpect(status().isForbidden())
+		update(token, "{\"values\":{\"transport.months_operated\":\"10\"}}").andExpect(status().isForbidden())
 			.andExpect(jsonPath("$.error").value("FORBIDDEN"));
 	}
 

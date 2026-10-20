@@ -26,6 +26,7 @@ import com.muhjain.school.model.dto.response.OtpRequestResponse;
 import com.muhjain.school.model.dto.request.OtpVerifyRequest;
 import com.muhjain.school.security.CurrentUser;
 import com.muhjain.school.service.auth.OtpService;
+import com.muhjain.school.service.auth.SessionService;
 
 /**
  * Login with phone and OTP. See docs/04-login-otp-jwt.md.
@@ -45,18 +46,21 @@ public class AuthController {
 
 	private final UserService userService;
 
+	private final SessionService sessionService;
+
 	private final CurrentUser currentUser;
 
 	private final AttendantRouteService attendantRoutes;
 
 	private final Clock clock;
 
-	public AuthController(OtpService otpService, UserService userService, CurrentUser currentUser,
-			AttendantRouteService attendantRoutes, Clock clock) {
+	public AuthController(OtpService otpService, UserService userService, SessionService sessionService,
+			CurrentUser currentUser, AttendantRouteService attendantRoutes, Clock clock) {
 		this.attendantRoutes = attendantRoutes;
 		this.clock = clock;
 		this.otpService = otpService;
 		this.userService = userService;
+		this.sessionService = sessionService;
 		this.currentUser = currentUser;
 	}
 
@@ -70,8 +74,8 @@ public class AuthController {
 	@Operation(summary = "Check the code and get a token")
 	@SecurityRequirements
 	@PostMapping("/otp/verify")
-	public LoginResponse verifyOtp(@Valid @RequestBody OtpVerifyRequest request) {
-		return otpService.verify(request.phone(), request.otp());
+	public LoginResponse verifyOtp(@Valid @RequestBody OtpVerifyRequest request, HttpServletRequest http) {
+		return otpService.verify(request.phone(), request.otp(), http.getRemoteAddr());
 	}
 
 	@Operation(summary = "Who am I and what can I do")
@@ -82,11 +86,11 @@ public class AuthController {
 			.orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED", "Please log in first."));
 	}
 
-	@Operation(summary = "Log out (the token stops working)")
+	@Operation(summary = "Log out (this device's token stops working; other devices are not affected)")
 	@PostMapping("/logout")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void logout() {
-		userService.logout(currentUser.id());
+		sessionService.revoke(currentUser.sessionId());
 	}
 
 	// The attendant's route of today, from the database (never from the client). Null if they have none.

@@ -222,4 +222,16 @@ public class GuardianService {
 		return guardians.existsById(guardianId);
 	}
 
+	/**
+	 * The "family" of a child for fees: its primary guardian. {@code receipt.family_guardian_id} uses it.
+	 * @throws ApiException 409 NO_GUARDIAN when the child has no phone saved at all
+	 */
+	@Transactional(readOnly = true)
+	public Long primaryGuardianId(Long studentId) {
+		return links.findByStudentIdAndPrimaryTrue(studentId)
+			.map(StudentGuardian::getGuardianId)
+			.orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "NO_GUARDIAN",
+					"This child has no parent phone saved yet. Add one first."));
+	}
+
 }

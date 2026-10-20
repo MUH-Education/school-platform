@@ -17,7 +17,7 @@ import com.muhjain.school.security.CurrentUser;
 import com.muhjain.school.exception.ApiException;
 import com.muhjain.school.model.dto.response.PageResponse;
 import com.muhjain.school.model.enums.FeeHead;
-import com.muhjain.school.util.FeeStatusCalculator.CoveredDue;
+import com.muhjain.school.util.FeeStatusCalculator.MonthInput;
 import com.muhjain.school.model.enums.FeeStatus;
 import com.muhjain.school.model.dto.response.SessionResponse;
 import com.muhjain.school.util.ClassNames;
@@ -86,7 +86,7 @@ public class AnalyticsService {
 	@Transactional(readOnly = true)
 	public MonthlyCollectionResponse feeCollectionByMonth(AnalyticsStudentFilter filter) {
 		SessionResponse session = base.session(filter);
-		List<CoveredDue> dues = base.students(filter)
+		List<MonthInput> dues = base.students(filter)
 			.stream()
 			.filter(s -> s.fee() != null)
 			.flatMap(s -> s.fee().dues().stream())

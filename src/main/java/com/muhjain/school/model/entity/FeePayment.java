@@ -9,17 +9,22 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.Immutable;
 import com.muhjain.school.model.enums.FeeHead;
-import com.muhjain.school.model.enums.PaymentMode;
 
 /**
- * Money the office received. Never edited, never deleted: there are no setters on purpose.
- * A correction is a new row with a negative amount and a note.
- * Example: SCHOOL 7500.00 by UPI on 1 Apr, receipt "R-2026-0412".
+ * One line of a receipt: one child, one month, one fee head. Never updated or deleted: a database trigger
+ * stops it. A cancel or a correction adds a new, negative line with {@code reversalOfId} pointing at the
+ * line it reverses.
+ * Example: receipt R-2026-1189, Aryan, September 2026, SCHOOL, 2500.00.
  */
 @Entity
+@Immutable
 @Table(name = "fee_payment")
 public class FeePayment extends BaseEntity {
+
+	@Column(name = "receipt_id", nullable = false)
+	private Long receiptId;
 
 	@Column(name = "student_id", nullable = false)
 	private Long studentId;
@@ -27,43 +32,35 @@ public class FeePayment extends BaseEntity {
 	@Column(name = "session_id", nullable = false)
 	private Long sessionId;
 
+	@Column(nullable = false)
+	private LocalDate month;
+
 	@Enumerated(EnumType.STRING)
 	@Column(name = "fee_head", nullable = false, length = 10)
 	private FeeHead feeHead;
 
-	@Column(nullable = false)
+	@Column(nullable = false, precision = 12, scale = 2)
 	private BigDecimal amount;
 
-	@Column(name = "paid_on", nullable = false)
-	private LocalDate paidOn;
-
-	@Enumerated(EnumType.STRING)
-	@Column(nullable = false, length = 15)
-	private PaymentMode mode;
-
-	@Column(name = "receipt_no", nullable = false, length = 20)
-	private String receiptNo;
-
-	@Column(length = 200)
-	private String note;
-
-	@Column(name = "recorded_by")
-	private Long recordedBy;
+	@Column(name = "reversal_of_id")
+	private Long reversalOfId;
 
 	protected FeePayment() {
 	}
 
-	public FeePayment(Long studentId, Long sessionId, FeeHead feeHead, BigDecimal amount, LocalDate paidOn,
-			PaymentMode mode, String receiptNo, String note, Long recordedBy) {
+	public FeePayment(Long receiptId, Long studentId, Long sessionId, LocalDate month, FeeHead feeHead,
+			BigDecimal amount, Long reversalOfId) {
+		this.receiptId = receiptId;
 		this.studentId = studentId;
 		this.sessionId = sessionId;
+		this.month = month;
 		this.feeHead = feeHead;
 		this.amount = amount;
-		this.paidOn = paidOn;
-		this.mode = mode;
-		this.receiptNo = receiptNo;
-		this.note = note;
-		this.recordedBy = recordedBy;
+		this.reversalOfId = reversalOfId;
+	}
+
+	public Long getReceiptId() {
+		return receiptId;
 	}
 
 	public Long getStudentId() {
@@ -74,6 +71,10 @@ public class FeePayment extends BaseEntity {
 		return sessionId;
 	}
 
+	public LocalDate getMonth() {
+		return month;
+	}
+
 	public FeeHead getFeeHead() {
 		return feeHead;
 	}
@@ -82,24 +83,8 @@ public class FeePayment extends BaseEntity {
 		return amount;
 	}
 
-	public LocalDate getPaidOn() {
-		return paidOn;
-	}
-
-	public PaymentMode getMode() {
-		return mode;
-	}
-
-	public String getReceiptNo() {
-		return receiptNo;
-	}
-
-	public String getNote() {
-		return note;
-	}
-
-	public Long getRecordedBy() {
-		return recordedBy;
+	public Long getReversalOfId() {
+		return reversalOfId;
 	}
 
 }

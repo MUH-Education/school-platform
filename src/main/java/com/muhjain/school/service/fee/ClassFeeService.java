@@ -30,11 +30,11 @@ public class ClassFeeService {
 
 	private final ClassFeeRepository classFees;
 
-	private final SessionService sessions;
+	private final AcademicSessionService sessions;
 
 	private final AuditService audit;
 
-	public ClassFeeService(ClassFeeRepository classFees, SessionService sessions, AuditService audit) {
+	public ClassFeeService(ClassFeeRepository classFees, AcademicSessionService sessions, AuditService audit) {
 		this.classFees = classFees;
 		this.sessions = sessions;
 		this.audit = audit;
@@ -47,14 +47,14 @@ public class ClassFeeService {
 		return classFees.findBySessionId(sessionId)
 			.stream()
 			.sorted(Comparator.comparingInt(f -> ClassNames.ALL.indexOf(f.getClassName())))
-			.map(f -> new ClassFeeItem(f.getClassName(), f.getSchoolFee()))
+			.map(f -> new ClassFeeItem(f.getClassName(), f.getPerMonth()))
 			.toList();
 	}
 
-	/** The standard fee of one class in one session, if the office has set it. */
+	/** The standard fee of one class in one session, a month, if the office has set it. */
 	@Transactional(readOnly = true)
 	public Optional<BigDecimal> standardFee(Long sessionId, String className) {
-		return classFees.findBySessionIdAndClassName(sessionId, className).map(ClassFee::getSchoolFee);
+		return classFees.findBySessionIdAndClassName(sessionId, className).map(ClassFee::getPerMonth);
 	}
 
 	/** Saves the whole list. Classes that are not in it lose their standard fee. */
@@ -68,7 +68,7 @@ public class ClassFeeService {
 			if (name.isEmpty()) {
 				throw ApiException.validation("fees", item.className() + " is not a class of this school");
 			}
-			if (wanted.put(name.get(), item.schoolFee().setScale(2)) != null) {
+			if (wanted.put(name.get(), item.perMonth().setScale(2)) != null) {
 				throw ApiException.validation("fees", "class " + name.get() + " is in the list twice");
 			}
 		}
@@ -84,8 +84,8 @@ public class ClassFeeService {
 				classFees.save(new ClassFee(sessionId, className, fee));
 				changed.add(className);
 			}
-			else if (row.getSchoolFee().compareTo(fee) != 0) {
-				row.setSchoolFee(fee);
+			else if (row.getPerMonth().compareTo(fee) != 0) {
+				row.setPerMonth(fee);
 				changed.add(className);
 			}
 		});

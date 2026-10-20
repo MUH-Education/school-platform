@@ -11,15 +11,27 @@ class EnquiryCreateTest extends EnquiryTestBase {
 
 	@Test
 	void enquiryCanBeSavedWithFiveFields() throws Exception {
+		// No session for next year has been added yet, so it defaults to the current one.
+		long currentSessionId = jdbc.queryForObject("select id from academic_session where name = '2026-27'",
+				Long.class);
 		create(desk, FIVE).andExpect(status().isCreated())
 			.andExpect(jsonPath("$.status").value("NEW"))
 			.andExpect(jsonPath("$.phone").value("+919812340208"))
 			.andExpect(jsonPath("$.classSought").value("3"))
 			.andExpect(jsonPath("$.needsBus").value("UNKNOWN"))
-			.andExpect(jsonPath("$.sessionName").value("2027-28"))
+			.andExpect(jsonPath("$.sessionId").value(currentSessionId))
 			.andExpect(jsonPath("$.overdue").value(false))
 			.andExpect(jsonPath("$.followUps.length()").value(0));
 		assertThat(jdbc.queryForObject("select created_by from enquiry", Long.class)).isNotNull();
+	}
+
+	@Test
+	void enquiryDefaultsToTheSessionThatHasNotStartedYet() throws Exception {
+		long nextSessionId = jdbc.queryForObject(
+				"insert into academic_session (name, starts_on, ends_on) values ('2027-28', '2027-04-01', "
+						+ "'2028-03-31') returning id",
+				Long.class);
+		create(desk, FIVE).andExpect(status().isCreated()).andExpect(jsonPath("$.sessionId").value(nextSessionId));
 	}
 
 	@Test
@@ -56,7 +68,8 @@ class EnquiryCreateTest extends EnquiryTestBase {
 	void samePhoneOtherClassIsAllowedAndSoIsAClosedOne() throws Exception {
 		long first = idOf(create(desk, json("9812340208", "3", null)));
 		create(desk, json("9812340208", "5", null)).andExpect(status().isCreated());
-		jdbc.update("update enquiry set status = 'LOST', lost_reason = 'far' where id = ?", first);
+		jdbc.update("update enquiry set status = 'LOST', lost_reason = 'OTHER', status_before_lost = 'NEW' "
+				+ "where id = ?", first);
 		create(desk, json("9812340208", "3", null)).andExpect(status().isCreated());
 	}
 

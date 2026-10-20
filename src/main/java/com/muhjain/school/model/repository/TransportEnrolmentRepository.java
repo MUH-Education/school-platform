@@ -23,14 +23,17 @@ public interface TransportEnrolmentRepository extends JpaRepository<TransportEnr
 
 	List<TransportEnrolment> findByStudentId(Long studentId);
 
-	/** The row that covers the day. Example: a child on Route 4 until 30 Nov: 15 Nov → that row, 1 Dec → empty. */
-	@Query("select e from TransportEnrolment e where e.studentId = :studentId and e.fromDate <= :day "
-			+ "and (e.toDate is null or e.toDate >= :day)")
+	/**
+	 * The row that has the child on a bus on the day (a {@code usesBus = false} row is not "the bus", so it
+	 * is left out). Example: a child on Route 4 until 30 Nov: 15 Nov → that row, 1 Dec → empty.
+	 */
+	@Query("select e from TransportEnrolment e where e.studentId = :studentId and e.usesBus = true "
+			+ "and e.fromDate <= :day and (e.toDate is null or e.toDate >= :day)")
 	Optional<TransportEnrolment> coveringDay(@Param("studentId") Long studentId, @Param("day") LocalDate day);
 
 	/** Same for many children. A child has at most one row that covers a day. */
-	@Query("select e from TransportEnrolment e where e.studentId in :studentIds and e.fromDate <= :day "
-			+ "and (e.toDate is null or e.toDate >= :day)")
+	@Query("select e from TransportEnrolment e where e.studentId in :studentIds and e.usesBus = true "
+			+ "and e.fromDate <= :day and (e.toDate is null or e.toDate >= :day)")
 	List<TransportEnrolment> coveringDay(@Param("studentIds") Collection<Long> studentIds,
 			@Param("day") LocalDate day);
 
@@ -43,6 +46,15 @@ public interface TransportEnrolmentRepository extends JpaRepository<TransportEnr
 			+ "and s.status = com.muhjain.school.model.enums.StudentStatus.ACTIVE and e.routeId = :routeId "
 			+ "and e.fromDate <= :day and (e.toDate is null or e.toDate >= :day)")
 	long countOnRoute(@Param("routeId") Long routeId, @Param("day") LocalDate day);
+
+	/**
+	 * The sum of the monthly bus fee of the active children on the route on the day. There is no more flat
+	 * {@code transport.bus_fee_per_year} setting: each child's fee lives on their own row.
+	 */
+	@Query("select coalesce(sum(e.busFeePerMonth), 0) from TransportEnrolment e, Student s "
+			+ "where s.id = e.studentId and s.status = com.muhjain.school.model.enums.StudentStatus.ACTIVE "
+			+ "and e.routeId = :routeId and e.fromDate <= :day and (e.toDate is null or e.toDate >= :day)")
+	java.math.BigDecimal sumBusFeePerMonthOnRoute(@Param("routeId") Long routeId, @Param("day") LocalDate day);
 
 	/** Query 1 of "Three queries used everywhere": the active children on a route on a day, by name. */
 	@Query("select new com.muhjain.school.model.dto.response.RouteChild(s.id, s.name, s.admissionNo, s.gender, s.className, "

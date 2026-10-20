@@ -46,6 +46,8 @@ class MyRouteApiTest extends TripTestBase {
 		sendMarks(balwanToken, morning(siya, "DONE", "07:42:00"))
 			.andExpect(jsonPath("$.results[0].error").value("NOT_YOUR_ROUTE"));
 		clock.advance(java.time.Duration.ofDays(1));
+		refreshTokens();
+		nareshToken = tokenFor(naresh);
 		getAs(nareshToken, "/api/v1/trips/my-route").andExpect(jsonPath("$.route").doesNotExist());
 		getAs(balwanToken, "/api/v1/trips/my-route").andExpect(jsonPath("$.route.name").value("Route 4"));
 	}

@@ -29,7 +29,8 @@ class EnquiryTransitionsTest {
 			/* VISITED   */ { NOT_ALLOWED, NOT_ALLOWED, UNCHANGED, ALLOWED, ADMITTED_BY_HAND, ALLOWED },
 			/* APPLIED   */ { NOT_ALLOWED, NOT_ALLOWED, NOT_ALLOWED, UNCHANGED, ADMITTED_BY_HAND, ALLOWED },
 			/* ADMITTED  */ { NOT_ALLOWED, NOT_ALLOWED, NOT_ALLOWED, NOT_ALLOWED, UNCHANGED, NOT_ALLOWED },
-			/* LOST      */ { NOT_ALLOWED, ALLOWED, NOT_ALLOWED, NOT_ALLOWED, ADMITTED_BY_HAND, UNCHANGED } };
+			// Which exact stage a reopen may land on is checked by the caller (status_before_lost), not here.
+			/* LOST      */ { ALLOWED, ALLOWED, ALLOWED, ALLOWED, ADMITTED_BY_HAND, UNCHANGED } };
 
 	@Test
 	void everyMoveFollowsTheTable() {

@@ -63,7 +63,7 @@ class OutboxNotifierTest extends TripTestBase {
 			.containsExactly("QUEUED");
 		assertThat(bodies()).containsOnly("Aryan सुबह की बस में चढ़ गया — 7:42। MUH Jain School");
 		assertThat(jdbc.queryForObject("select template_code from message_outbox limit 1", String.class))
-			.isEqualTo("BOARDED_MORNING_M");
+			.isEqualTo("BOARDED_MORNING");
 	}
 
 	@Test

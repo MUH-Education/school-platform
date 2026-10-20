@@ -19,9 +19,11 @@ class EnquiryAuditTest extends EnquiryTestBase {
 	void createStatusAndFollowUpAreInTheChangeHistory() throws Exception {
 		long id = idOf(create(desk, FIVE));
 		move(desk, id, "{\"status\":\"VISITED\"}");
-		followUp(desk, id, "{\"note\":\"Called. Will visit on Sunday.\",\"nextActionOn\":\"2026-10-12\"}");
-		followUp(desk, id, "{\"note\":\"Final call\"}");
-		move(desk, id, "{\"status\":\"LOST\",\"lostReason\":\"Joined a school near home\"}");
+		followUp(desk, id, "{\"followType\":\"CALL\",\"note\":\"Called. Will visit on Sunday.\","
+				+ "\"nextOn\":\"2026-10-12\"}");
+		followUp(desk, id, "{\"followType\":\"CALL\",\"note\":\"Final call\"}");
+		move(desk, id, "{\"status\":\"LOST\",\"lostReason\":\"CHOSE_OTHER_SCHOOL\","
+				+ "\"lostNote\":\"Joined a school near home\"}");
 		assertThat(lines()).containsExactly("Enquiry added: Ramesh Jain, Jakhal, class 3 (WALK_IN)",
 				"Status changed from NEW to VISITED",
 				"Follow-up added: Called. Will visit on Sunday., next 12 Oct 2026",

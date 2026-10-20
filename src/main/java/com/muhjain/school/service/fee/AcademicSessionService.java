@@ -1,5 +1,7 @@
 package com.muhjain.school.service.fee;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.List;
 
 import com.muhjain.school.model.enums.AuditAction;
@@ -14,30 +16,35 @@ import com.muhjain.school.model.entity.AcademicSession;
 import com.muhjain.school.model.repository.AcademicSessionRepository;
 
 /**
- * School years. Rule 1 of phase 7: exactly one session is current.
- * Example: "2026-27" is current. Adding "2027-28" with {@code current: true} makes it current and "2026-27" not.
+ * School years. "Current" is not a flag anyone sets: it is whichever session's dates include today.
+ * Example: today is 7 Oct 2026, so "2026-27" (1 Apr 2026 to 31 Mar 2027) is current.
  */
 @Service
-public class SessionService {
+public class AcademicSessionService {
 
 	private final AcademicSessionRepository sessions;
 
 	private final AuditService audit;
 
-	public SessionService(AcademicSessionRepository sessions, AuditService audit) {
+	private final Clock clock;
+
+	public AcademicSessionService(AcademicSessionRepository sessions, AuditService audit, Clock clock) {
 		this.sessions = sessions;
 		this.audit = audit;
+		this.clock = clock;
 	}
 
 	@Transactional(readOnly = true)
 	public List<SessionResponse> list() {
-		return sessions.findAllByOrderByStartsOnDesc().stream().map(SessionResponse::of).toList();
+		LocalDate today = LocalDate.now(clock);
+		return sessions.findAllByOrderByStartsOnDesc().stream().map(s -> SessionResponse.of(s, today)).toList();
 	}
 
 	/** The current session. Every fee rule that says "this session" uses it. */
 	@Transactional(readOnly = true)
 	public AcademicSession current() {
-		return sessions.findByCurrentTrue()
+		LocalDate today = LocalDate.now(clock);
+		return sessions.findFirstByStartsOnLessThanEqualAndEndsOnGreaterThanEqual(today, today)
 			.orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "NO_CURRENT_SESSION",
 					"No school year is current. Add one first."));
 	}
@@ -48,13 +55,29 @@ public class SessionService {
 	 */
 	@Transactional(readOnly = true)
 	public SessionResponse resolve(Long sessionId) {
-		return SessionResponse.of((sessionId == null) ? current() : get(sessionId));
+		return SessionResponse.of((sessionId == null) ? current() : get(sessionId), LocalDate.now(clock));
+	}
+
+	/**
+	 * The session an enquiry is for: the soonest one that has not started yet, or the current one if
+	 * there is no later session added. Replaces the old {@code SessionNames.nextSession()}, which just
+	 * computed a name without checking a session for it actually existed.
+	 */
+	@Transactional(readOnly = true)
+	public AcademicSession nextOrCurrent() {
+		LocalDate today = LocalDate.now(clock);
+		return sessions.findFirstByStartsOnGreaterThanOrderByStartsOnAsc(today).orElseGet(this::current);
 	}
 
 	@Transactional(readOnly = true)
 	public AcademicSession get(Long id) {
 		return sessions.findById(id)
 			.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "This school year does not exist."));
+	}
+
+	@Transactional(readOnly = true)
+	public boolean exists(Long id) {
+		return sessions.existsById(id);
 	}
 
 	@Transactional
@@ -82,19 +105,9 @@ public class SessionService {
 			throw new ApiException(HttpStatus.CONFLICT, "SESSION_OVERLAP",
 					"These dates overlap another school year.");
 		}
-		boolean makeCurrent = Boolean.TRUE.equals(request.current());
-		if (makeCurrent) {
-			// The old one must stop being current first: the database allows one current row at a time.
-			sessions.findByCurrentTrue().ifPresent(old -> {
-				old.setCurrent(false);
-				sessions.saveAndFlush(old);
-			});
-		}
-		AcademicSession saved = sessions
-			.save(new AcademicSession(name, request.startsOn(), request.endsOn(), makeCurrent));
-		audit.record("SESSION", saved.getId(), AuditAction.CREATED,
-				"School year " + name + " added" + (makeCurrent ? " and made current." : "."), null);
-		return SessionResponse.of(saved);
+		AcademicSession saved = sessions.save(new AcademicSession(name, request.startsOn(), request.endsOn()));
+		audit.record("SESSION", saved.getId(), AuditAction.CREATED, "School year " + name + " added.", null);
+		return SessionResponse.of(saved, LocalDate.now(clock));
 	}
 
 }

@@ -9,6 +9,7 @@ create table otp_whitelist (
 );
 
 -- A whitelisted login never sends a real message, so otp_code needs one more channel value.
-alter table otp_code drop constraint otp_code_channel_ck;
-alter table otp_code add constraint otp_code_channel_ck
+-- V1's check on otp_code.channel has no explicit name, so Postgres named it otp_code_channel_check.
+alter table otp_code drop constraint otp_code_channel_check;
+alter table otp_code add constraint otp_code_channel_check
     check (channel in ('WHATSAPP', 'SMS', 'LOG', 'WHITELIST'));

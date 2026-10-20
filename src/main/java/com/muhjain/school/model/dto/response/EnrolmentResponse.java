@@ -3,11 +3,15 @@ package com.muhjain.school.model.dto.response;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import com.muhjain.school.model.enums.TransportReason;
+
 /**
- * One line of a child's bus history. {@code toDate} null means "still going on".
+ * One line of a child's bus history. {@code toDate} null means "still going on". {@code usesBus} false is
+ * itself a period ("no bus" for these days): then {@code routeId}/{@code stopId}/{@code busFee} are null.
  * Example: Route 4, Jakhal, from 1 Apr 2026 to 30 Nov 2026, fee 8800.
  */
-public record EnrolmentResponse(Long id, Long routeId, String routeName, Long stopId, String stopName,
-		LocalDate fromDate, LocalDate toDate, BigDecimal busFee, boolean open) {
+public record EnrolmentResponse(Long id, boolean usesBus, Long routeId, String routeName, Long stopId,
+		String stopName, LocalDate fromDate, LocalDate toDate, BigDecimal busFee, TransportReason reason,
+		String note, boolean open) {
 
 }

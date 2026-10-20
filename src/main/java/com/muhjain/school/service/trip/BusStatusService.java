@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 import com.muhjain.school.exception.ApiException;
 import com.muhjain.school.service.messaging.MessageService;
 import com.muhjain.school.model.dto.response.SmsDelivery;
-import com.muhjain.school.util.SmsPolicy;
+import com.muhjain.school.service.messaging.BusSmsRuleService;
 import com.muhjain.school.model.dto.response.StopTimes;
 import com.muhjain.school.service.setting.SettingService;
 import com.muhjain.school.service.staff.AssignmentService;
@@ -67,15 +67,19 @@ public class BusStatusService {
 
 	private final MessageService messageService;
 
+	private final BusSmsRuleService smsRules;
+
 	private final Clock clock;
 
 	public BusStatusService(RouteDayService routeDays, SettingService settings, VehicleService vehicleService,
-			AssignmentService assignmentService, MessageService messageService, Clock clock) {
+			AssignmentService assignmentService, MessageService messageService, BusSmsRuleService smsRules,
+			Clock clock) {
 		this.messageService = messageService;
 		this.routeDays = routeDays;
 		this.settings = settings;
 		this.vehicleService = vehicleService;
 		this.assignmentService = assignmentService;
+		this.smsRules = smsRules;
 		this.clock = clock;
 	}
 
@@ -90,7 +94,7 @@ public class BusStatusService {
 
 	// Per event: the queue row if there is one; else "not for this class" if the child was tapped DONE for an event
 	// the class rule does not cover; else NONE.
-	private static Map<EventType, SmsDelivery> smsStates(RouteDay routeDay, RouteChild child,
+	private Map<EventType, SmsDelivery> smsStates(RouteDay routeDay, RouteChild child,
 			Map<EventType, SmsDelivery> rows) {
 		Map<EventType, SmsDelivery> states = new java.util.EnumMap<>(EventType.class);
 		for (EventType type : EventType.values()) {
@@ -100,7 +104,7 @@ public class BusStatusService {
 				states.put(type, row);
 			}
 			else if (tap != null && tap.getOutcome() == Outcome.DONE
-					&& !SmsPolicy.allows(child.className(), type)) {
+					&& !smsRules.allows(child.className(), type)) {
 				states.put(type, SmsDelivery.NOT_FOR_CLASS);
 			}
 			else {
@@ -246,9 +250,9 @@ public class BusStatusService {
 			.toList();
 		String startsAt = (s.state() == RouteState.NOT_STARTED && !s.stops().isEmpty()) ? hhmm(s.stops().get(0).due())
 				: null;
-		LocalTime due = (s.phase() == BusPhase.MORNING) ? c.route().schoolDueMorning() : c.route().schoolDueEvening();
-		RouteStatusResponse.School school = new RouteStatusResponse.School(
-				(due != null) ? day.atTime(due).format(HOUR_MINUTE) : null, hhmm(s.reachedAt()));
+		LocalTime due = (s.phase() == BusPhase.MORNING) ? c.route().schoolArrivalTime() : c.route().schoolLeaveTime();
+		RouteStatusResponse.School school = new RouteStatusResponse.School(day.atTime(due).format(HOUR_MINUTE),
+				hhmm(s.reachedAt()));
 		return new RouteStatusResponse(c.route().routeId(), c.route().routeName(), (vehicle != null) ? vehicle.name() : null,
 				(vehicle != null) ? vehicle.vehicleType() : null, (vehicle != null) ? vehicle.seats() : null, attendant,
 				s.phase(), s.state(), s.lateMinutes(), startsAt, school, c.counts().boarded(), c.counts().absent(),

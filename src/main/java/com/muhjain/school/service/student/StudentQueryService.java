@@ -73,6 +73,12 @@ public class StudentQueryService {
 		return (int) enrolments.countOnRoute(routeId, date);
 	}
 
+	/** The sum of the monthly bus fee of the active children on the route on that day. */
+	@Transactional(readOnly = true)
+	public java.math.BigDecimal busFeePerMonthOnRoute(Long routeId, LocalDate date) {
+		return enrolments.sumBusFeePerMonthOnRoute(routeId, date);
+	}
+
 	/** Children per stop on that day. A stop with no children is not in the map. */
 	@Transactional(readOnly = true)
 	public Map<Long, Integer> childrenByStop(Long routeId, LocalDate date) {
@@ -148,16 +154,12 @@ public class StudentQueryService {
 	}
 
 	/**
-	 * The first day of the child's bus inside a date range, or empty if no bus row touches it.
-	 * Used to start the bus dues of a fee plan. Example: bus from 2 Nov, range 1 Apr to 31 Mar → 2 Nov.
+	 * The bus fee agreed for the child on that day, for the fee-due generator. Empty when the child uses no bus
+	 * that day.
 	 */
 	@Transactional(readOnly = true)
-	public java.util.Optional<LocalDate> firstBusDay(Long studentId, LocalDate rangeStart, LocalDate rangeEnd) {
-		return enrolments.findByStudentId(studentId)
-			.stream()
-			.filter(e -> !e.getFromDate().isAfter(rangeEnd) && (e.getToDate() == null || !e.getToDate().isBefore(rangeStart)))
-			.map(e -> e.getFromDate().isBefore(rangeStart) ? rangeStart : e.getFromDate())
-			.min(LocalDate::compareTo);
+	public java.util.Optional<java.math.BigDecimal> busFeeOn(Long studentId, LocalDate date) {
+		return enrolments.coveringDay(studentId, date).map(TransportEnrolment::getBusFeePerMonth);
 	}
 
 	/** Names by id. Example: {118 → "Aryan Jain"}. An id that does not exist is not in the map. */

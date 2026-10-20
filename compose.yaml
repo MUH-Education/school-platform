@@ -10,5 +10,12 @@ services:
     volumes:
       - 'school-pgdata:/var/lib/postgresql/data'
 
+  # OTP codes and login sessions (docs/08-decisions.md). A cache, not a database: nothing here
+  # needs to survive a restart, so there is no volume.
+  redis:
+    image: 'redis:7-alpine'
+    ports:
+      - '6379:6379'
+
 volumes:
   school-pgdata:

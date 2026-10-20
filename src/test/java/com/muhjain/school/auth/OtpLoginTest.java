@@ -17,14 +17,22 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import com.muhjain.school.service.auth.OtpService;
+import com.muhjain.school.service.auth.RedisOtpStore;
+import com.muhjain.school.util.OtpHasher;
 
-/** The "Login" tests of docs/phases/phase-1-login-users.md, over HTTP. */
+/** The "Login" tests of docs/phases/phase-1-login-users.md. */
 class OtpLoginTest extends AbstractIntegrationTest {
 
 	private static final String PHONE = "+919812340002";
 
 	@Autowired
 	private OtpService otpService;
+
+	@Autowired
+	private RedisOtpStore otpStore;
+
+	@Autowired
+	private OtpHasher hasher;
 
 	@Test
 	void unknownAndKnownPhoneGetTheSameAnswer() throws Exception {
@@ -39,15 +47,14 @@ class OtpLoginTest extends AbstractIntegrationTest {
 	}
 
 	@Test
-	void onlyKnownPhoneCreatesAnOtpRow() throws Exception {
+	void onlyKnownPhoneGetsACode() throws Exception {
 		addUser(PHONE, Role.OFFICE_ADMIN);
 
 		request("98123 49999").andExpect(status().isOk());
-		assertThat(otpRows()).isZero();
+		assertThat(otpStore.find("+919812349999")).isEmpty();
 
 		request("98123 40002").andExpect(status().isOk());
-		assertThat(otpRows()).isEqualTo(1);
-		assertThat(jdbc.queryForObject("select request_ip from otp_code", String.class)).isEqualTo("127.0.0.1");
+		assertThat(otpStore.find(PHONE)).isPresent();
 	}
 
 	@Test
@@ -86,13 +93,13 @@ class OtpLoginTest extends AbstractIntegrationTest {
 	}
 
 	@Test
-	void fiveWrongTriesLockTheCode() throws Exception {
+	void threeWrongTriesLockTheCode() throws Exception {
 		addUser(PHONE, Role.OFFICE_ADMIN);
 		request(PHONE);
 		String right = lastCodeSentTo(PHONE);
 		String wrong = right.equals("000000") ? "111111" : "000000";
 
-		for (int i = 0; i < 5; i++) {
+		for (int i = 0; i < 3; i++) {
 			verify(PHONE, wrong).andExpect(status().isUnauthorized()).andExpect(jsonPath("$.error").value("OTP_INVALID"));
 		}
 		verify(PHONE, wrong).andExpect(status().isTooManyRequests()).andExpect(jsonPath("$.error").value("OTP_LOCKED"));
@@ -123,7 +130,8 @@ class OtpLoginTest extends AbstractIntegrationTest {
 		request(PHONE).andExpect(status().isTooManyRequests())
 			.andExpect(jsonPath("$.error").value("OTP_TOO_MANY_REQUESTS"))
 			.andExpect(header().string("Retry-After", String.valueOf(50 * 60)));
-		assertThat(otpRows()).isEqualTo(5);
+		assertThat(otpStore.activeInWindow("phone:" + PHONE, java.time.Instant.now(clock), Duration.ofHours(1)))
+			.hasSize(5);
 
 		clock.advance(Duration.ofMinutes(50).plusSeconds(1));
 		request(PHONE).andExpect(status().isOk());
@@ -158,7 +166,8 @@ class OtpLoginTest extends AbstractIntegrationTest {
 		clock.advance(Duration.ofMinutes(1));
 
 		request(PHONE).andExpect(status().isOk());
-		assertThat(otpRows()).as("no new code for a turned-off user").isEqualTo(1);
+		assertThat(otpStore.find(PHONE).orElseThrow().codeHash()).as("no new code for a turned-off user")
+			.isEqualTo(hasher.hash(PHONE, code));
 		verify(PHONE, code).andExpect(status().isUnauthorized()).andExpect(jsonPath("$.error").value("OTP_INVALID"));
 	}
 
@@ -188,10 +197,6 @@ class OtpLoginTest extends AbstractIntegrationTest {
 	private ResultActions verify(String phone, String otp) throws Exception {
 		return mockMvc.perform(post("/api/v1/auth/otp/verify").contentType(MediaType.APPLICATION_JSON)
 			.content("{\"phone\":\"" + phone + "\",\"otp\":\"" + otp + "\"}"));
-	}
-
-	private int otpRows() {
-		return jdbc.queryForObject("select count(*) from otp_code", Integer.class);
 	}
 
 }

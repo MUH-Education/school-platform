@@ -3,21 +3,17 @@ package com.muhjain.school.model.dto.response;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-import com.muhjain.school.util.FeeStatusCalculator.CoveredDue;
-import com.muhjain.school.model.enums.FeeHead;
-import com.muhjain.school.util.FeeStatusCalculator;
+import com.muhjain.school.util.FeeStatusCalculator.MonthView;
 
 /**
- * One due with the part payments cover. Example: SCHOOL due 1 Jul, amount 7500, covered 2500, open 5000.
- * {@code overdue} is true when the day has come and something is still open.
+ * One month's due with what is paid. Example: July 2026, total 3300, paid 800, open 2500, due, not yet late.
  */
-public record DueView(Long id, FeeHead feeHead, LocalDate dueOn, BigDecimal amount, BigDecimal covered,
-		BigDecimal open, boolean overdue) {
+public record DueView(Long feeDueId, LocalDate month, BigDecimal total, BigDecimal paid, BigDecimal open,
+		LocalDate dueDate, LocalDate graceDate, boolean due, boolean late) {
 
-	public static DueView of(CoveredDue due, LocalDate today) {
-		BigDecimal open = due.amount().subtract(due.covered());
-	return new DueView(due.id(), due.head(), due.dueOn(), due.amount(), due.covered(), open,
-				open.signum() > 0 && !due.dueOn().isAfter(today));
+	public static DueView of(MonthView month) {
+		return new DueView(month.feeDueId(), month.month(), month.total(), month.paid(), month.balance(),
+				month.dueDate(), month.graceDate(), month.due(), month.late());
 	}
 
 }

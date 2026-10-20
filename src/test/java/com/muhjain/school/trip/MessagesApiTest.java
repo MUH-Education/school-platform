@@ -24,15 +24,21 @@ class MessagesApiTest extends TripTestBase {
 
 	@BeforeEach
 	void rememberTemplates() {
-		originalTemplates = jdbc.queryForList("select code, body, provider_template_id, active from message_template");
+		originalTemplates = jdbc
+			.queryForList("select id, body, provider_template_id, active from message_template");
 	}
 
 	@AfterEach
 	void restoreTemplates() {
 		for (Map<String, Object> t : originalTemplates) {
-			jdbc.update("update message_template set body = ?, provider_template_id = ?, active = ? where code = ?",
-					t.get("body"), t.get("provider_template_id"), t.get("active"), t.get("code"));
+			jdbc.update("update message_template set body = ?, provider_template_id = ?, active = ? where id = ?",
+					t.get("body"), t.get("provider_template_id"), t.get("active"), t.get("id"));
 		}
+	}
+
+	private long idOf(String code, String gender) {
+		return jdbc.queryForObject("select id from message_template where code = ? and gender = ?", Long.class, code,
+				gender);
 	}
 
 	@BeforeEach
@@ -93,12 +99,13 @@ class MessagesApiTest extends TripTestBase {
 	void templatesAreListedWithTheEightTexts() throws Exception {
 		getAs(officeToken, "/api/v1/message-templates").andExpect(status().isOk())
 			.andExpect(jsonPath("$.length()").value(8))
-			.andExpect(jsonPath("$[0].code").value("BOARDED_EVENING_F"));
+			.andExpect(jsonPath("$[0].code").value("BOARDED_EVENING"))
+			.andExpect(jsonPath("$[0].gender").value("F"));
 	}
 
-	private org.springframework.test.web.servlet.ResultActions putTemplate(String token, String code, String json)
+	private org.springframework.test.web.servlet.ResultActions putTemplate(String token, long id, String json)
 			throws Exception {
-		return mockMvc.perform(put("/api/v1/message-templates/" + code).header("Authorization", bearer(token))
+		return mockMvc.perform(put("/api/v1/message-templates/" + id).header("Authorization", bearer(token))
 			.contentType(MediaType.APPLICATION_JSON)
 			.content(json));
 	}
@@ -106,28 +113,30 @@ class MessagesApiTest extends TripTestBase {
 	@Test
 	void ownerCanSaveTheProviderIdAndTheTextAndOfficeCannot() throws Exception {
 		String owner = tokenFor(addUser("+919812340001", com.muhjain.school.model.enums.Role.OWNER));
+		long reachedSchoolM = idOf("REACHED_SCHOOL", "M");
 		String body = "{name} स्कूल पहुँच गया — {time}। MUH Jain School";
-		putTemplate(owner, "REACHED_SCHOOL_M", "{\"body\":\"" + body + "\",\"providerTemplateId\":\"1107001\","
+		putTemplate(owner, reachedSchoolM, "{\"body\":\"" + body + "\",\"providerTemplateId\":\"1107001\","
 				+ "\"active\":true}").andExpect(status().isOk())
 			.andExpect(jsonPath("$.providerTemplateId").value("1107001"));
-		putTemplate(officeToken, "REACHED_SCHOOL_M", "{\"body\":\"x {name} {time}\",\"active\":true}")
+		putTemplate(officeToken, reachedSchoolM, "{\"body\":\"x {name} {time}\",\"active\":true}")
 			.andExpect(status().isForbidden());
 	}
 
 	@Test
 	void templateTextMustKeepPlaceholdersAndFitIn70Characters() throws Exception {
 		String owner = tokenFor(addUser("+919812340001", com.muhjain.school.model.enums.Role.OWNER));
-		putTemplate(owner, "REACHED_SCHOOL_M", "{\"body\":\"no placeholders\",\"active\":true}")
+		long reachedSchoolM = idOf("REACHED_SCHOOL", "M");
+		putTemplate(owner, reachedSchoolM, "{\"body\":\"no placeholders\",\"active\":true}")
 			.andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.fields.body").exists());
-		putTemplate(owner, "REACHED_SCHOOL_M", "{\"body\":\"{name} {time} " + "x".repeat(70) + "\",\"active\":true}")
+		putTemplate(owner, reachedSchoolM, "{\"body\":\"{name} {time} " + "x".repeat(70) + "\",\"active\":true}")
 			.andExpect(status().isBadRequest());
-		putTemplate(owner, "NO_SUCH", "{\"body\":\"{name} {time}\",\"active\":true}").andExpect(status().isNotFound());
+		putTemplate(owner, 999999, "{\"body\":\"{name} {time}\",\"active\":true}").andExpect(status().isNotFound());
 	}
 
 	@Test
 	void inactiveTemplateQueuesNoSms() throws Exception {
-		jdbc.update("update message_template set active = false where code = 'BOARDED_MORNING_M'");
+		jdbc.update("update message_template set active = false where code = 'BOARDED_MORNING' and gender = 'M'");
 		sendMarks(balwanToken, morning(dev, "DONE", "07:44:00"));
 		getAs(officeToken, "/api/v1/messages?studentId=" + dev).andExpect(jsonPath("$.totalItems").value(0));
 	}

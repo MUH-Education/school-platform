@@ -23,9 +23,10 @@ public interface MessageOutboxRepository extends JpaRepository<MessageOutbox, Lo
 	 */
 	@Modifying(flushAutomatically = true)
 	@Query(value = "insert into message_outbox (purpose, channel, phone, guardian_id, student_id, service_date, "
-			+ "event_type, template_code, body, status, created_at, updated_at) values ('BOARDING', 'SMS', :phone, :guardianId, :studentId, "
-			+ ":day, :eventType, :templateCode, :body, 'QUEUED', :now, :now) on conflict (guardian_id, student_id, "
-			+ "service_date, event_type) where purpose = 'BOARDING' do nothing", nativeQuery = true)
+			+ "event_type, template_code, body, status, next_try_at, created_at, updated_at) values ('BOARDING', "
+			+ "'SMS', :phone, :guardianId, :studentId, :day, :eventType, :templateCode, :body, 'QUEUED', :now, :now, "
+			+ ":now) on conflict (guardian_id, student_id, service_date, event_type) "
+			+ "where purpose = 'BOARDING' and fallback_of_id is null do nothing", nativeQuery = true)
 	int queueBoarding(@Param("phone") String phone, @Param("guardianId") Long guardianId,
 			@Param("studentId") Long studentId, @Param("day") LocalDate day, @Param("eventType") String eventType,
 			@Param("templateCode") String templateCode, @Param("body") String body, @Param("now") Instant now);

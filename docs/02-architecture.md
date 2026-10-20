@@ -2,12 +2,13 @@
 
 ## The big picture
 
-One Spring Boot application (one jar). One PostgreSQL database. Two outside services: an SMS company and a WhatsApp company (they can be the same company).
+One Spring Boot application (one jar). One PostgreSQL database. One Redis (OTP codes and login sessions only — docs/08-decisions.md). Two outside services: an SMS company and a WhatsApp company (they can be the same company).
 
 ```
 React admin web app ─┐
                      ├─► Spring Boot (JWT on every request) ─► PostgreSQL
-Attendant phone app ─┘            │
+Attendant phone app ─┘            │         │
+                                  │         └─► Redis (OTP codes, login sessions)
                                   ├─► SMS provider ──────► parent phone
                                   └─► WhatsApp provider ─► staff phone (OTP)
 ```
@@ -23,20 +24,21 @@ com.muhjain.school
 ├── SchoolApplication.java
 ├── controller/           every XController (one per feature)
 ├── service/
-│   ├── auth/              OtpService, JwtService's caller-side, OtpCleanupJob, OtpDeliveryService
+│   ├── auth/              OtpService, RedisOtpStore, SessionService, OtpDeliveryService
 │   │   └── impl/           OtpSender implementations: LogOtpSender, SmsOtpSender, WhatsAppOtpSender
 │   ├── student/, fee/, trip/, route/, staff/, vehicle/, messaging/, enquiry/, user/, ...
 │   │   └── impl/           each feature's own interface implementations, where it has any
 │   └── analytics/, audit/, setting/, dev/   one sub-package per remaining feature
 ├── model/
-│   ├── entity/            every @Entity (Vehicle, Staff, Route, Student, ...)
-│   ├── repository/        every Spring Data repository (VehicleRepository, StaffRepository, ...)
+│   ├── entity/            every @Entity (Vehicle, Staff, Route, Student, UserSession, ...)
+│   ├── repository/        every Spring Data repository (VehicleRepository, StaffRepository, UserSessionRepository, ...)
 │   ├── enums/             plain enums used by entities or requests (Gender, PayFrequency, Role, ...)
 │   └── dto/
 │       ├── request/        every ...Request record
 │       └── response/       every ...Response record, and any other DTO-shaped record (StudentFilter, Crew, ...)
 ├── config/               @Configuration and @ConfigurationProperties classes
-├── security/             SecurityConfig, JwtService, CurrentUser, UserJwtConverter, TripAccess
+├── security/             SecurityConfig, JwtService, JwtProperties, SessionProperties, CurrentUser,
+│                         UserJwtConverter, RequestContext, RequestContextData, RequestContextCleanupFilter, TripAccess
 ├── exception/            ApiException, ApiErrorResponse, GlobalExceptionHandler, and other XException classes
 └── util/                 small static helper classes with no state (PhoneNumbers, MoneyText, calculators)
 ```

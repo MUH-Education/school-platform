@@ -295,7 +295,13 @@ public class AssignmentService {
 		Optional<VehicleAssignment> closing = permanent.stream()
 			.filter(row -> row.getToDate() == null || !row.getToDate().isBefore(from))
 			.findFirst();
-		closing.ifPresent(row -> row.setToDate(from.minusDays(1)));
+		// Flushed now, before the new row is inserted: db-design's vehicle_assignment_one_normal exclusion
+		// constraint is checked per statement (it is not deferrable), so if the insert of the new row ran
+		// first, it would briefly overlap this row's still-open to_date and be refused.
+		closing.ifPresent(row -> {
+			row.setToDate(from.minusDays(1));
+			assignments.saveAndFlush(row);
+		});
 		return closing;
 	}
 

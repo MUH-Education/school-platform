@@ -21,6 +21,7 @@ import com.muhjain.school.model.dto.response.MessageSummaryResponse;
 import com.muhjain.school.model.dto.response.TemplateResponse;
 import com.muhjain.school.model.dto.request.UpdateTemplateRequest;
 import com.muhjain.school.model.enums.MessageStatus;
+import com.muhjain.school.security.CurrentUser;
 import com.muhjain.school.service.messaging.MessageService;
 
 /**
@@ -34,8 +35,11 @@ public class MessageController {
 
 	private final MessageService messageService;
 
-	public MessageController(MessageService messageService) {
+	private final CurrentUser currentUser;
+
+	public MessageController(MessageService messageService, CurrentUser currentUser) {
 		this.messageService = messageService;
+		this.currentUser = currentUser;
 	}
 
 	/** The SMS log of one day (default today), newest first. Filters: {@code status}, {@code studentId}, {@code phone}. */
@@ -66,10 +70,10 @@ public class MessageController {
 	}
 
 	@Operation(summary = "Change a message template")
-	@PutMapping("/message-templates/{code}")
+	@PutMapping("/message-templates/{id}")
 	@PreAuthorize("hasAuthority('SETTINGS_EDIT')")
-	public TemplateResponse updateTemplate(@PathVariable String code, @Valid @RequestBody UpdateTemplateRequest request) {
-		return messageService.updateTemplate(code, request);
+	public TemplateResponse updateTemplate(@PathVariable Long id, @Valid @RequestBody UpdateTemplateRequest request) {
+		return messageService.updateTemplate(id, request, currentUser.id());
 	}
 
 }

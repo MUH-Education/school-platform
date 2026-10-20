@@ -14,7 +14,7 @@ import com.muhjain.school.model.enums.EnquiryStatus;
  * NEW, CONTACTED, VISITED, APPLIED   forward by one stage, or skipping one stage
  *                                    (a walk-in parent goes from NEW straight to VISITED)
  * any open stage → LOST              needs a reason
- * LOST → CONTACTED                   the enquiry is opened again
+ * LOST → (the stage before LOST)     the enquiry is opened again (checked by the caller, which knows that stage)
  * → ADMITTED                         never by hand: only an admission made from the enquiry does it
  * ADMITTED →                         nothing, the child is in the school
  * </pre>
@@ -53,7 +53,8 @@ public final class EnquiryTransitions {
 			return Move.ALLOWED;
 		}
 		if (from == LOST) {
-			return (to == CONTACTED) ? Move.ALLOWED : Move.NOT_ALLOWED;
+			// Which exact stage this may reopen to is up to the caller (it knows status_before_lost).
+			return Move.ALLOWED;
 		}
 		int jump = rank(to) - rank(from);
 		return (jump == 1 || jump == 2) ? Move.ALLOWED : Move.NOT_ALLOWED;

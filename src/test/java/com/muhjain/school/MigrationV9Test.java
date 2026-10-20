@@ -6,8 +6,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** The database rules of V8__staff_employee.sql. They hold even if the Java code has a bug. */
-class MigrationV8Test extends AbstractIntegrationTest {
+/** The database rules of V9__staff_employee.sql. They hold even if the Java code has a bug. */
+class MigrationV9Test extends AbstractIntegrationTest {
 
 	private long addTeacher(String name) {
 		return addStaff(name, "TEACHER");

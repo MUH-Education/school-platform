@@ -170,27 +170,31 @@ class UserManagementTest extends AbstractIntegrationTest {
 	}
 
 	@Test
-	void changingPhoneRoleOrTurningOffEndsOldTokensAndIsAudited() throws Exception {
+	void changingPhoneRoleOrTurningOffEndsOldSessionsAndIsAudited() throws Exception {
 		AppUser admin = addUser("+919812340002", Role.OFFICE_ADMIN);
-		int version = admin.getTokenVersion();
+		String tokenBeforeNameChange = tokenFor(admin);
 
 		update(ownerToken, admin.getId(),
 				"{\"phone\":\"+919812340002\",\"name\":\"Neelam\",\"role\":\"OFFICE_ADMIN\",\"active\":true}")
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.name").value("Neelam"));
-		assertThat(userRepository.findById(admin.getId()).orElseThrow().getTokenVersion())
-			.as("a name change keeps the token").isEqualTo(version);
+		mockMvc.perform(get("/api/v1/auth/me").header("Authorization", bearer(tokenBeforeNameChange)))
+			.andExpect(status().isOk());
 
+		String tokenBeforePhoneChange = tokenFor(admin);
 		update(ownerToken, admin.getId(),
 				"{\"phone\":\"+919812340012\",\"name\":\"Neelam\",\"role\":\"OFFICE_ADMIN\",\"active\":true}")
 			.andExpect(status().isOk());
-		assertThat(userRepository.findById(admin.getId()).orElseThrow().getTokenVersion()).isEqualTo(version + 1);
+		mockMvc.perform(get("/api/v1/auth/me").header("Authorization", bearer(tokenBeforePhoneChange)))
+			.andExpect(status().isUnauthorized());
 
+		String tokenBeforeTurnOff = tokenFor(admin);
 		update(ownerToken, admin.getId(),
 				"{\"phone\":\"+919812340012\",\"name\":\"Neelam\",\"role\":\"OFFICE_ADMIN\",\"active\":false}")
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.active").value(false));
-		assertThat(userRepository.findById(admin.getId()).orElseThrow().getTokenVersion()).isEqualTo(version + 2);
+		mockMvc.perform(get("/api/v1/auth/me").header("Authorization", bearer(tokenBeforeTurnOff)))
+			.andExpect(status().isUnauthorized());
 
 		assertThat(jdbc.queryForList(
 				"select summary from audit_log where entity_id = ? and action = 'UPDATED' order by id", String.class,

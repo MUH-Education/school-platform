@@ -34,4 +34,9 @@ public class EnrolmentStudentCounts implements StudentCounts {
 		return queries.childrenByStop(routeId, date);
 	}
 
+	@Override
+	public java.math.BigDecimal busFeePerMonthOnRoute(Long routeId, LocalDate date) {
+		return queries.busFeePerMonthOnRoute(routeId, date);
+	}
+
 }

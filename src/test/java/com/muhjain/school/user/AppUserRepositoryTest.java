@@ -29,7 +29,6 @@ class AppUserRepositoryTest extends AbstractIntegrationTest {
 		assertThat(saved.getCreatedAt()).isEqualTo(fixed);
 		assertThat(saved.getUpdatedAt()).isEqualTo(fixed);
 		assertThat(saved.isActive()).isTrue();
-		assertThat(saved.getTokenVersion()).isZero();
 		assertThat(users.findByPhoneAndActiveTrue("+919812340002")).isPresent();
 	}
 

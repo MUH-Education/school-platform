@@ -5,6 +5,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Optional;
 
 import com.muhjain.school.model.enums.AuditAction;
@@ -24,16 +25,14 @@ import com.muhjain.school.model.dto.response.IssuedToken;
 import com.muhjain.school.model.dto.response.LoginResponse;
 import com.muhjain.school.model.dto.response.OtpRequestResponse;
 import com.muhjain.school.exception.OtpSendException;
-import com.muhjain.school.model.entity.OtpCode;
 import com.muhjain.school.model.entity.OtpWhitelist;
-import com.muhjain.school.model.repository.OtpCodeRepository;
 import com.muhjain.school.model.repository.OtpWhitelistRepository;
-import com.muhjain.school.security.JwtService;
 import com.muhjain.school.util.OtpHasher;
 
 /**
- * Login codes: ask for one ({@link #request}) and check one ({@link #verify}).
- * See docs/04-login-otp-jwt.md.
+ * Login codes: ask for one ({@link #request}) and check one ({@link #verify}). The code, its
+ * attempts and the rate-limit windows all live in Redis ({@link RedisOtpStore}), not Postgres —
+ * see docs/08-decisions.md. See docs/04-login-otp-jwt.md for the flow.
  */
 @Service
 public class OtpService {
@@ -50,7 +49,7 @@ public class OtpService {
 
 	static final String WHITELIST_CHANNEL = "WHITELIST";
 
-	private final OtpCodeRepository codes;
+	private final RedisOtpStore otpStore;
 
 	private final OtpHasher hasher;
 
@@ -60,7 +59,7 @@ public class OtpService {
 
 	private final UserService userService;
 
-	private final JwtService jwtService;
+	private final SessionService sessionService;
 
 	private final AuditService auditService;
 
@@ -70,15 +69,15 @@ public class OtpService {
 
 	private final SecureRandom random = new SecureRandom();
 
-	public OtpService(OtpCodeRepository codes, OtpHasher hasher, OtpDeliveryService delivery,
-			OtpProperties properties, UserService userService, JwtService jwtService, AuditService auditService,
-			OtpWhitelistRepository whitelist, Clock clock) {
-		this.codes = codes;
+	public OtpService(RedisOtpStore otpStore, OtpHasher hasher, OtpDeliveryService delivery,
+			OtpProperties properties, UserService userService, SessionService sessionService,
+			AuditService auditService, OtpWhitelistRepository whitelist, Clock clock) {
+		this.otpStore = otpStore;
 		this.hasher = hasher;
 		this.delivery = delivery;
 		this.properties = properties;
 		this.userService = userService;
-		this.jwtService = jwtService;
+		this.sessionService = sessionService;
 		this.auditService = auditService;
 		this.whitelist = whitelist;
 		this.clock = clock;
@@ -101,14 +100,15 @@ public class OtpService {
 			if (whitelist.existsById(phone)) {
 				// Example: +919999900001 is whitelisted -> code is always "123456", no WhatsApp/SMS goes out.
 				String code = fixedCode();
-				codes.save(new OtpCode(phone, hasher.hash(phone, code), WHITELIST_CHANNEL, now.plus(properties.ttl()),
-						ip));
+				otpStore.save(phone, hasher.hash(phone, code), WHITELIST_CHANNEL, now.plus(properties.ttl()));
+				recordWindows(phone, ip, now);
 			}
 			else {
 				String code = newCode();
 				try {
 					String channel = delivery.send(phone, code);
-					codes.save(new OtpCode(phone, hasher.hash(phone, code), channel, now.plus(properties.ttl()), ip));
+					otpStore.save(phone, hasher.hash(phone, code), channel, now.plus(properties.ttl()));
+					recordWindows(phone, ip, now);
 				}
 				catch (OtpSendException ex) {
 					// Same answer as always, so the failure does not tell a stranger the number is known.
@@ -136,73 +136,71 @@ public class OtpService {
 	/**
 	 * Step C of the login. Example: "98123 40002" + "482913" → a token for Neelam.
 	 * Wrong code, old code, no code, unknown or turned-off user: all give the same 401 OTP_INVALID.
-	 * <p>
-	 * Does not roll back on ApiException: a wrong try must still save {@code attempts + 1}.
 	 *
-	 * @throws ApiException 401 OTP_INVALID, 429 OTP_LOCKED after 5 wrong tries
+	 * @throws ApiException 401 OTP_INVALID, 429 OTP_LOCKED after too many wrong tries
 	 */
-	@Transactional(noRollbackFor = ApiException.class)
-	public LoginResponse verify(String rawPhone, String code) {
+	@Transactional
+	public LoginResponse verify(String rawPhone, String code, String ip) {
 		String phone = PhoneNumbers.normalize(rawPhone);
 		Instant now = now();
-		OtpCode otp = codes.findFirstWithLockByPhoneAndConsumedAtIsNullOrderByCreatedAtDescIdDesc(phone)
-			.filter(row -> !row.isExpired(now))
+		RedisOtpStore.ActiveCode otp = otpStore.find(phone).filter(row -> row.expiresAt().isAfter(now))
 			.orElseThrow(OtpService::invalid);
 		AppUser user = userService.findActiveByPhone(phone).orElseThrow(OtpService::invalid);
-		if (otp.getAttempts() >= properties.maxAttempts()) {
+		if (otp.attempts() >= properties.maxAttempts()) {
 			throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, LOCKED,
 					"Too many wrong tries. Please ask for a new code.");
 		}
-		if (code == null || !hasher.matches(phone, code, otp.getCodeHash())) {
-			otp.addWrongAttempt();
+		if (code == null || !hasher.matches(phone, code, otp.codeHash())) {
+			otpStore.addWrongAttempt(phone);
 			throw invalid();
 		}
 
-		otp.consume(now);
+		otpStore.consume(phone);
 		user = userService.recordLogin(user.getId(), now);
-		auditService.record("USER", user.getId(), AuditAction.LOGIN, "Logged in by OTP (" + otp.getChannel() + ")",
-				null, user.getId());
-		IssuedToken token = jwtService.issue(user);
+		auditService.record("USER", user.getId(), AuditAction.LOGIN, "Logged in by OTP (" + otp.channel() + ")", null,
+				user.getId());
+		IssuedToken token = sessionService.create(user, ip);
 		return new LoginResponse(token.token(), token.expiresAt().atZone(clock.getZone()).toOffsetDateTime(),
 				AuthUserResponse.of(user));
-	}
-
-	/** Deletes codes made before {@code now - age}. Example: age 7 days on 14 Oct → codes before 7 Oct. */
-	@Transactional
-	public int deleteOlderThan(Duration age) {
-		return codes.deleteCreatedBefore(now().minus(age));
 	}
 
 	private static ApiException invalid() {
 		return new ApiException(HttpStatus.UNAUTHORIZED, INVALID, "The code is wrong or too old.");
 	}
 
-	// PostgreSQL keeps microseconds, so "now" is cut to microseconds too.
+	// PostgreSQL keeps microseconds, so "now" is cut to microseconds too (kept for consistency with
+	// the rest of the app, even though OTP state no longer lives in PostgreSQL).
 	private Instant now() {
 		return Instant.now(clock).truncatedTo(ChronoUnit.MICROS);
 	}
 
-	// Limits are counted from otp_code rows: 60 seconds between codes, 5 per phone and 20 per IP in one hour.
+	// Limits are read from the Redis windows: 60 seconds between codes, 5 per phone and 20 per IP in one hour.
+	// A phone that turns out to be unknown never calls recordWindows, so it never counts against these limits.
 	private void checkLimits(String phone, String ip, Instant now) {
-		Optional<OtpCode> last = codes.findFirstByPhoneOrderByCreatedAtDescIdDesc(phone);
-		if (last.isPresent()) {
-			Instant nextAllowed = last.get().getCreatedAt().plus(properties.resendAfter());
+		List<Instant> phoneWindow = otpStore.activeInWindow("phone:" + phone, now, ONE_HOUR);
+		if (!phoneWindow.isEmpty()) {
+			Instant last = phoneWindow.get(phoneWindow.size() - 1);
+			Instant nextAllowed = last.plus(properties.resendAfter());
 			if (now.isBefore(nextAllowed)) {
 				throw tooMany(Duration.between(now, nextAllowed));
 			}
 		}
-		Instant hourAgo = now.minus(ONE_HOUR);
-		if (codes.countByPhoneAndCreatedAtAfter(phone, hourAgo) >= properties.maxPerHour()) {
-			Instant oldest = codes.findFirstByPhoneAndCreatedAtAfterOrderByCreatedAtAsc(phone, hourAgo)
-				.orElseThrow()
-				.getCreatedAt();
+		if (phoneWindow.size() >= properties.maxPerHour()) {
+			Instant oldest = phoneWindow.get(0);
 			throw tooMany(Duration.between(now, oldest.plus(ONE_HOUR)));
 		}
-		if (ip != null && codes.countByRequestIpAndCreatedAtAfter(ip, hourAgo) >= properties.maxPerIpPerHour()) {
-			Instant oldest = codes.findFirstByRequestIpAndCreatedAtAfterOrderByCreatedAtAsc(ip, hourAgo)
-				.orElseThrow()
-				.getCreatedAt();
-			throw tooMany(Duration.between(now, oldest.plus(ONE_HOUR)));
+		if (ip != null) {
+			List<Instant> ipWindow = otpStore.activeInWindow("ip:" + ip, now, ONE_HOUR);
+			if (ipWindow.size() >= properties.maxPerIpPerHour()) {
+				throw tooMany(Duration.between(now, ipWindow.get(0).plus(ONE_HOUR)));
+			}
+		}
+	}
+
+	private void recordWindows(String phone, String ip, Instant now) {
+		otpStore.record("phone:" + phone, now, ONE_HOUR);
+		if (ip != null) {
+			otpStore.record("ip:" + ip, now, ONE_HOUR);
 		}
 	}
 

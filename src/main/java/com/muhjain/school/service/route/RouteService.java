@@ -2,6 +2,7 @@ package com.muhjain.school.service.route;
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -77,7 +78,7 @@ public class RouteService {
 	public List<RouteResponse> list() {
 		List<Route> all = routes.findAllByOrderByIdAsc();
 		Map<Long, List<RouteStop>> stopsByRoute = stops
-			.findByRouteIdInOrderByRouteIdAscSeqNoAsc(all.stream().map(Route::getId).toList())
+			.findByRouteIdInAndActiveTrueOrderByRouteIdAscSeqNoAsc(all.stream().map(Route::getId).toList())
 			.stream()
 			.collect(Collectors.groupingBy(RouteStop::getRouteId));
 		Map<Long, VehicleSummary> vehicles = vehicleService
@@ -107,8 +108,13 @@ public class RouteService {
 		checkName(name, 0L);
 		VehicleSummary vehicle = checkVehicle(request.vehicleId(), true, 0L);
 		Route route = new Route(name, request.vehicleId());
-		route.setSchoolDueMorning(request.schoolDueMorning());
-		route.setSchoolDueEvening(request.schoolDueEvening());
+		// Left out in the request, these keep the entity's own defaults (08:10 / 14:40), same as the database.
+		if (request.schoolArrivalTime() != null) {
+			route.setSchoolArrivalTime(request.schoolArrivalTime());
+		}
+		if (request.schoolLeaveTime() != null) {
+			route.setSchoolLeaveTime(request.schoolLeaveTime());
+		}
 		route = save(route);
 		auditService.record(ENTITY, route.getId(), AuditAction.CREATED,
 				name + " added" + ((vehicle != null) ? " on " + vehicle.name() : " with no vehicle"), null);
@@ -134,17 +140,22 @@ public class RouteService {
 		VehicleSummary newVehicle = checkVehicle(request.vehicleId(), active, id);
 		VehicleSummary oldVehicle = (route.getVehicleId() == null) ? null
 				: vehicleService.summaries(List.of(route.getVehicleId())).get(route.getVehicleId());
+		// Left out in the request, these keep whatever the route already had.
+		LocalTime arrivalTime = (request.schoolArrivalTime() != null) ? request.schoolArrivalTime()
+				: route.getSchoolArrivalTime();
+		LocalTime leaveTime = (request.schoolLeaveTime() != null) ? request.schoolLeaveTime()
+				: route.getSchoolLeaveTime();
 		AuditChanges changes = new AuditChanges().field("Name", "name", route.getName(), name)
 			.field("Vehicle", "vehicle", (oldVehicle != null) ? oldVehicle.name() : null,
 					(newVehicle != null) ? newVehicle.name() : null)
 			.active(route.isActive(), active)
-			.field("School due (morning)", "schoolDueMorning", route.getSchoolDueMorning(), request.schoolDueMorning())
-			.field("School due (evening)", "schoolDueEvening", route.getSchoolDueEvening(), request.schoolDueEvening());
+			.field("School arrival time", "schoolArrivalTime", route.getSchoolArrivalTime(), arrivalTime)
+			.field("School leave time", "schoolLeaveTime", route.getSchoolLeaveTime(), leaveTime);
 		route.setName(name);
 		route.setVehicleId(request.vehicleId());
 		route.setActive(active);
-		route.setSchoolDueMorning(request.schoolDueMorning());
-		route.setSchoolDueEvening(request.schoolDueEvening());
+		route.setSchoolArrivalTime(arrivalTime);
+		route.setSchoolLeaveTime(leaveTime);
 		route = save(route);
 		if (!changes.isEmpty()) {
 			auditService.record(ENTITY, id, AuditAction.UPDATED, changes.summary(), changes.details());
@@ -177,7 +188,7 @@ public class RouteService {
 	@Transactional
 	public RouteResponse saveStops(Long routeId, List<StopRequest> requested) {
 		Route route = find(routeId);
-		Map<Long, RouteStop> existing = stops.findByRouteIdOrderBySeqNoAsc(routeId)
+		Map<Long, RouteStop> existing = stops.findByRouteIdAndActiveTrueOrderBySeqNoAsc(routeId)
 			.stream()
 			.collect(Collectors.toMap(RouteStop::getId, Function.identity(), (a, b) -> a, LinkedHashMap::new));
 		Set<Long> kept = checkStopList(requested, existing.keySet());
@@ -192,7 +203,24 @@ public class RouteService {
 							count + " children board at " + stop.getName() + ". Move them to another stop first.");
 				}
 			}
-			stops.deleteAll(removed);
+			// Soft delete: old bus rows still point at this stop. Flushed now, so its seq_no is free
+			// again straight away (the uniqueness below only looks at active stops).
+			removed.forEach(stop -> stop.setActive(false));
+			stops.saveAllAndFlush(removed);
+		}
+
+		// db-design's seq_no uniqueness is a plain partial index, not deferrable, so reordering the
+		// stops kept from before would collide with each other in one flush. Move them out of the way
+		// first, as the V2 migration comment says, then write the real 1, 2, 3 order.
+		List<RouteStop> keptExisting = requested.stream()
+			.map(StopRequest::id)
+			.filter(java.util.Objects::nonNull)
+			.map(existing::get)
+			.toList();
+		if (!keptExisting.isEmpty()) {
+			int offset = requested.size() + 1000;
+			keptExisting.forEach(stop -> stop.setSeqNo(stop.getSeqNo() + offset));
+			stops.saveAllAndFlush(keptExisting);
 		}
 
 		int seqNo = 1;
@@ -200,11 +228,14 @@ public class RouteService {
 		for (StopRequest item : requested) {
 			String name = NameKeys.tidy(item.name());
 			if (item.id() == null) {
-				toSave.add(new RouteStop(routeId, name, seqNo, item.morningTime(), item.eveningTime()));
+				RouteStop stop = new RouteStop(routeId, name, seqNo, item.morningTime(), item.eveningTime());
+				stop.setNameHindi(item.nameHindi());
+				toSave.add(stop);
 			}
 			else {
 				RouteStop stop = existing.get(item.id());
 				stop.setName(name);
+				stop.setNameHindi(item.nameHindi());
 				stop.setSeqNo(seqNo);
 				stop.setMorningTime(item.morningTime());
 				stop.setEveningTime(item.eveningTime());
@@ -293,14 +324,14 @@ public class RouteService {
 	}
 
 	private static RouteSummary toSummary(Route r) {
-		return new RouteSummary(r.getId(), r.getName(), r.getVehicleId(), r.getSchoolDueMorning(),
-				r.getSchoolDueEvening());
+		return new RouteSummary(r.getId(), r.getName(), r.getVehicleId(), r.getSchoolArrivalTime(),
+				r.getSchoolLeaveTime());
 	}
 
 	/** The stops of a route in morning order, with their times. Example: Sadhanwas 07:25, Jakhal 07:40, ... */
 	@Transactional(readOnly = true)
 	public List<StopTimes> stopTimes(Long routeId) {
-		return stops.findByRouteIdOrderBySeqNoAsc(routeId)
+		return stops.findByRouteIdAndActiveTrueOrderBySeqNoAsc(routeId)
 			.stream()
 			.map(s -> new StopTimes(s.getId(), s.getName(), s.getSeqNo(), s.getMorningTime(), s.getEveningTime()))
 			.toList();
@@ -323,7 +354,7 @@ public class RouteService {
 	private RouteResponse response(Route route) {
 		VehicleSummary vehicle = (route.getVehicleId() == null) ? null
 				: vehicleService.summaries(List.of(route.getVehicleId())).get(route.getVehicleId());
-		return toResponse(route, stops.findByRouteIdOrderBySeqNoAsc(route.getId()), vehicle, today());
+		return toResponse(route, stops.findByRouteIdAndActiveTrueOrderBySeqNoAsc(route.getId()), vehicle, today());
 	}
 
 	private RouteResponse toResponse(Route route, List<RouteStop> routeStops, VehicleSummary vehicle,
@@ -334,7 +365,7 @@ public class RouteService {
 			.map(s -> StopResponse.of(s, children.getOrDefault(s.getId(), 0)))
 			.toList();
 		return new RouteResponse(route.getId(), route.getName(), route.isActive(), RouteResponse.VehicleRef.of(vehicle),
-				route.getSchoolDueMorning(), route.getSchoolDueEvening(), items);
+				route.getSchoolArrivalTime(), route.getSchoolLeaveTime(), items);
 	}
 
 	private void checkName(String name, Long exceptId) {
@@ -400,17 +431,19 @@ public class RouteService {
 	}
 
 	// The checks above can miss a route saved at the same moment. The unique indexes still catch it.
+	// db-design names the "one active route per vehicle" index route_one_per_vehicle, and name is a
+	// plain unique column, so Postgres names that constraint route_name_key (not the old route_name_uk).
 	private Route save(Route route) {
 		try {
 			return routes.saveAndFlush(route);
 		}
 		catch (DataIntegrityViolationException ex) {
 			String cause = String.valueOf(NestedExceptionUtils.getMostSpecificCause(ex).getMessage());
-			if (cause.contains("route_vehicle_active_uk")) {
+			if (cause.contains("route_one_per_vehicle")) {
 				throw new ApiException(HttpStatus.CONFLICT, "VEHICLE_HAS_ROUTE",
 						"This vehicle already runs another route.");
 			}
-			if (cause.contains("route_name_uk")) {
+			if (cause.contains("route_name_key")) {
 				throw nameUsed();
 			}
 			throw ex;

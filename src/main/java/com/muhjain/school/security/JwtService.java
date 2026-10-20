@@ -1,55 +1,44 @@
 package com.muhjain.school.security;
 
-import java.time.Clock;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 
-import com.muhjain.school.model.entity.AppUser;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
-import com.muhjain.school.model.dto.response.IssuedToken;
 
 /**
- * Makes the login token. It holds only: sub (user id), role (for information), ver (token version), iat, exp.
- * Example for Neelam: sub "2", role "OFFICE_ADMIN", ver 0, valid 30 days.
+ * Makes the login token. It holds only: sub (user id, for audit and logging), sid (the session
+ * id), iat, exp. Who the user actually is comes from the session (Redis, or Postgres as a
+ * fallback), never from a claim here — that is what lets a role change or a logout take effect
+ * at once, without waiting for the token itself to expire.
+ * <p>
+ * {@code exp} is the session's 12-hour hard cap ({@code app.session.max-lifetime}), not the
+ * 15-minute idle timeout: the idle timeout slides with use and a JWT cannot be edited after it is
+ * made, so it is checked separately, on every request, against the session itself.
  */
 @Service
 public class JwtService {
 
-	public static final String CLAIM_ROLE = "role";
-
-	public static final String CLAIM_VERSION = "ver";
+	public static final String CLAIM_SESSION = "sid";
 
 	private final JwtEncoder encoder;
 
-	private final JwtProperties properties;
-
-	private final Clock clock;
-
-	public JwtService(JwtEncoder encoder, JwtProperties properties, Clock clock) {
+	public JwtService(JwtEncoder encoder) {
 		this.encoder = encoder;
-		this.properties = properties;
-		this.clock = clock;
 	}
 
-	public IssuedToken issue(AppUser user) {
-		// A token keeps whole seconds, so the answer says the same time as the token.
-		Instant now = Instant.now(clock).truncatedTo(ChronoUnit.SECONDS);
-		Instant expiresAt = now.plus(properties.ttl());
+	public String issue(Long userId, String sessionId, Instant issuedAt, Instant expiresAt) {
 		JwtClaimsSet claims = JwtClaimsSet.builder()
-			.subject(String.valueOf(user.getId()))
-			.claim(CLAIM_ROLE, user.getRole().name())
-			.claim(CLAIM_VERSION, user.getTokenVersion())
-			.issuedAt(now)
+			.subject(String.valueOf(userId))
+			.claim(CLAIM_SESSION, sessionId)
+			.issuedAt(issuedAt)
 			.expiresAt(expiresAt)
 			.build();
 		JwsHeader header = JwsHeader.with(MacAlgorithm.HS256).build();
-		String token = encoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
-		return new IssuedToken(token, expiresAt);
+		return encoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
 	}
 
 }

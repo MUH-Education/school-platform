@@ -10,10 +10,10 @@ class MigrationV1Test extends AbstractIntegrationTest {
 
 	@Test
 	void settingsHaveTheirStartValues() {
-		assertThat(jdbc.queryForObject("select value from app_setting where key = 'transport.bus_fee_per_year'",
+		assertThat(jdbc.queryForObject("select value from app_setting where key = 'transport.months_operated'",
 				String.class))
-			.isEqualTo("8800");
-		assertThat(jdbc.queryForObject("select count(*) from app_setting", Integer.class)).isEqualTo(7);
+			.isEqualTo("11");
+		assertThat(jdbc.queryForObject("select count(*) from app_setting", Integer.class)).isEqualTo(11);
 	}
 
 	@Test
@@ -26,13 +26,6 @@ class MigrationV1Test extends AbstractIntegrationTest {
 	void attendantNeedsStaffId() {
 		assertThatThrownBy(
 				() -> jdbc.update("insert into app_user (phone, role) values ('+919812340009', 'ATTENDANT')"))
-			.isInstanceOf(DataIntegrityViolationException.class);
-	}
-
-	@Test
-	void unknownOtpChannelIsRejected() {
-		assertThatThrownBy(() -> jdbc.update("insert into otp_code (phone, code_hash, channel, expires_at) "
-				+ "values ('+919812340002', 'x', 'EMAIL', now())"))
 			.isInstanceOf(DataIntegrityViolationException.class);
 	}
 

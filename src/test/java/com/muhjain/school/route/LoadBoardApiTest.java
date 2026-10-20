@@ -1,5 +1,6 @@
 package com.muhjain.school.route;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Map;
@@ -24,7 +25,8 @@ import com.muhjain.school.service.route.StudentCounts;
  * {@code GET /routes/load-board} with children pretended (there are no students before Phase 3).
  * Fleet: Van 4, Van 5, Van 7 (14 seats each), Bus 8 (26 seats, runs no route), Van 9 (turned off).
  * Routes: Route 4 (Van 4, 19 children), Route 5 (Van 5, 6), Route 6 (no vehicle, 3), Route 7 (Van 7, 0),
- * Route 10 (turned off). Settings: 11 months, fee 8800, 95 percent.
+ * Route 10 (turned off). Settings: 11 months, 95 percent. The bus fee is mocked per route through
+ * {@code StudentCounts.busFeePerMonthOnRoute}: 800 a month (8800 a year) per child, like the docs' example.
  */
 class LoadBoardApiTest extends AbstractIntegrationTest {
 
@@ -56,6 +58,15 @@ class LoadBoardApiTest extends AbstractIntegrationTest {
 		when(studentCounts.childrenOnRoute(route6, LocalDate.of(2026, 10, 7))).thenReturn(3);
 		when(studentCounts.childrenOnRoute(route7, LocalDate.of(2026, 10, 7))).thenReturn(0);
 		when(studentCounts.childrenByStop(anyLong(), any(LocalDate.class))).thenReturn(Map.of());
+		// There is no flat yearly bus fee setting any more: each route's children's own monthly fee is
+		// added up. 800 a month (8800 a year) per child here, matching the old fee of the docs' example.
+		when(studentCounts.busFeePerMonthOnRoute(anyLong(), any(LocalDate.class))).thenReturn(BigDecimal.ZERO);
+		when(studentCounts.busFeePerMonthOnRoute(route4, LocalDate.of(2026, 10, 7)))
+			.thenReturn(new BigDecimal("15200"));
+		when(studentCounts.busFeePerMonthOnRoute(route5, LocalDate.of(2026, 10, 7)))
+			.thenReturn(new BigDecimal("4800"));
+		when(studentCounts.busFeePerMonthOnRoute(route6, LocalDate.of(2026, 10, 7)))
+			.thenReturn(new BigDecimal("2400"));
 	}
 
 	private long addRoute(String name, Long vehicleId, boolean active) {
@@ -119,18 +130,20 @@ class LoadBoardApiTest extends AbstractIntegrationTest {
 
 	@Test
 	void settingsChangeTheNumbers() throws Exception {
+		// There is no bus fee setting to change any more: the route's children simply pay more between
+		// them, 17,100 a month here instead of 15,200.
+		when(studentCounts.busFeePerMonthOnRoute(route4, LocalDate.of(2026, 10, 7)))
+			.thenReturn(new BigDecimal("17100"));
 		jdbc.update("update app_setting set value = '10' where key = 'transport.months_operated'");
-		jdbc.update("update app_setting set value = '9000' where key = 'transport.bus_fee_per_year'");
 		jdbc.update("update app_setting set value = '100' where key = 'transport.collection_pct'");
 		try {
-			// Route 4: yearly cost 303,000.00. Fee got 19 x 9000 = 171,000.00.
+			// Route 4: yearly cost 303,000.00. Fee got 17,100 x 10 months = 171,000.00.
 			board().andExpect(jsonPath("$.routes[0].yearlyCost").value(303000.00))
 				.andExpect(jsonPath("$.routes[0].feeGot").value(171000.00))
 				.andExpect(jsonPath("$.routes[0].surplus").value(-132000.00));
 		}
 		finally {
 			jdbc.update("update app_setting set value = '11' where key = 'transport.months_operated'");
-			jdbc.update("update app_setting set value = '8800' where key = 'transport.bus_fee_per_year'");
 			jdbc.update("update app_setting set value = '95' where key = 'transport.collection_pct'");
 		}
 	}

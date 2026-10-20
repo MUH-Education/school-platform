@@ -8,6 +8,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
+import com.muhjain.school.model.enums.EnquiryLostReason;
+import com.muhjain.school.model.enums.EnquiryNextType;
 import com.muhjain.school.model.enums.EnquirySource;
 import com.muhjain.school.model.enums.EnquiryStatus;
 import com.muhjain.school.model.enums.NeedsBus;
@@ -19,6 +21,9 @@ import com.muhjain.school.model.enums.NeedsBus;
 @Entity
 @Table(name = "enquiry")
 public class Enquiry extends BaseEntity {
+
+	@Column(name = "session_id", nullable = false)
+	private Long sessionId;
 
 	@Column(name = "parent_name", nullable = false, length = 120)
 	private String parentName;
@@ -58,26 +63,39 @@ public class Enquiry extends BaseEntity {
 	@Column(name = "needs_bus", nullable = false, length = 10)
 	private NeedsBus needsBus = NeedsBus.UNKNOWN;
 
+	@Column(name = "needs_bus_from", length = 80)
+	private String needsBusFrom;
+
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 12)
 	private EnquiryStatus status = EnquiryStatus.NEW;
 
-	@Column(name = "lost_reason", length = 200)
-	private String lostReason;
+	// Set when the status becomes LOST, so "open the enquiry again" knows where to go back to.
+	@Enumerated(EnumType.STRING)
+	@Column(name = "status_before_lost", length = 12)
+	private EnquiryStatus statusBeforeLost;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "lost_reason", length = 30)
+	private EnquiryLostReason lostReason;
+
+	@Column(name = "lost_note", length = 300)
+	private String lostNote;
 
 	@Column(name = "next_follow_up_on")
 	private LocalDate nextFollowUpOn;
 
+	@Enumerated(EnumType.STRING)
+	@Column(name = "next_follow_up_type", length = 10)
+	private EnquiryNextType nextFollowUpType;
+
 	@Column(length = 1000)
 	private String note;
-
-	@Column(name = "session_name", nullable = false, length = 9)
-	private String sessionName;
 
 	@Column(name = "admitted_student_id")
 	private Long admittedStudentId;
 
-	@Column(name = "created_by")
+	@Column(name = "created_by", nullable = false)
 	private Long createdBy;
 
 	protected Enquiry() {
@@ -101,9 +119,19 @@ public class Enquiry extends BaseEntity {
 		this.referredBy = other.referredBy;
 		this.referredByGuardianId = other.referredByGuardianId;
 		this.needsBus = other.needsBus;
+		this.needsBusFrom = other.needsBusFrom;
 		this.nextFollowUpOn = other.nextFollowUpOn;
+		this.nextFollowUpType = other.nextFollowUpType;
 		this.note = other.note;
-		this.sessionName = other.sessionName;
+		this.sessionId = other.sessionId;
+	}
+
+	public Long getSessionId() {
+		return sessionId;
+	}
+
+	public void setSessionId(Long sessionId) {
+		this.sessionId = sessionId;
 	}
 
 	public String getParentName() {
@@ -202,6 +230,14 @@ public class Enquiry extends BaseEntity {
 		this.needsBus = needsBus;
 	}
 
+	public String getNeedsBusFrom() {
+		return needsBusFrom;
+	}
+
+	public void setNeedsBusFrom(String needsBusFrom) {
+		this.needsBusFrom = needsBusFrom;
+	}
+
 	public EnquiryStatus getStatus() {
 		return status;
 	}
@@ -210,12 +246,28 @@ public class Enquiry extends BaseEntity {
 		this.status = status;
 	}
 
-	public String getLostReason() {
+	public EnquiryStatus getStatusBeforeLost() {
+		return statusBeforeLost;
+	}
+
+	public void setStatusBeforeLost(EnquiryStatus statusBeforeLost) {
+		this.statusBeforeLost = statusBeforeLost;
+	}
+
+	public EnquiryLostReason getLostReason() {
 		return lostReason;
 	}
 
-	public void setLostReason(String lostReason) {
+	public void setLostReason(EnquiryLostReason lostReason) {
 		this.lostReason = lostReason;
+	}
+
+	public String getLostNote() {
+		return lostNote;
+	}
+
+	public void setLostNote(String lostNote) {
+		this.lostNote = lostNote;
 	}
 
 	public LocalDate getNextFollowUpOn() {
@@ -226,20 +278,20 @@ public class Enquiry extends BaseEntity {
 		this.nextFollowUpOn = nextFollowUpOn;
 	}
 
+	public EnquiryNextType getNextFollowUpType() {
+		return nextFollowUpType;
+	}
+
+	public void setNextFollowUpType(EnquiryNextType nextFollowUpType) {
+		this.nextFollowUpType = nextFollowUpType;
+	}
+
 	public String getNote() {
 		return note;
 	}
 
 	public void setNote(String note) {
 		this.note = note;
-	}
-
-	public String getSessionName() {
-		return sessionName;
-	}
-
-	public void setSessionName(String sessionName) {
-		this.sessionName = sessionName;
 	}
 
 	public Long getAdmittedStudentId() {

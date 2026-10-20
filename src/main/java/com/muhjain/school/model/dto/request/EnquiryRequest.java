@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import com.muhjain.school.model.enums.EnquiryNextType;
 import com.muhjain.school.model.enums.EnquirySource;
 import com.muhjain.school.model.enums.NeedsBus;
 
@@ -16,8 +17,10 @@ import com.muhjain.school.model.enums.NeedsBus;
  * <li>{@code classSought}: Nursery, LKG, UKG, 1 to 12.</li>
  * <li>{@code source} REFERRAL needs {@code referredBy}. {@code referredByGuardianId} is optional, the web app sends
  * it when the name or phone matched a known parent.</li>
- * <li>{@code needsBus}: default UNKNOWN. {@code sessionName}: "2027-28", default is the next admission session.</li>
- * <li>{@code nextFollowUpOn}: the first date to call back.</li>
+ * <li>{@code needsBus}: default UNKNOWN. {@code needsBusFrom}: the stop/area, free text, only when YES.</li>
+ * <li>{@code sessionId}: the year the child wants to join. Left out, it defaults to the soonest session that
+ * has not started yet.</li>
+ * <li>{@code nextFollowUpOn} / {@code nextFollowUpType}: the first date to call back, and how.</li>
  * </ul>
  * The stage is not here: use {@code POST /enquiries/{id}/status}.
  * Example: {@code {"parentName":"Ramesh Jain","phone":"98123 40208","village":"Jakhal","classSought":"3",
@@ -27,7 +30,7 @@ public record EnquiryRequest(@NotBlank @Size(max = 120) String parentName, @NotB
 		@Size(max = 20) String relation, @NotBlank @Size(max = 80) String village,
 		@Size(max = 120) String childName, @NotBlank String classSought, @Size(max = 20) String childAge,
 		@Size(max = 120) String currentSchool, @NotNull EnquirySource source, @Size(max = 120) String referredBy,
-		Long referredByGuardianId, NeedsBus needsBus, LocalDate nextFollowUpOn, @Size(max = 1000) String note,
-		@Size(max = 9) String sessionName) {
+		Long referredByGuardianId, NeedsBus needsBus, @Size(max = 80) String needsBusFrom,
+		LocalDate nextFollowUpOn, EnquiryNextType nextFollowUpType, @Size(max = 1000) String note, Long sessionId) {
 
 }

@@ -8,10 +8,11 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
+import com.muhjain.school.model.enums.LoginClient;
 import com.muhjain.school.model.enums.Role;
 
 /**
- * A person who can log in. Example: +919812340002, "Neelam", OFFICE_ADMIN, active, token version 0.
+ * A person who can log in. Example: +919812340002, "Neelam", OFFICE_ADMIN, active.
  */
 @Entity
 @Table(name = "app_user")
@@ -36,12 +37,12 @@ public class AppUser extends BaseEntity {
 	@Column(nullable = false)
 	private boolean active = true;
 
-	// +1 on logout, turn off, role change, phone change. Tokens with an older number stop working.
-	@Column(name = "token_version", nullable = false)
-	private int tokenVersion;
-
 	@Column(name = "last_login_at")
 	private Instant lastLoginAt;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "last_login_client", length = 20)
+	private LoginClient lastLoginClient;
 
 	@Column(name = "created_by")
 	private Long createdBy;
@@ -52,11 +53,6 @@ public class AppUser extends BaseEntity {
 	public AppUser(String phone, Role role) {
 		this.phone = phone;
 		this.role = role;
-	}
-
-	/** Makes every token of this user stop working. */
-	public void bumpTokenVersion() {
-		tokenVersion++;
 	}
 
 	public String getPhone() {
@@ -99,16 +95,20 @@ public class AppUser extends BaseEntity {
 		this.active = active;
 	}
 
-	public int getTokenVersion() {
-		return tokenVersion;
-	}
-
 	public Instant getLastLoginAt() {
 		return lastLoginAt;
 	}
 
 	public void setLastLoginAt(Instant lastLoginAt) {
 		this.lastLoginAt = lastLoginAt;
+	}
+
+	public LoginClient getLastLoginClient() {
+		return lastLoginClient;
+	}
+
+	public void setLastLoginClient(LoginClient lastLoginClient) {
+		this.lastLoginClient = lastLoginClient;
 	}
 
 	public Long getCreatedBy() {

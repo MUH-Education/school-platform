@@ -1,55 +1,78 @@
 package com.muhjain.school.model.entity;
 
-import java.time.Instant;
-
+import com.muhjain.school.model.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+import com.muhjain.school.model.enums.Gender;
 import com.muhjain.school.model.enums.MessageChannel;
+import com.muhjain.school.model.enums.TemplateApproval;
 
 /**
- * One approved text. The primary key is the code. Example: {@code BOARDED_MORNING_M}, SMS, hi,
+ * One approved text. Bus texts have a boy row and a girl row ({@code gender} M/F); fee texts have one row
+ * ({@code gender} null). {@code body} is what the office last typed; {@code approvedBody} is what the phone
+ * company (DLT) approved. The server always sends {@code approvedBody}, never the un-approved {@code body}.
+ * Example: code {@code BOARDED_MORNING}, gender M, SMS, hi,
  * {@code "{name} सुबह की बस में चढ़ गया — {time}। MUH Jain School"}.
- * The provider's template id is filled in after DLT approval.
  */
 @Entity
 @Table(name = "message_template")
-public class MessageTemplate {
+public class MessageTemplate extends BaseEntity {
 
-	@Id
 	@Column(length = 40)
 	private String code;
+
+	@Enumerated(EnumType.STRING)
+	@JdbcTypeCode(SqlTypes.VARCHAR)
+	@Column(length = 1)
+	private Gender gender;
+
+	@Column(length = 60)
+	private String name;
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 10)
 	private MessageChannel channel;
 
 	@Column(nullable = false, length = 5)
-	private String language;
+	private String language = "hi";
 
-	@Column(nullable = false, length = 500)
+	@Column(nullable = false, length = 1000)
 	private String body;
+
+	@Column(name = "approved_body", length = 1000)
+	private String approvedBody;
 
 	@Column(name = "provider_template_id", length = 60)
 	private String providerTemplateId;
 
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 10)
+	private TemplateApproval approval = TemplateApproval.WAITING;
+
 	@Column(nullable = false)
 	private boolean active = true;
 
-	@Column(name = "created_at", nullable = false, updatable = false, insertable = false)
-	private Instant createdAt;
-
-	@Column(name = "updated_at", nullable = false)
-	private Instant updatedAt;
+	@Column(name = "updated_by")
+	private Long updatedBy;
 
 	protected MessageTemplate() {
 	}
 
 	public String getCode() {
 		return code;
+	}
+
+	public Gender getGender() {
+		return gender;
+	}
+
+	public String getName() {
+		return name;
 	}
 
 	public MessageChannel getChannel() {
@@ -64,24 +87,38 @@ public class MessageTemplate {
 		return body;
 	}
 
+	public String getApprovedBody() {
+		return approvedBody;
+	}
+
 	public String getProviderTemplateId() {
 		return providerTemplateId;
+	}
+
+	public TemplateApproval getApproval() {
+		return approval;
 	}
 
 	public boolean isActive() {
 		return active;
 	}
 
-	public Instant getUpdatedAt() {
-		return updatedAt;
+	public Long getUpdatedBy() {
+		return updatedBy;
 	}
 
-	/** Changes the text and the provider id. {@code now} comes from the app Clock. */
-	public void change(String body, String providerTemplateId, boolean active, Instant now) {
+	/** The text to actually send: the DLT-approved one, or the typed one while none is approved yet. */
+	public String textToSend() {
+		return (approvedBody != null) ? approvedBody : body;
+	}
+
+	/** Changes the text and the provider id. The approval status and {@code approvedBody} are untouched here:
+	 * they only change once the phone company approves the new text (a later, separate step). */
+	public void change(String body, String providerTemplateId, boolean active, Long updatedBy) {
 		this.body = body;
 		this.providerTemplateId = providerTemplateId;
 		this.active = active;
-		this.updatedAt = now;
+		this.updatedBy = updatedBy;
 	}
 
 }

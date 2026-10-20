@@ -8,7 +8,7 @@ import com.muhjain.school.service.auth.impl.LogOtpSender;
  */
 public interface OtpSender {
 
-	/** "WHATSAPP", "SMS" or "LOG". Saved in {@code otp_code.channel}. */
+	/** "WHATSAPP", "SMS" or "LOG". Saved as the channel field of the Redis OTP entry. */
 	String channel();
 
 	void send(String phone, String code) throws OtpSendException;

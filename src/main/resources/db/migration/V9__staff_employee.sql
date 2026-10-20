@@ -2,10 +2,11 @@
 -- A teacher is a staff row with staff_type = TEACHER, not a new kind of user (decision B22, B23).
 -- Details and example rows: docs/03-data-model.md → "Phase 10 tables".
 
--- TEACHER joins the list. The licence check is not touched: a teacher has no licence, and the old
+-- TEACHER joins the list. The licence check is not touched: a teacher has no licence, and the
 -- constraint already allows both licence fields to be null for anyone who is not a DRIVER.
-alter table staff drop constraint staff_type_ck;
-alter table staff add constraint staff_type_ck
+-- V2's check on staff.staff_type has no explicit name, so Postgres named it staff_staff_type_check.
+alter table staff drop constraint staff_staff_type_check;
+alter table staff add constraint staff_staff_type_check
     check (staff_type in ('DRIVER', 'ATTENDANT', 'HELPER', 'TEACHER'));
 
 -- The details every employee has. All nullable: the people added in Phase 2 have none of this filled in.

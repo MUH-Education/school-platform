@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 import com.muhjain.school.model.enums.FatherOccupation;
 import com.muhjain.school.model.enums.Gender;
+import com.muhjain.school.model.enums.LeftReason;
 import com.muhjain.school.model.enums.StudentStatus;
 
 /**
@@ -12,7 +13,7 @@ import com.muhjain.school.model.enums.StudentStatus;
  */
 public record StudentResponse(Long id, String admissionNo, String name, LocalDate dob, Gender gender,
 		String className, String section, String village, String address, FatherOccupation fatherOccupation,
-		StudentStatus status, LocalDate joinedOn, LocalDate leftOn, boolean hasPhoto, List<GuardianResponse> guardians,
-		EnrolmentResponse busNow) {
+		StudentStatus status, LocalDate joinedOn, LocalDate leftOn, LeftReason leftReason, String leftNote,
+		boolean hasPhoto, List<GuardianResponse> guardians, EnrolmentResponse busNow) {
 
 }

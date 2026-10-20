@@ -3,6 +3,8 @@ package com.muhjain.school.service.student;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.Map;
 
 import com.muhjain.school.model.enums.AuditAction;
@@ -41,10 +43,14 @@ public class StudentPhotoService {
 
 	private final AuditService auditService;
 
-	public StudentPhotoService(StudentRepository students, PhotoStorage storage, AuditService auditService) {
+	private final Clock clock;
+
+	public StudentPhotoService(StudentRepository students, PhotoStorage storage, AuditService auditService,
+			Clock clock) {
 		this.students = students;
 		this.storage = storage;
 		this.auditService = auditService;
+		this.clock = clock;
 	}
 
 	/**
@@ -68,6 +74,7 @@ public class StudentPhotoService {
 		String oldKey = student.getPhotoKey();
 		String newKey = write(bytes, kind);
 		student.setPhotoKey(newKey);
+		student.setPhotoUpdatedAt(Instant.now(clock));
 		students.save(student);
 		auditService.record("STUDENT", studentId, AuditAction.UPDATED, (oldKey == null) ? "Photo added." : "Photo replaced.",
 				Map.of("photo", (oldKey == null) ? "added" : "replaced"));
@@ -104,6 +111,7 @@ public class StudentPhotoService {
 		String oldKey = student.getPhotoKey();
 		if (oldKey != null) {
 			student.setPhotoKey(null);
+			student.setPhotoUpdatedAt(Instant.now(clock));
 			students.save(student);
 			auditService.record("STUDENT", studentId, AuditAction.UPDATED, "Photo removed.", Map.of("photo", "removed"));
 			afterTransaction(committed -> {

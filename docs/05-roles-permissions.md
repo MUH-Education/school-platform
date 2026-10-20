@@ -38,6 +38,9 @@ Roles and their permissions are **fixed in Java code** (two enums). They are not
 | `STUDENTS_EDIT` | Change a student, photo, parents, bus | `PUT /api/v1/students/{id}` |
 | `ADMISSIONS_CREATE` | Create a new admission | `POST /api/v1/admissions` |
 | `MESSAGES_VIEW` | See the SMS log | `GET /api/v1/messages` |
+| `MARKETING_VIEW` | See templates and broadcasts | `GET /api/v1/broadcasts` |
+| `MARKETING_EDIT` | Make or change a template | `POST /api/v1/message-templates` |
+| `MARKETING_SEND` | Send or schedule a broadcast | `POST /api/v1/broadcasts/{id}/send` |
 | `ENQUIRIES_VIEW` | See enquiries | `GET /api/v1/enquiries` |
 | `ENQUIRIES_EDIT` | Add or change enquiries | `POST /api/v1/enquiries` |
 | `FEES_VIEW` | See fee plans, dues, payments | `GET /api/v1/students/{id}/fees` |
@@ -66,6 +69,9 @@ This matches the "Users and roles" screen in the design.
 | `STUDENTS_EDIT` | yes | yes | | | |
 | `ADMISSIONS_CREATE` | yes | yes | | yes | |
 | `MESSAGES_VIEW` | yes | yes | yes | | |
+| `MARKETING_VIEW` | yes | | | | |
+| `MARKETING_EDIT` | yes | | | | |
+| `MARKETING_SEND` | yes | | | | |
 | `ENQUIRIES_VIEW` | yes | yes | | yes | |
 | `ENQUIRIES_EDIT` | yes | yes | | yes | |
 | `FEES_VIEW` | yes | yes | | yes | |

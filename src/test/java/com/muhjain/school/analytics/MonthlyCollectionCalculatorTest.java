@@ -9,7 +9,7 @@ import java.util.List;
 
 import com.muhjain.school.util.MonthlyCollectionCalculator.MonthRow;
 import com.muhjain.school.model.enums.FeeHead;
-import com.muhjain.school.util.FeeStatusCalculator.CoveredDue;
+import com.muhjain.school.util.FeeStatusCalculator.MonthInput;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,14 +24,22 @@ class MonthlyCollectionCalculatorTest {
 
 	private static final LocalDate END = LocalDate.of(2027, 3, 31);
 
-	private static CoveredDue due(FeeHead head, String on, long amount, long covered) {
-		return new CoveredDue(null, head, LocalDate.parse(on), BigDecimal.valueOf(amount), BigDecimal.valueOf(covered));
+	private static MonthInput due(FeeHead head, String on, long amount, long covered) {
+		LocalDate dueDate = LocalDate.parse(on);
+		BigDecimal amt = BigDecimal.valueOf(amount);
+		BigDecimal cov = BigDecimal.valueOf(covered);
+		BigDecimal schoolAmount = (head == FeeHead.SCHOOL) ? amt : BigDecimal.ZERO;
+		BigDecimal busAmount = (head == FeeHead.BUS) ? amt : BigDecimal.ZERO;
+		BigDecimal paidSchool = (head == FeeHead.SCHOOL) ? cov : BigDecimal.ZERO;
+		BigDecimal paidBus = (head == FeeHead.BUS) ? cov : BigDecimal.ZERO;
+		return new MonthInput(null, dueDate.withDayOfMonth(1), schoolAmount, BigDecimal.ZERO, busAmount, amt,
+				paidSchool, paidBus, BigDecimal.ZERO, amt.subtract(cov), dueDate, dueDate);
 	}
 
 	@Test
 	void monthlyCollectionIs96PercentInTheExample() {
 		// April dues ₹10,00,000 (two families), ₹9,60,000 of them covered.
-		List<CoveredDue> dues = List.of(due(FeeHead.SCHOOL, "2026-04-01", 600_000, 600_000),
+		List<MonthInput> dues = List.of(due(FeeHead.SCHOOL, "2026-04-01", 600_000, 600_000),
 				due(FeeHead.SCHOOL, "2026-04-01", 400_000, 360_000));
 
 		List<MonthRow> rows = MonthlyCollectionCalculator.calculate(dues, START, END, LocalDate.now(clock));
@@ -58,7 +66,7 @@ class MonthlyCollectionCalculatorTest {
 
 	@Test
 	void aMonthWithNoDuesForAHeadHasNoPercent() {
-		List<CoveredDue> dues = List.of(due(FeeHead.SCHOOL, "2026-04-01", 7500, 7500));
+		List<MonthInput> dues = List.of(due(FeeHead.SCHOOL, "2026-04-01", 7500, 7500));
 		MonthRow may = MonthlyCollectionCalculator.calculate(dues, START, END, LocalDate.now(clock)).get(1);
 		assertThat(may.school().percent()).isNull();
 		assertThat(may.school().due()).isEqualByComparingTo("0");
@@ -67,7 +75,7 @@ class MonthlyCollectionCalculatorTest {
 
 	@Test
 	void headsAreKeptApartAndPercentRoundsHalfUp() {
-		List<CoveredDue> dues = List.of(due(FeeHead.SCHOOL, "2026-07-01", 3, 2), due(FeeHead.BUS, "2026-07-15", 200, 50));
+		List<MonthInput> dues = List.of(due(FeeHead.SCHOOL, "2026-07-01", 3, 2), due(FeeHead.BUS, "2026-07-15", 200, 50));
 		MonthRow july = MonthlyCollectionCalculator.calculate(dues, START, END, LocalDate.now(clock)).get(3);
 		assertThat(july.school().percent()).isEqualByComparingTo("66.7");
 		assertThat(july.bus().percent()).isEqualByComparingTo("25.0");

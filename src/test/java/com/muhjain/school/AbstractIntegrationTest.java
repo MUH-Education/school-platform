@@ -5,13 +5,15 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.time.ZoneId;
+import java.util.List;
 
 import com.jayway.jsonpath.JsonPath;
-import com.muhjain.school.security.JwtService;
+import com.muhjain.school.service.auth.SessionService;
 import com.muhjain.school.service.auth.impl.LogOtpSender;
 import com.muhjain.school.model.entity.AppUser;
 import com.muhjain.school.model.repository.AppUserRepository;
 import com.muhjain.school.model.enums.Role;
+import com.redis.testcontainers.RedisContainer;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,12 +24,14 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.postgresql.PostgreSQLContainer;
+import org.testcontainers.utility.DockerImageName;
 
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
@@ -37,9 +41,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Base class for tests that need the whole app and a real database.
- * One PostgreSQL container starts once and is shared by every test class.
- * Before each test: the clock is set to the real "now", and users, codes, audit rows, vehicles, staff and routes are deleted.
+ * Base class for tests that need the whole app, a real database and a real Redis.
+ * One PostgreSQL container and one Redis container start once and are shared by every test class.
+ * Before each test: the clock is set to the real "now", Redis is flushed, and users, sessions,
+ * audit rows, vehicles, staff and routes are deleted.
  * Example: {@code class HealthEndpointTest extends AbstractIntegrationTest}
  */
 @SpringBootTest
@@ -51,8 +56,12 @@ public abstract class AbstractIntegrationTest {
 	@ServiceConnection
 	static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:17");
 
+	@ServiceConnection
+	static final RedisContainer redis = new RedisContainer(DockerImageName.parse("redis:7-alpine"));
+
 	static {
 		postgres.start();
+		redis.start();
 	}
 
 	@Autowired
@@ -68,7 +77,10 @@ public abstract class AbstractIntegrationTest {
 	protected AppUserRepository userRepository;
 
 	@Autowired
-	protected JwtService jwtService;
+	protected SessionService sessionService;
+
+	@Autowired
+	protected StringRedisTemplate redisTemplate;
 
 	// A spy: the real LogOtpSender runs, and tests can read which code it was given.
 	@MockitoSpyBean
@@ -118,8 +130,18 @@ public abstract class AbstractIntegrationTest {
 	protected long addAssignment(long vehicleId, long staffId, String duty, String from, String to,
 			boolean temporary) {
 		return jdbc.queryForObject("insert into vehicle_assignment (vehicle_id, staff_id, duty, from_date, to_date, "
-				+ "temporary) values (?, ?, ?, ?::date, ?::date, ?) returning id", Long.class, vehicleId, staffId,
-				duty, from, to, temporary);
+				+ "temporary, created_by) values (?, ?, ?, ?::date, ?::date, ?, ?) returning id", Long.class,
+				vehicleId, staffId, duty, from, to, temporary, anyUserId());
+	}
+
+	// db-design makes several created_by columns (vehicle_assignment, student, transport_enrolment, ...)
+	// not null. Tests that build a row straight in the database and do not care who made it can reuse
+	// any existing user, or make one if there is not one yet.
+	protected Long anyUserId() {
+		List<Long> existing = jdbc.queryForList("select id from app_user order by id limit 1", Long.class);
+		return !existing.isEmpty() ? existing.get(0)
+				: jdbc.queryForObject("insert into app_user (phone, role) values ('+919800000000', 'OWNER') "
+						+ "returning id", Long.class);
 	}
 
 	/** The last code LogOtpSender was asked to send to this phone. */
@@ -129,9 +151,9 @@ public abstract class AbstractIntegrationTest {
 		return code.getValue();
 	}
 
-	/** A valid token for this user, made directly. */
+	/** A valid token for this user, with a real session behind it, made directly. */
 	protected String tokenFor(AppUser user) {
-		return jwtService.issue(user).token();
+		return sessionService.create(user, "10.0.0.1").token();
 	}
 
 	/** Real login over HTTP: ask for a code, read it from LogOtpSender, verify. Returns the token. */
@@ -158,24 +180,38 @@ public abstract class AbstractIntegrationTest {
 	void resetClockAndTables() {
 		clock.setInstant(Instant.now().truncatedTo(ChronoUnit.MILLIS));
 		clearInvocations(logOtpSender);
-		// Children first, because of the foreign keys.
+		redisTemplate.getConnectionFactory().getConnection().flushAll();
+		// Children first, because of the foreign keys. academic_session has no is_current flag any more:
+		// "current" is whichever row's dates cover today, so the seeded 2026-27 row just needs to stay.
 		jdbc.update("delete from fee_payment");
+		jdbc.update("delete from receipt");
+		jdbc.update("delete from family_credit_entry");
 		jdbc.update("delete from fee_due");
 		jdbc.update("delete from fee_plan");
-		jdbc.update("delete from receipt_counter");
+		// Keep the seeded row of the base session: like bus_sms_rule, nothing re-inserts it after a delete.
+		jdbc.update("delete from session_fee_setting where session_id <> "
+				+ "(select id from academic_session where name = '2026-27')");
 		jdbc.update("delete from class_fee");
-		jdbc.update("delete from academic_session where name <> '2026-27'");
-		jdbc.update("update academic_session set is_current = false");
-		jdbc.update("update academic_session set is_current = true where name = '2026-27'");
+		jdbc.update("delete from number_counter");
+		jdbc.update("delete from promotion_choice");
+		jdbc.update("delete from promotion_run");
+		jdbc.update("delete from enquiry_stage");
 		jdbc.update("delete from enquiry_follow_up");
 		jdbc.update("delete from enquiry");
-		jdbc.update("delete from boarding_event");
 		jdbc.update("delete from message_outbox");
+		// bus_sms_rule is seeded reference data (like app_setting), not per-test rows: not deleted here.
+		jdbc.update("delete from boarding_event");
+		jdbc.update("delete from holiday");
+		jdbc.update("delete from student_document_note");
+		jdbc.update("delete from student_document");
+		jdbc.update("delete from transfer_certificate");
+		jdbc.update("delete from upload");
+		jdbc.update("delete from admission_draft");
 		jdbc.update("delete from transport_enrolment");
 		jdbc.update("delete from student_guardian");
 		jdbc.update("delete from guardian");
 		jdbc.update("delete from student");
-		jdbc.update("delete from admission_counter");
+		jdbc.update("delete from academic_session where name <> '2026-27'");
 		jdbc.update("delete from route_stop");
 		jdbc.update("delete from route");
 		jdbc.update("delete from vehicle_assignment");
@@ -185,7 +221,7 @@ public abstract class AbstractIntegrationTest {
 		jdbc.update("delete from staff_salary");
 		jdbc.update("update app_setting set updated_by = null");
 		jdbc.update("delete from audit_log");
-		jdbc.update("delete from otp_code");
+		jdbc.update("delete from user_session");
 		jdbc.update("delete from otp_whitelist");
 		jdbc.update("delete from app_user");
 		jdbc.update("delete from staff");

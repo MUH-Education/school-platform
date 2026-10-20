@@ -53,6 +53,8 @@ abstract class AnalyticsTestBase extends AbstractIntegrationTest {
 	/** Child name → id. */
 	final Map<String, Long> ids = new HashMap<>();
 
+	private int admissionSeq = 100;
+
 	@BeforeEach
 	void twelveChildren() throws Exception {
 		clock.setInstant(Instant.parse("2026-10-07T04:30:00Z"));
@@ -83,13 +85,15 @@ abstract class AnalyticsTestBase extends AbstractIntegrationTest {
 	/** @param schoolPaid -1 means no fee plan at all */
 	void child(String name, String className, String village, String occupation, long[] route, int schoolPaid,
 			int busPaid) throws Exception {
+		long userId = anyUserId();
 		long id = jdbc.queryForObject("insert into student (admission_no, name, dob, gender, class_name, village, "
-				+ "father_occupation, joined_on) values (?, ?, date '2018-05-14', 'M', ?, ?, ?, date '2026-04-01') "
-				+ "returning id", Long.class, "T-" + name, name, className, village, occupation);
+				+ "father_occupation, joined_on, created_by) values (?, ?, date '2018-05-14', 'M', ?, ?, ?, "
+				+ "date '2026-04-01', ?) returning id", Long.class, "A-2026-" + (++admissionSeq), name, className,
+				village, occupation, userId);
 		ids.put(name, id);
 		if (route != null) {
-			jdbc.update("insert into transport_enrolment (student_id, route_id, stop_id, from_date) "
-					+ "values (?, ?, ?, date '2026-04-01')", id, route[0], route[1]);
+			jdbc.update("insert into transport_enrolment (student_id, uses_bus, route_id, stop_id, from_date, "
+					+ "created_by) values (?, true, ?, ?, date '2026-04-01', ?)", id, route[0], route[1], userId);
 		}
 		if (schoolPaid < 0) {
 			return;
@@ -112,8 +116,9 @@ abstract class AnalyticsTestBase extends AbstractIntegrationTest {
 	/** Adds a child with no plan and no bus, straight into the database. */
 	long plainChild(String name, String className, String village) {
 		return jdbc.queryForObject("insert into student (admission_no, name, dob, gender, class_name, village, "
-				+ "father_occupation, joined_on) values (?, ?, date '2018-05-14', 'M', ?, ?, 'OTHER', date '2026-04-01') "
-				+ "returning id", Long.class, "X-" + name, name, className, village);
+				+ "father_occupation, joined_on, created_by) values (?, ?, date '2018-05-14', 'M', ?, ?, 'OTHER', "
+				+ "date '2026-04-01', ?) returning id", Long.class, "A-2026-" + (++admissionSeq), name, className,
+				village, anyUserId());
 	}
 
 	long[] addBusRoute(String name) {

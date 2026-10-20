@@ -1,33 +1,34 @@
 package com.muhjain.school.model.repository;
 
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import com.muhjain.school.model.entity.FeePayment;
-import com.muhjain.school.model.enums.FeeHead;
 
-public interface FeePaymentRepository extends JpaRepository<FeePayment, Long>, JpaSpecificationExecutor<FeePayment> {
+public interface FeePaymentRepository extends JpaRepository<FeePayment, Long> {
 
-	List<FeePayment> findByStudentIdAndSessionIdOrderByPaidOnAscIdAsc(Long studentId, Long sessionId);
+	List<FeePayment> findByReceiptIdOrderById(Long receiptId);
 
-	List<FeePayment> findByReceiptNoOrderById(String receiptNo);
+	List<FeePayment> findByStudentIdAndSessionIdOrderByMonthAscIdAsc(Long studentId, Long sessionId);
 
-	/** Money received for one head in a session. Correction rows (below 0) are counted too. */
-	@Query("select coalesce(sum(p.amount), 0) from FeePayment p where p.studentId = :studentId "
-			+ "and p.sessionId = :sessionId and p.feeHead = :head")
-	java.math.BigDecimal paidFor(@Param("studentId") Long studentId, @Param("sessionId") Long sessionId,
-			@Param("head") FeeHead head);
+	boolean existsByStudentIdAndMonth(Long studentId, LocalDate month);
 
-	/** Money received per child and head in a session. Each row is {studentId, feeHead, sum}. */
-	@Query("select p.studentId, p.feeHead, sum(p.amount) from FeePayment p where p.sessionId = :sessionId "
-			+ "and p.studentId in :studentIds group by p.studentId, p.feeHead")
-	List<Object[]> paidByStudentAndHead(@Param("sessionId") Long sessionId,
-			@Param("studentIds") java.util.Collection<Long> studentIds);
+	/** Money received (lines plus their reversals) for one child and month, by head. */
+	@Query("select p.feeHead, sum(p.amount) from FeePayment p where p.studentId = :studentId "
+			+ "and p.month = :month group by p.feeHead")
+	List<Object[]> paidByHead(@Param("studentId") Long studentId, @Param("month") LocalDate month);
 
-	/** The rows of one receipt for one head. Example: R-2026-0412, SCHOOL → the SCHOOL row and its corrections. */
-	List<FeePayment> findByStudentIdAndReceiptNoAndFeeHead(Long studentId, String receiptNo, FeeHead head);
+	/** The lines whose receipt was paid in the given range. Every filter is optional (null = any). */
+	@Query("select p from FeePayment p where p.receiptId in (select r.id from Receipt r where "
+			+ "r.paidAt >= :from and r.paidAt < :to and (:sessionId is null or r.sessionId = :sessionId)) "
+			+ "order by p.id desc")
+	Page<FeePayment> search(@Param("from") Instant from, @Param("to") Instant to,
+			@Param("sessionId") Long sessionId, Pageable pageable);
 
 }

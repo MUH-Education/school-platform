@@ -5,6 +5,8 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import com.muhjain.school.model.entity.Enquiry;
+import com.muhjain.school.model.enums.EnquiryLostReason;
+import com.muhjain.school.model.enums.EnquiryNextType;
 import com.muhjain.school.model.enums.EnquirySource;
 import com.muhjain.school.model.enums.EnquiryStatus;
 import com.muhjain.school.model.enums.NeedsBus;
@@ -16,18 +18,19 @@ import com.muhjain.school.model.enums.NeedsBus;
  */
 public record EnquiryResponse(Long id, String parentName, String phone, String relation, String village,
 		String childName, String classSought, String childAge, String currentSchool, EnquirySource source,
-		String referredBy, Long referredByGuardianId, NeedsBus needsBus, EnquiryStatus status, String lostReason,
-		LocalDate nextFollowUpOn, boolean overdue, LocalDate overdueSince, String note, String sessionName,
-		Long admittedStudentId, OffsetDateTime createdAt, List<FollowUpResponse> followUps) {
+		String referredBy, Long referredByGuardianId, NeedsBus needsBus, String needsBusFrom, EnquiryStatus status,
+		EnquiryLostReason lostReason, String lostNote, LocalDate nextFollowUpOn, EnquiryNextType nextFollowUpType,
+		boolean overdue, LocalDate overdueSince, String note, Long sessionId, Long admittedStudentId,
+		OffsetDateTime createdAt, List<FollowUpResponse> followUps) {
 
 	public static EnquiryResponse of(Enquiry e, LocalDate today, ZoneId zone, List<FollowUpResponse> followUps) {
 		boolean overdue = isOverdue(e, today);
 	return new EnquiryResponse(e.getId(), e.getParentName(), e.getPhone(), e.getRelation(), e.getVillage(),
 				e.getChildName(), e.getClassSought(), e.getChildAge(), e.getCurrentSchool(), e.getSource(),
-				e.getReferredBy(), e.getReferredByGuardianId(), e.getNeedsBus(), e.getStatus(), e.getLostReason(),
-				e.getNextFollowUpOn(), overdue, overdue ? e.getNextFollowUpOn() : null, e.getNote(),
-				e.getSessionName(), e.getAdmittedStudentId(), e.getCreatedAt().atZone(zone).toOffsetDateTime(),
-				followUps);
+				e.getReferredBy(), e.getReferredByGuardianId(), e.getNeedsBus(), e.getNeedsBusFrom(), e.getStatus(),
+				e.getLostReason(), e.getLostNote(), e.getNextFollowUpOn(), e.getNextFollowUpType(), overdue,
+				overdue ? e.getNextFollowUpOn() : null, e.getNote(), e.getSessionId(), e.getAdmittedStudentId(),
+				e.getCreatedAt().atZone(zone).toOffsetDateTime(), followUps);
 	}
 
 	/** Overdue: next follow-up before today, and the enquiry is still open. Example on 7 Oct: due 5 Oct, CONTACTED. */

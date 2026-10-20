@@ -35,7 +35,7 @@ import com.muhjain.school.model.dto.response.PaymentLine;
 import com.muhjain.school.model.enums.PaymentMode;
 import com.muhjain.school.model.dto.request.PaymentRequest;
 import com.muhjain.school.service.fee.PaymentService;
-import com.muhjain.school.service.fee.SessionService;
+import com.muhjain.school.service.fee.AcademicSessionService;
 import com.muhjain.school.model.dto.request.CreateRouteRequest;
 import com.muhjain.school.model.dto.response.RouteResponse;
 import com.muhjain.school.service.route.RouteService;
@@ -182,7 +182,7 @@ public class DevDataLoader implements ApplicationRunner {
 
 	private final EnquiryService enquiryService;
 
-	private final SessionService sessionService;
+	private final AcademicSessionService sessionService;
 
 	private final ClassFeeService classFeeService;
 
@@ -196,7 +196,7 @@ public class DevDataLoader implements ApplicationRunner {
 			AssignmentService assignmentService, RouteService routeService, AdmissionService admissionService,
 			GuardianService guardianService, StudentService studentService, StudentQueryService studentQuery,
 			MarkService markService, UserService userService, OtpService otpService, EnquiryService enquiryService,
-			SessionService sessionService, ClassFeeService classFeeService, FeePlanService feePlanService,
+			AcademicSessionService sessionService, ClassFeeService classFeeService, FeePlanService feePlanService,
 			PaymentService paymentService, Clock clock) {
 		this.sessionService = sessionService;
 		this.classFeeService = classFeeService;
@@ -270,9 +270,9 @@ public class DevDataLoader implements ApplicationRunner {
 			assign(vehicle.id(), Duty.DRIVER, drivers.get(n - 1), yearStart);
 			assign(vehicle.id(), Duty.ATTENDANT, attendants.get(n - 1), yearStart);
 
-			LocalTime schoolDueMorning = lastStopTime(n).plusMinutes(10);
+			LocalTime schoolArrivalTime = lastStopTime(n).plusMinutes(10);
 			RouteResponse route = routeService
-				.create(new CreateRouteRequest("Route " + n, vehicle.id(), schoolDueMorning, null));
+				.create(new CreateRouteRequest("Route " + n, vehicle.id(), schoolArrivalTime, null));
 			routeService.saveStops(route.id(), stops(n));
 		}
 		log.info("Dev data loaded: 9 vehicles, 9 routes, {} staff", DRIVERS.length * 2 + 2);
@@ -335,6 +335,14 @@ public class DevDataLoader implements ApplicationRunner {
 
 	private static final int FAMILIES = 28;
 
+	// db-design makes several created_by columns not null (student, enquiry, enquiry_follow_up, ...).
+	// Dev data used null for "nobody in particular" before; now it reuses the test office admin's id.
+	private Long systemUserId() {
+		return userService.findActiveByPhone(com.muhjain.school.util.PhoneNumbers.normalize(TEST_OFFICE_ADMIN_PHONE))
+			.map(com.muhjain.school.model.entity.AppUser::getId)
+			.orElse(null);
+	}
+
 	private void loadStudents() {
 		List<RouteResponse> routes = routeService.list();
 		if (routes.isEmpty()) {
@@ -381,7 +389,7 @@ public class DevDataLoader implements ApplicationRunner {
 						dob, isGirl ? Gender.F : Gender.M, className, (children % 2 == 0) ? "A" : "B", village, null,
 						occupations[f % occupations.length], yearStart,
 						List.of(new GuardianRequest(parent, phone, GuardianRelation.FATHER, true)), null, null, bus, null, null),
-						null);
+						systemUserId());
 				if (k == 0) {
 					firstChildOfFamily.add(admitted.studentId());
 				}
@@ -394,7 +402,8 @@ public class DevDataLoader implements ApplicationRunner {
 		guardianService.add(firstChildOfFamily.get(3),
 				new GuardianRequest("Dharampal Goyal", phones.get(4), GuardianRelation.GRANDFATHER, true));
 		// The last child has left school 10 days ago.
-		studentService.setStatus(lastStudent, new UpdateStatusRequest(StudentStatus.LEFT, today.minusDays(10)));
+		studentService.setStatus(lastStudent, new UpdateStatusRequest(StudentStatus.LEFT, today.minusDays(10),
+				com.muhjain.school.model.enums.LeftReason.OTHER, null));
 		log.info("Dev data loaded: {} students in {} families", children, FAMILIES);
 	}
 
@@ -439,7 +448,7 @@ public class DevDataLoader implements ApplicationRunner {
 		List<StopRequest> stops = new ArrayList<>();
 		String[] names = STOPS[route - 1];
 		for (int i = 0; i < names.length; i++) {
-			stops.add(new StopRequest(null, names[i], LocalTime.parse(STOP_TIMES[route - 1][i]), null));
+			stops.add(new StopRequest(null, names[i], null, LocalTime.parse(STOP_TIMES[route - 1][i]), null));
 		}
 		return stops;
 	}
@@ -513,47 +522,55 @@ public class DevDataLoader implements ApplicationRunner {
 			};
 			boolean discount = index % 8 == 5;
 			BigDecimal schoolFee = classFeeService.standardFee(session.getId(), child.className())
-				.orElse(BigDecimal.valueOf(30000));
+				.orElse(BigDecimal.valueOf(2500));
 			FeePlanResponse plan = feePlanService.save(child.id(),
-					new FeePlanRequest(schoolFee, (child.busNow() != null) ? new BigDecimal("8800") : null,
-							discount ? new BigDecimal("2000") : null,
+					new FeePlanRequest(schoolFee, discount ? new BigDecimal("200") : null,
 							discount ? DiscountReason.SIBLING : null, frequency),
-					null);
+					systemUserId());
 			payUpTo(child.id(), plan, wanted, today, modes[index % modes.length]);
 			index++;
 		}
 		log.info("Dev data: {} fee plans made", index);
 	}
 
-	// Pays every due before the day that makes the wanted status. No such day (or ON_TIME): every due up to today.
+	// Pays every month before the one that makes the wanted status. No such month (or ON_TIME): every month up
+	// to today. Due day is the 1st (the seeded session_fee_setting), so a due month is its own due date.
 	private void payUpTo(Long studentId, FeePlanResponse plan, String wanted, LocalDate today, PaymentMode mode) {
 		LocalDate stopAt = null;
 		for (DueResponse due : plan.dues()) {
-			long late = ChronoUnit.DAYS.between(due.dueOn(), today);
+			long late = ChronoUnit.DAYS.between(due.month(), today);
 			boolean fits = switch (wanted) {
 				case "DELAYED" -> late >= 11 && late <= 60;
 				case "DEFAULTED" -> late > 60;
 				default -> false;
 			};
-			if (fits && (stopAt == null || due.dueOn().isBefore(stopAt))) {
-				stopAt = due.dueOn();
+			if (fits && (stopAt == null || due.month().isBefore(stopAt))) {
+				stopAt = due.month();
 			}
 		}
 		EnumMap<FeeHead, BigDecimal> money = new EnumMap<>(FeeHead.class);
 		for (DueResponse due : plan.dues()) {
-			boolean before = (stopAt == null) ? !due.dueOn().isAfter(today) : due.dueOn().isBefore(stopAt);
+			boolean before = (stopAt == null) ? !due.month().isAfter(today) : due.month().isBefore(stopAt);
 			if (before) {
-				money.merge(due.feeHead(), due.amount(), BigDecimal::add);
+				money.merge(FeeHead.SCHOOL, due.schoolAmount().subtract(due.discountAmount()), BigDecimal::add);
+				if (due.busAmount().signum() > 0) {
+					money.merge(FeeHead.BUS, due.busAmount(), BigDecimal::add);
+				}
 			}
 		}
-		List<PaymentLine> lines = money.entrySet().stream().map(e -> new PaymentLine(e.getKey(), e.getValue())).toList();
+		List<PaymentLine> lines = money.entrySet()
+			.stream()
+			.filter(e -> e.getValue().signum() > 0)
+			.map(e -> new PaymentLine(e.getKey(), e.getValue()))
+			.toList();
 		if (!lines.isEmpty()) {
-			paymentService.record(studentId, new PaymentRequest(null, mode, null, lines), null);
+			paymentService.record(studentId, new PaymentRequest(null, mode, null, lines), systemUserId());
 		}
 	}
 
 	private void loadEnquiries() {
 		LocalDate today = LocalDate.now(clock);
+		Long userId = systemUserId();
 		List<Long> students = studentService.list(new StudentFilter(null, null, null, null, null, null), 0, 4, null)
 			.items()
 			.stream()
@@ -570,38 +587,43 @@ public class DevDataLoader implements ApplicationRunner {
 					"98222" + String.format("%05d", i + 1), (i % 2 == 0) ? "FATHER" : "MOTHER", VILLAGES[i % VILLAGES.length],
 					(i % 3 == 0) ? null : "Child " + (i + 1), CLASSES[i % CLASSES.length], null, null, source,
 					(source == EnquirySource.REFERRAL) ? "Dharampal Goyal" : null, null,
-					(i % 3 == 0) ? NeedsBus.YES : (i % 3 == 1) ? NeedsBus.UNKNOWN : NeedsBus.NO, next, null, null),
-					null);
+					(i % 3 == 0) ? NeedsBus.YES : (i % 3 == 1) ? NeedsBus.UNKNOWN : NeedsBus.NO, null, next, null,
+					null, null),
+					userId);
 			if (stage == EnquiryStatus.NEW) {
 				continue;
 			}
 			// The path to each stage uses only moves a person may make (no stage skipped twice).
 			if (stage == EnquiryStatus.CONTACTED) {
-				move(created.id(), EnquiryStatus.CONTACTED, null);
+				move(created.id(), EnquiryStatus.CONTACTED, null, null, userId);
 			}
 			else if (stage == EnquiryStatus.VISITED) {
-				move(created.id(), EnquiryStatus.VISITED, null);
+				move(created.id(), EnquiryStatus.VISITED, null, null, userId);
 			}
 			else if (stage == EnquiryStatus.APPLIED || stage == EnquiryStatus.ADMITTED) {
-				move(created.id(), EnquiryStatus.VISITED, null);
-				move(created.id(), EnquiryStatus.APPLIED, null);
+				move(created.id(), EnquiryStatus.VISITED, null, null, userId);
+				move(created.id(), EnquiryStatus.APPLIED, null, null, userId);
 				if (stage == EnquiryStatus.ADMITTED && admitted < students.size()) {
-					enquiryService.markAdmitted(created.id(), students.get(admitted++));
+					enquiryService.markAdmitted(created.id(), students.get(admitted++), userId);
 				}
 			}
 			else if (stage == EnquiryStatus.LOST) {
-				move(created.id(), EnquiryStatus.LOST, "Joined a school near home");
+				move(created.id(), EnquiryStatus.LOST, com.muhjain.school.model.enums.EnquiryLostReason.OTHER,
+						"Joined a school near home", userId);
 			}
 			if (stage == EnquiryStatus.VISITED && i == 15) {
-				enquiryService.addFollowUp(created.id(), new FollowUpRequest("Visited the school with the father",
-						today.plusDays(3)), null);
+				enquiryService.addFollowUp(created.id(),
+						new FollowUpRequest(null, com.muhjain.school.model.enums.EnquiryFollowType.VISIT,
+								"Visited the school with the father", null, today.plusDays(3)),
+						userId);
 			}
 		}
 		log.info("Dev data loaded: {} enquiries", PARENTS.length);
 	}
 
-	private void move(Long id, EnquiryStatus status, String lostReason) {
-		enquiryService.changeStatus(id, new StatusRequest(status, lostReason));
+	private void move(Long id, EnquiryStatus status, com.muhjain.school.model.enums.EnquiryLostReason lostReason,
+			String lostNote, Long userId) {
+		enquiryService.changeStatus(id, new StatusRequest(status, lostReason, lostNote), userId);
 	}
 
 	// ---- taps (Phase 4) ----

@@ -85,8 +85,16 @@ public class OutboxWorker {
 			return;
 		}
 		try {
+			// template_code has no foreign key any more (a bus code now has a boy row and a girl row), so this
+			// is a best-effort lookup: it takes whichever row of the code has a provider id. A known gap until
+			// the gender used to build the message is kept on the outbox row too (see docs/08-decisions.md).
 			String providerTemplateId = (message.getTemplateCode() == null) ? null
-					: templates.findById(message.getTemplateCode()).map(MessageTemplate::getProviderTemplateId).orElse(null);
+					: templates.findByCode(message.getTemplateCode())
+						.stream()
+						.map(MessageTemplate::getProviderTemplateId)
+						.filter(java.util.Objects::nonNull)
+						.findFirst()
+						.orElse(null);
 			SendResult result = smsSender.send(message.getPhone(), message.getBody(), providerTemplateId);
 			message.markDone(result.testOnly() ? MessageStatus.TEST_ONLY : MessageStatus.SENT, result.providerRef(),
 					now);

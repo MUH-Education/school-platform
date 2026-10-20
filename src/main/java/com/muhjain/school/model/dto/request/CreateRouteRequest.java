@@ -8,11 +8,11 @@ import jakarta.validation.constraints.Size;
 import com.muhjain.school.model.entity.Route;
 
 /**
- * Add a route. The vehicle is optional and can be set later. {@code schoolDueMorning}/{@code schoolDueEvening} are
- * optional too (null until the office knows the time). Example: {@code { "name": "Route 4", "vehicleId": 4,
- * "schoolDueMorning": "08:10", "schoolDueEvening": "14:35" }}
+ * Add a route. The vehicle is optional and can be set later. {@code schoolArrivalTime}/{@code schoolLeaveTime}
+ * are optional too: left out, they default to 08:10 and 14:40 like the database does. Example:
+ * {@code { "name": "Route 4", "vehicleId": 4, "schoolArrivalTime": "08:10", "schoolLeaveTime": "14:35" }}
  */
 public record CreateRouteRequest(@NotBlank @Size(max = 80) String name, @Positive Long vehicleId,
-		LocalTime schoolDueMorning, LocalTime schoolDueEvening) {
+		LocalTime schoolArrivalTime, LocalTime schoolLeaveTime) {
 
 }

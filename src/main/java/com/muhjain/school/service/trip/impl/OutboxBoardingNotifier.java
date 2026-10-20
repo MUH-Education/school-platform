@@ -19,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.muhjain.school.model.entity.MessageTemplate;
 import com.muhjain.school.model.repository.MessageOutboxRepository;
 import com.muhjain.school.model.repository.MessageTemplateRepository;
-import com.muhjain.school.util.SmsPolicy;
+import com.muhjain.school.service.messaging.BusSmsRuleService;
 import com.muhjain.school.util.SmsTextBuilder;
 
 /**
@@ -41,13 +41,16 @@ public class OutboxBoardingNotifier implements BoardingNotifier {
 
 	private final MessageOutboxRepository outbox;
 
+	private final BusSmsRuleService smsRules;
+
 	private final Clock clock;
 
 	public OutboxBoardingNotifier(StudentQueryService studentQuery, MessageTemplateRepository templates,
-			MessageOutboxRepository outbox, Clock clock) {
+			MessageOutboxRepository outbox, BusSmsRuleService smsRules, Clock clock) {
 		this.studentQuery = studentQuery;
 		this.templates = templates;
 		this.outbox = outbox;
+		this.smsRules = smsRules;
 		this.clock = clock;
 	}
 
@@ -62,17 +65,21 @@ public class OutboxBoardingNotifier implements BoardingNotifier {
 	}
 
 	private void queue(SmsTarget child, EventType eventType, LocalDate serviceDate, Instant occurredAt) {
-		if (!SmsPolicy.allows(child.className(), eventType) || child.phones().isEmpty()) {
+		if (!smsRules.allows(child.className(), eventType) || child.phones().isEmpty()) {
 			return;
 		}
-		String code = eventType.name() + ((child.gender() == Gender.F) ? "_F" : "_M");
-		MessageTemplate template = templates.findById(code).filter(MessageTemplate::isActive).orElse(null);
+		String code = eventType.name();
+		Gender gender = (child.gender() == Gender.F) ? Gender.F : Gender.M;
+		MessageTemplate template = templates.findByCodeAndGender(code, gender).filter(MessageTemplate::isActive)
+			.orElse(null);
 		if (template == null) {
-			log.warn("No active message template {}, no SMS queued for student {}", code, child.studentId());
+			log.warn("No active message template {}/{}, no SMS queued for student {}", code, gender,
+					child.studentId());
 			return;
 		}
 		LocalTime time = occurredAt.atZone(clock.getZone()).toLocalTime();
-		String body = SmsTextBuilder.build(template.getBody(), child.name(), time);
+		// The server always sends the DLT-approved text, never the office's unapproved edit.
+		String body = SmsTextBuilder.build(template.textToSend(), child.name(), time);
 		Instant now = Instant.now(clock).truncatedTo(java.time.temporal.ChronoUnit.MICROS);
 		for (SmsTarget.Phone phone : child.phones()) {
 			int saved = outbox.queueBoarding(phone.phone(), phone.guardianId(), child.studentId(), serviceDate,

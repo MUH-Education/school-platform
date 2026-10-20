@@ -29,6 +29,7 @@ class AttentionApiTest extends TripTestBase {
 	void childWhoCameInMorningWithNoEveningTapIsMissing() throws Exception {
 		morningRoutine();
 		clock.advance(Duration.ofHours(7).plusMinutes(2)); // 14:50
+		refreshTokens();
 		sendMarks(balwanToken, evening(aryan, "DONE", "14:40:00"));
 		getAs(officeToken, "/api/v1/bus-status/attention").andExpect(status().isOk())
 			.andExpect(jsonPath("$[?(@.kind=='CHILD_MISSING')]", hasSize(1)))
@@ -42,6 +43,7 @@ class AttentionApiTest extends TripTestBase {
 	void childMarkedNotTravellingIsNotMissing() throws Exception {
 		morningRoutine();
 		clock.advance(Duration.ofHours(7).plusMinutes(2));
+		refreshTokens();
 		sendMarks(balwanToken, evening(aryan, "DONE", "14:40:00"), evening(siya, "NOT_TRAVELLING", "14:41:00"));
 		getAs(officeToken, "/api/v1/bus-status/attention")
 			.andExpect(jsonPath("$[?(@.kind=='CHILD_MISSING')]").isEmpty());
@@ -51,6 +53,7 @@ class AttentionApiTest extends TripTestBase {
 	void childMarkedAbsentInTheEveningIsNotMissing() throws Exception {
 		morningRoutine();
 		clock.advance(Duration.ofHours(7).plusMinutes(2));
+		refreshTokens();
 		sendMarks(balwanToken, evening(aryan, "DONE", "14:40:00"), evening(siya, "ABSENT", "14:41:00"));
 		getAs(officeToken, "/api/v1/bus-status/attention")
 			.andExpect(jsonPath("$[?(@.kind=='CHILD_MISSING')]").isEmpty());
@@ -60,6 +63,7 @@ class AttentionApiTest extends TripTestBase {
 	void childAbsentInTheMorningIsNotMissingInTheEvening() throws Exception {
 		morningRoutine();
 		clock.advance(Duration.ofHours(7).plusMinutes(2));
+		refreshTokens();
 		sendMarks(balwanToken, evening(aryan, "DONE", "14:40:00"));
 		// Meera was absent in the morning: she is not on the missing list, only Siya is.
 		getAs(officeToken, "/api/v1/bus-status/attention")
@@ -70,6 +74,7 @@ class AttentionApiTest extends TripTestBase {
 	void nobodyIsMissingBeforeEveningBoardingStarts() throws Exception {
 		morningRoutine();
 		clock.advance(Duration.ofHours(7).plusMinutes(2));
+		refreshTokens();
 		getAs(officeToken, "/api/v1/bus-status/attention")
 			.andExpect(jsonPath("$[?(@.kind=='CHILD_MISSING')]").isEmpty());
 	}
@@ -80,6 +85,7 @@ class AttentionApiTest extends TripTestBase {
 		sendMarks(balwanToken, mark(meera, "REACHED_SCHOOL", "DONE", TODAY, TODAY + "T08:05:00+05:30"),
 				morning(aryan, "DONE", "07:30:00"));
 		clock.advance(Duration.ofHours(7).plusMinutes(2));
+		refreshTokens();
 		sendMarks(balwanToken, evening(aryan, "DONE", "14:40:00"));
 		getAs(officeToken, "/api/v1/bus-status/attention")
 			.andExpect(jsonPath("$[?(@.kind=='CHILD_MISSING')]", hasSize(1)))
@@ -100,6 +106,7 @@ class AttentionApiTest extends TripTestBase {
 	@Test
 	void morningWarningsAreNotShownInTheAfternoon() throws Exception {
 		clock.advance(Duration.ofHours(7));
+		refreshTokens();
 		getAs(officeToken, "/api/v1/bus-status/attention")
 			.andExpect(jsonPath("$[?(@.kind=='NO_TAPS' || @.kind=='LATE')]").isEmpty());
 	}

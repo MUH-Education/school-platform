@@ -34,11 +34,13 @@ class EnquiryStatusApiTest extends EnquiryTestBase {
 		long id = newEnquiry();
 		move(desk, id, "{\"status\":\"LOST\"}").andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.fields.lostReason").exists());
-		move(desk, id, "{\"status\":\"LOST\",\"lostReason\":\"  \"}").andExpect(status().isBadRequest());
+		move(desk, id, "{\"status\":\"LOST\",\"lostReason\":null}").andExpect(status().isBadRequest());
 		assertThat(jdbc.queryForObject("select status from enquiry", String.class)).isEqualTo("NEW");
-		move(desk, id, "{\"status\":\"LOST\",\"lostReason\":\"Joined a school near home\"}").andExpect(status().isOk())
+		move(desk, id, "{\"status\":\"LOST\",\"lostReason\":\"CHOSE_OTHER_SCHOOL\","
+				+ "\"lostNote\":\"Joined a school near home\"}").andExpect(status().isOk())
 			.andExpect(jsonPath("$.status").value("LOST"))
-			.andExpect(jsonPath("$.lostReason").value("Joined a school near home"));
+			.andExpect(jsonPath("$.lostReason").value("CHOSE_OTHER_SCHOOL"))
+			.andExpect(jsonPath("$.lostNote").value("Joined a school near home"));
 	}
 
 	@Test
@@ -52,19 +54,21 @@ class EnquiryStatusApiTest extends EnquiryTestBase {
 	@Test
 	void lostEnquiryCanBeReopened() throws Exception {
 		long id = newEnquiry();
-		move(desk, id, "{\"status\":\"LOST\",\"lostReason\":\"far\"}");
+		move(desk, id, "{\"status\":\"CONTACTED\"}");
+		move(desk, id, "{\"status\":\"LOST\",\"lostReason\":\"TOO_FAR_NO_BUS\"}");
+		// Reopens to exactly the stage it was lost from (CONTACTED), not any other.
 		move(desk, id, "{\"status\":\"CONTACTED\"}").andExpect(status().isOk())
 			.andExpect(jsonPath("$.status").value("CONTACTED"))
 			.andExpect(jsonPath("$.lostReason").doesNotExist());
-		// Not back to any other stage.
-		move(desk, id, "{\"status\":\"LOST\",\"lostReason\":\"again\"}");
+		move(desk, id, "{\"status\":\"LOST\",\"lostReason\":\"OTHER\"}");
 		move(desk, id, "{\"status\":\"VISITED\"}").andExpect(status().isConflict());
 	}
 
 	@Test
 	void reopeningIsRefusedWhenAnotherOpenEnquiryHasTheSamePhoneAndClass() throws Exception {
 		long old = newEnquiry();
-		move(desk, old, "{\"status\":\"LOST\",\"lostReason\":\"far\"}");
+		move(desk, old, "{\"status\":\"CONTACTED\"}");
+		move(desk, old, "{\"status\":\"LOST\",\"lostReason\":\"TOO_FAR_NO_BUS\"}");
 		long fresh = newEnquiry();
 		move(desk, old, "{\"status\":\"CONTACTED\"}").andExpect(status().isConflict())
 			.andExpect(jsonPath("$.error").value("ENQUIRY_EXISTS"))
@@ -81,10 +85,10 @@ class EnquiryStatusApiTest extends EnquiryTestBase {
 	void admittedEnquiryCannotBeMovedOrLost() throws Exception {
 		long id = addEnquiry("+919812340208", "3", "NEW", "Jakhal", null);
 		long student = jdbc.queryForObject("insert into student (admission_no, name, dob, gender, class_name, village, "
-				+ "father_occupation, joined_on) values ('T-1', 'Aryan', '2018-05-14', 'M', '3', 'Jakhal', 'OTHER', "
-				+ "'2026-04-01') returning id", Long.class);
+				+ "father_occupation, joined_on, created_by) values ('A-2026-101', 'Aryan', '2018-05-14', 'M', '3', 'Jakhal', "
+				+ "'OTHER', '2026-04-01', ?) returning id", Long.class, anyUserId());
 		jdbc.update("update enquiry set status = 'ADMITTED', admitted_student_id = ? where id = ?", student, id);
-		move(desk, id, "{\"status\":\"LOST\",\"lostReason\":\"x\"}").andExpect(status().isConflict());
+		move(desk, id, "{\"status\":\"LOST\",\"lostReason\":\"OTHER\"}").andExpect(status().isConflict());
 		move(desk, id, "{\"status\":\"CONTACTED\"}").andExpect(status().isConflict());
 	}
 

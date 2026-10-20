@@ -8,8 +8,12 @@ import com.muhjain.school.model.entity.RouteStop;
 
 public interface RouteStopRepository extends JpaRepository<RouteStop, Long> {
 
-	List<RouteStop> findByRouteIdOrderBySeqNoAsc(Long routeId);
+	// A removed stop is kept as active = false (old bus rows still point at it), so every normal
+	// read excludes it. Only saveStops() looks at the full history, through findByRouteIdOrderBySeqNoAsc.
+	List<RouteStop> findByRouteIdAndActiveTrueOrderBySeqNoAsc(Long routeId);
 
-	List<RouteStop> findByRouteIdInOrderByRouteIdAscSeqNoAsc(Collection<Long> routeIds);
+	List<RouteStop> findByRouteIdInAndActiveTrueOrderByRouteIdAscSeqNoAsc(Collection<Long> routeIds);
+
+	List<RouteStop> findByRouteIdOrderBySeqNoAsc(Long routeId);
 
 }

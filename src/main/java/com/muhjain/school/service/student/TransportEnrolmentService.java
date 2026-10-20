@@ -27,6 +27,7 @@ import com.muhjain.school.model.dto.response.TransportWarning;
 import com.muhjain.school.model.entity.Student;
 import com.muhjain.school.model.entity.TransportEnrolment;
 import com.muhjain.school.model.enums.StudentStatus;
+import com.muhjain.school.model.enums.TransportReason;
 import com.muhjain.school.model.repository.StudentRepository;
 import com.muhjain.school.model.repository.TransportEnrolmentRepository;
 
@@ -114,7 +115,7 @@ public class TransportEnrolmentService {
 	@Transactional
 	public TransportSaveResponse save(Long studentId, TransportRequest request, Long userId) {
 		if (!request.usesBus()) {
-			return stop(studentId, request.fromDate(), userId);
+			return stop(studentId, request.fromDate(), request.reason(), request.note(), userId);
 		}
 		if (request.routeId() == null) {
 			throw ApiException.validation("routeId", "is required when the child uses the bus");
@@ -123,11 +124,14 @@ public class TransportEnrolmentService {
 			throw ApiException.validation("stopId", "is required when the child uses the bus");
 		}
 		findStudent(studentId);
+		// Every enrolled child has an open row (bus or "no bus") once admitted this way, so this is
+		// almost always the path taken; start() stays only for a child with no row at all yet.
 		if (enrolments.findByStudentIdAndToDateIsNull(studentId).isPresent()) {
 			return change(studentId, request.routeId(), request.stopId(), request.fromDate(), request.busFee(),
-					userId);
+					request.reason(), request.note(), userId);
 		}
-		return start(studentId, request.routeId(), request.stopId(), request.fromDate(), request.busFee(), userId);
+		return start(studentId, request.routeId(), request.stopId(), request.fromDate(), request.busFee(),
+				request.reason(), request.note(), userId);
 	}
 
 	/**
@@ -138,7 +142,7 @@ public class TransportEnrolmentService {
 	 */
 	@Transactional
 	public TransportSaveResponse start(Long studentId, Long routeId, Long stopId, LocalDate fromDate,
-			BigDecimal busFee, Long userId) {
+			BigDecimal busFee, TransportReason reason, String note, Long userId) {
 		Student student = findActiveStudent(studentId);
 		if (enrolments.findByStudentIdAndToDateIsNull(studentId).isPresent()) {
 			throw new ApiException(HttpStatus.CONFLICT, "BUS_ALREADY_STARTED",
@@ -151,60 +155,78 @@ public class TransportEnrolmentService {
 			throw tooEarly("The last bus of this child ended on " + DayText.on(lastEnd)
 					+ ". The new bus must start after that day.");
 		}
-		TransportSaveResponse result = insert(student, target, fromDate, busFee, userId);
+		TransportSaveResponse result = insert(student, target, fromDate, busFee, reason, note, userId);
 		audit(studentId, "Bus started: " + target.label() + ", from " + DayText.on(fromDate),
 				details("started", target, fromDate, null));
 		// Rule 8 of Phase 7: the bus fee of a bus that starts later becomes BUS dues in the fee plan.
-		feePlans.addBusFee(studentId, busFee, fromDate, userId);
+		feePlans.regenerateDues(studentId);
 		return result;
 	}
 
 	/**
-	 * Rule 10 (change). Example: Route 4 to Route 6 on 1 Dec → the old row ends on 30 Nov.
+	 * Rule 10 (change). Example: Route 4 to Route 6 on 1 Dec → the old row ends on 30 Nov. The row before
+	 * may itself be a "no bus" period: starting the bus for the first time after admission goes through
+	 * here too, since admission already opened a "no bus" row.
 	 *
 	 * @throws ApiException 404 NOT_FOUND, 409 STUDENT_LEFT, 409 BUS_NOT_STARTED, 400 VALIDATION, 400
 	 * STOP_NOT_ON_ROUTE, 409 FROM_DATE_TOO_EARLY
 	 */
 	@Transactional
 	public TransportSaveResponse change(Long studentId, Long routeId, Long stopId, LocalDate fromDate,
-			BigDecimal busFee, Long userId) {
+			BigDecimal busFee, TransportReason reason, String note, Long userId) {
 		Student student = findActiveStudent(studentId);
 		TransportEnrolment open = enrolments.findByStudentIdAndToDateIsNull(studentId)
 			.orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "BUS_NOT_STARTED",
 					"This child does not use a bus yet. Start the bus first."));
 		Target target = checkTarget(routeId, stopId);
 		checkFromDate(student, fromDate);
-		Target old = labelOf(open);
-		if (open.getRouteId().equals(routeId) && open.getStopId().equals(stopId)
-				&& sameFee(open.getBusFee(), busFee)) {
+		if (open.isUsesBus() && routeId.equals(open.getRouteId()) && stopId.equals(open.getStopId())
+				&& sameFee(open.getBusFeePerMonth(), busFee)) {
 			// Nothing changes: no new row, no audit line.
 			return TransportSaveResponse.ok(null);
 		}
+		String oldLabel = openLabel(open);
 		closeOrDrop(open, fromDate);
-		TransportSaveResponse result = insert(student, target, fromDate, busFee, userId);
+		TransportSaveResponse result = insert(student, target, fromDate, busFee, reason, note, userId);
 		audit(studentId,
-				"Bus changed from " + old.label() + " to " + target.label() + ", from " + DayText.on(fromDate),
-				details("changed", target, fromDate, old));
+				"Bus changed from " + oldLabel + " to " + target.label() + ", from " + DayText.on(fromDate),
+				details("changed", target, fromDate, oldLabel));
+		feePlans.regenerateDues(studentId);
 		return result;
 	}
 
 	/**
-	 * Rule 10 (stop). The last day on the bus is {@code fromDate - 1}. A child with no bus: nothing happens.
+	 * Rule 10 (stop). The last day on the bus is {@code fromDate - 1}. A new "no bus" row opens from
+	 * {@code fromDate}, so the whole history stays gap-free. A child already with no bus: nothing happens.
 	 *
 	 * @throws ApiException 404 NOT_FOUND, 409 FROM_DATE_TOO_EARLY
 	 */
 	@Transactional
-	public TransportSaveResponse stop(Long studentId, LocalDate fromDate, Long userId) {
-		findStudent(studentId);
+	public TransportSaveResponse stop(Long studentId, LocalDate fromDate, TransportReason reason, String note,
+			Long userId) {
+		Student student = findStudent(studentId);
 		Optional<TransportEnrolment> open = enrolments.findByStudentIdAndToDateIsNull(studentId);
-		if (open.isEmpty()) {
+		if (open.isEmpty() || !open.get().isUsesBus()) {
 			return TransportSaveResponse.ok(null);
 		}
-		Target old = labelOf(open.get());
+		String oldLabel = openLabel(open.get());
 		closeOrDrop(open.get(), fromDate);
-		audit(studentId, "Bus stopped from " + DayText.on(fromDate) + " (was " + old.label() + ")",
-				details("stopped", null, fromDate, old));
+		enrolments.saveAndFlush(
+				new TransportEnrolment(studentId, false, null, null, fromDate, null, reason, note, userId));
+		audit(studentId, "Bus stopped from " + DayText.on(fromDate) + " (was " + oldLabel + ")",
+				details("stopped", null, fromDate, oldLabel));
+		feePlans.regenerateDues(studentId);
 		return TransportSaveResponse.ok(null);
+	}
+
+	/**
+	 * Opens the first "no bus" row of a freshly admitted child, so the history has no gap at the start.
+	 * Called by AdmissionService when the admission has no bus part.
+	 */
+	@Transactional
+	public void openWithNoBus(Long studentId, LocalDate fromDate, Long userId) {
+		enrolments.saveAndFlush(new TransportEnrolment(studentId, false, null, null, fromDate, null,
+				TransportReason.ADMISSION, null, userId));
 	}
 
 	/**
@@ -250,10 +272,10 @@ public class TransportEnrolmentService {
 	}
 
 	private TransportSaveResponse insert(Student student, Target target, LocalDate fromDate, BigDecimal busFee,
-			Long userId) {
+			TransportReason reason, String note, Long userId) {
 		BigDecimal fee = (busFee == null) ? null : busFee.setScale(2, java.math.RoundingMode.HALF_UP);
-		enrolments.saveAndFlush(new TransportEnrolment(student.getId(), target.route().id(), target.stop().id(),
-				fromDate, fee, userId));
+		enrolments.saveAndFlush(new TransportEnrolment(student.getId(), true, target.route().id(), target.stop().id(),
+				fromDate, fee, reason, note, userId));
 		return TransportSaveResponse.ok(fullWarning(target.route(), fromDate));
 	}
 
@@ -296,21 +318,32 @@ public class TransportEnrolmentService {
 		}
 	}
 
-	private Target labelOf(TransportEnrolment row) {
+	// "No bus" for a row that is not using one, else "Route 9, Model Town".
+	private String openLabel(TransportEnrolment row) {
+		if (!row.isUsesBus()) {
+			return "no bus";
+		}
 		RouteInfo route = routeService.info(row.getRouteId()).orElseThrow();
 		StopRef stop = routeService.stopRefs(Set.of(row.getStopId())).get(row.getStopId());
-		return new Target(route, stop);
+		return new Target(route, stop).label();
 	}
 
 	private List<EnrolmentResponse> toResponses(List<TransportEnrolment> rows) {
-		Map<Long, String> routeNames = routeService
-			.routeNames(rows.stream().map(TransportEnrolment::getRouteId).collect(Collectors.toSet()));
-		Map<Long, StopRef> stops = routeService
-			.stopRefs(rows.stream().map(TransportEnrolment::getStopId).collect(Collectors.toSet()));
+		Set<Long> routeIds = rows.stream()
+			.map(TransportEnrolment::getRouteId)
+			.filter(java.util.Objects::nonNull)
+			.collect(Collectors.toSet());
+		Set<Long> stopIds = rows.stream()
+			.map(TransportEnrolment::getStopId)
+			.filter(java.util.Objects::nonNull)
+			.collect(Collectors.toSet());
+		Map<Long, String> routeNames = routeService.routeNames(routeIds);
+		Map<Long, StopRef> stops = routeService.stopRefs(stopIds);
 		return rows.stream()
-			.map(r -> new EnrolmentResponse(r.getId(), r.getRouteId(), routeNames.get(r.getRouteId()), r.getStopId(),
-					(stops.get(r.getStopId()) != null) ? stops.get(r.getStopId()).name() : null, r.getFromDate(),
-					r.getToDate(), r.getBusFee(), r.getToDate() == null))
+			.map(r -> new EnrolmentResponse(r.getId(), r.isUsesBus(), r.getRouteId(), routeNames.get(r.getRouteId()),
+					r.getStopId(), (stops.get(r.getStopId()) != null) ? stops.get(r.getStopId()).name() : null,
+					r.getFromDate(), r.getToDate(), r.getBusFeePerMonth(), r.getReason(), r.getNote(),
+					r.getToDate() == null))
 			.toList();
 	}
 
@@ -318,7 +351,7 @@ public class TransportEnrolmentService {
 		auditService.record(ENTITY, studentId, AuditAction.UPDATED, summary, details);
 	}
 
-	private static Map<String, Object> details(String what, Target now, LocalDate fromDate, Target before) {
+	private static Map<String, Object> details(String what, Target now, LocalDate fromDate, String oldLabel) {
 		Map<String, Object> details = new LinkedHashMap<>();
 		details.put("bus", what);
 		details.put("fromDate", fromDate.toString());
@@ -326,9 +359,8 @@ public class TransportEnrolmentService {
 			details.put("routeId", now.route().id());
 			details.put("stopId", now.stop().id());
 		}
-		if (before != null) {
-			details.put("oldRouteId", before.route().id());
-			details.put("oldStopId", before.stop().id());
+		if (oldLabel != null) {
+			details.put("old", oldLabel);
 		}
 		return details;
 	}

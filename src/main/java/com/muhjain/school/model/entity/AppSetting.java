@@ -22,6 +22,9 @@ public class AppSetting {
 	@Column(name = "updated_by")
 	private Long updatedBy;
 
+	@Column(name = "created_at", nullable = false)
+	private Instant createdAt;
+
 	@Column(name = "updated_at", nullable = false)
 	private Instant updatedAt;
 
@@ -44,6 +47,10 @@ public class AppSetting {
 
 	public Long getUpdatedBy() {
 		return updatedBy;
+	}
+
+	public Instant getCreatedAt() {
+		return createdAt;
 	}
 
 	public Instant getUpdatedAt() {

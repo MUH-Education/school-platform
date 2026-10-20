@@ -3,22 +3,27 @@ package com.muhjain.school.messaging;
 import java.util.List;
 import java.util.Set;
 
+import com.muhjain.school.AbstractIntegrationTest;
 import com.muhjain.school.model.enums.EventType;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import com.muhjain.school.util.SmsPolicy;
+import com.muhjain.school.service.messaging.BusSmsRuleService;
 
-/** All 15 classes x 4 events. */
-class SmsPolicyTest {
+/** All 15 classes x 4 events, against the seeded bus_sms_rule rows of V5. */
+class BusSmsRuleServiceTest extends AbstractIntegrationTest {
+
+	@Autowired
+	private BusSmsRuleService policy;
 
 	private static final List<String> ALL_CLASSES = List.of("Nursery", "LKG", "UKG", "1", "2", "3", "4", "5", "6", "7",
 			"8", "9", "10", "11", "12");
 
-	private static Set<EventType> allowed(String className) {
+	private Set<EventType> allowed(String className) {
 		return Set.of(EventType.values())
 			.stream()
-			.filter(e -> SmsPolicy.allows(className, e))
+			.filter(e -> policy.allows(className, e))
 			.collect(java.util.stream.Collectors.toSet());
 	}
 

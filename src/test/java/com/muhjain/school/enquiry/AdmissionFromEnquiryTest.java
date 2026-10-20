@@ -44,7 +44,7 @@ class AdmissionFromEnquiryTest extends EnquiryTestBase {
 	void unknownEnquiryStopsTheAdmissionAndSavesNoChild() throws Exception {
 		admit("99999").andExpect(status().isBadRequest()).andExpect(jsonPath("$.fields.enquiryId").exists());
 		assertThat(jdbc.queryForObject("select count(*) from student", Integer.class)).isZero();
-		assertThat(jdbc.queryForObject("select count(*) from admission_counter", Integer.class)).isZero();
+		assertThat(jdbc.queryForObject("select count(*) from number_counter", Integer.class)).isZero();
 	}
 
 	@Test
@@ -57,7 +57,7 @@ class AdmissionFromEnquiryTest extends EnquiryTestBase {
 	@Test
 	void lostEnquiryCanBeAdmittedWhenTheParentComesBack() throws Exception {
 		long id = idOf(create(desk, FIVE));
-		move(desk, id, "{\"status\":\"LOST\",\"lostReason\":\"far\"}");
+		move(desk, id, "{\"status\":\"LOST\",\"lostReason\":\"TOO_FAR_NO_BUS\"}");
 		admit(String.valueOf(id)).andExpect(status().isCreated());
 		read(desk, "/api/v1/enquiries/" + id).andExpect(jsonPath("$.status").value("ADMITTED"))
 			.andExpect(jsonPath("$.lostReason").doesNotExist());

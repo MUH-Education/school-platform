@@ -2,18 +2,22 @@ package com.muhjain.school.service.fee;
 
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.muhjain.school.model.enums.AuditAction;
 import com.muhjain.school.service.audit.AuditService;
 import com.muhjain.school.exception.ApiException;
-import com.muhjain.school.util.DayText;
 import com.muhjain.school.model.dto.response.StudentBasics;
+import com.muhjain.school.service.student.GuardianService;
 import com.muhjain.school.service.student.StudentQueryService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -24,55 +28,74 @@ import com.muhjain.school.model.dto.request.PaymentRequest;
 import com.muhjain.school.model.dto.response.PaymentResponse;
 import com.muhjain.school.model.dto.response.ReceiptResponse;
 import com.muhjain.school.model.entity.AcademicSession;
+import com.muhjain.school.model.entity.FeeMonthView;
 import com.muhjain.school.model.entity.FeePayment;
-import com.muhjain.school.model.entity.FeePlan;
+import com.muhjain.school.model.entity.Receipt;
 import com.muhjain.school.model.enums.FeeHead;
-import com.muhjain.school.model.repository.FeeDueRepository;
+import com.muhjain.school.model.enums.ReceiptKind;
+import com.muhjain.school.model.enums.ReceiptSource;
+import com.muhjain.school.model.enums.ReceiptStatus;
+import com.muhjain.school.model.repository.FeeMonthViewRepository;
 import com.muhjain.school.model.repository.FeePaymentRepository;
 import com.muhjain.school.model.repository.FeePlanRepository;
+import com.muhjain.school.model.repository.ReceiptRepository;
 import com.muhjain.school.util.MoneyText;
 
 /**
- * Payments and corrections (rules 9 to 13 of phase 7).
+ * Payments and receipt cancellations (rules 9 to 13 of phase 7).
  * <ul>
- * <li>A payment is never changed or deleted. A mistake is fixed with a correction row (negative amount), by the
- * owner only.</li>
- * <li>A payment cannot be more than what is still unpaid for that head in the session. Paying future dues early is fine.</li>
- * <li>One receipt number for one visit, also when it covers school and bus.</li>
+ * <li>A payment line is never changed or deleted (a database trigger stops it). Cancelling a receipt adds a
+ * negative line for each of its lines instead, and the months it covered are unpaid again.</li>
+ * <li>Money for a head is spent on the oldest unpaid month first. A payment cannot be more than what is still
+ * unpaid for that head.</li>
+ * <li>One receipt number for one visit, also when it covers school and bus, also when it spans several months.</li>
  * </ul>
- * Example: dues SCHOOL 30,000 and BUS 8,800, nothing paid. SCHOOL 7,500 + BUS 2,200 → two rows, one receipt.
- * Then SCHOOL 25,000 → 409 PAYMENT_TOO_LARGE, because only 22,500 is unpaid.
+ * Example: dues SCHOOL 2500 and BUS 800 a month for September and October, nothing paid. SCHOOL 5000 + BUS 1600
+ * → four lines (Sep and Oct, each head), one receipt.
  */
 @Service
 public class PaymentService {
 
 	private final FeePlanRepository plans;
 
-	private final FeeDueRepository dues;
+	private final FeeMonthViewRepository months;
+
+	private final FeeDueGenerator dueGenerator;
 
 	private final FeePaymentRepository payments;
 
-	private final SessionService sessions;
+	private final ReceiptRepository receipts;
 
-	private final ReceiptNumberService receipts;
+	private final AcademicSessionService sessions;
+
+	private final ReceiptNumberService receiptNumbers;
 
 	private final StudentQueryService students;
+
+	private final GuardianService guardianService;
 
 	private final AuditService audit;
 
 	private final Clock clock;
 
-	public PaymentService(FeePlanRepository plans, FeeDueRepository dues, FeePaymentRepository payments,
-			SessionService sessions, ReceiptNumberService receipts, StudentQueryService students,
+	public PaymentService(FeePlanRepository plans, FeeMonthViewRepository months, FeeDueGenerator dueGenerator,
+			FeePaymentRepository payments, ReceiptRepository receipts, AcademicSessionService sessions,
+			ReceiptNumberService receiptNumbers, StudentQueryService students, GuardianService guardianService,
 			AuditService audit, Clock clock) {
 		this.plans = plans;
-		this.dues = dues;
+		this.months = months;
+		this.dueGenerator = dueGenerator;
 		this.payments = payments;
-		this.sessions = sessions;
 		this.receipts = receipts;
+		this.sessions = sessions;
+		this.receiptNumbers = receiptNumbers;
 		this.students = students;
+		this.guardianService = guardianService;
 		this.audit = audit;
 		this.clock = clock;
+	}
+
+	private record MonthAllocation(LocalDate month, BigDecimal amount) {
 	}
 
 	/**
@@ -97,110 +120,139 @@ public class PaymentService {
 			}
 		}
 		AcademicSession session = sessions.current();
-		FeePlan plan = lockedPlan(studentId, session);
+		// Locked first, so two clerks cannot both pass the "not more than unpaid" check at the same moment.
+		plans.lockNewestByStudentIdAndSessionId(studentId, session.getId())
+			.orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "NO_FEE_PLAN",
+					"This child has no fee plan for " + session.getName() + ". Save the plan first."));
+		List<FeeMonthView> rows = months.findByStudentIdAndSessionIdOrderByMonthAsc(studentId, session.getId());
 
 		// Nothing is saved before every head is checked. Example: SCHOOL is fine but BUS is too large → nothing.
+		Map<FeeHead, List<MonthAllocation>> allocations = new EnumMap<>(FeeHead.class);
+		BigDecimal total = BigDecimal.ZERO;
 		for (Map.Entry<FeeHead, BigDecimal> entry : wanted.entrySet()) {
-			BigDecimal unpaid = unpaid(plan, studentId, session, entry.getKey());
-			if (entry.getValue().compareTo(unpaid) > 0) {
-				throw new ApiException(HttpStatus.CONFLICT, "PAYMENT_TOO_LARGE", "Only " + MoneyText.of(unpaid)
-						+ " is still unpaid for " + entry.getKey() + ". Check the amount.");
-			}
+			allocations.put(entry.getKey(), allocate(rows, entry.getKey(), entry.getValue()));
+			total = total.add(entry.getValue());
 		}
 
-		String receiptNo = receipts.next(session);
+		Long familyGuardianId = guardianService.primaryGuardianId(studentId);
+		String receiptNo = receiptNumbers.next();
+		Instant now = Instant.now(clock).truncatedTo(ChronoUnit.MICROS);
+		Receipt receipt = receipts.save(new Receipt(receiptNo, ReceiptKind.PAYMENT, ReceiptSource.COLLECT,
+				session.getId(), familyGuardianId, paidOn, now, request.mode(), request.reference(), total, null,
+				userId));
 		List<FeePayment> saved = new ArrayList<>();
-		for (FeeHead head : FeeHead.values()) {
-			BigDecimal amount = wanted.get(head);
-			if (amount != null) {
-				FeePayment row = payments.save(new FeePayment(studentId, session.getId(), head, amount, paidOn,
-						request.mode(), receiptNo, tidy(request.note()), userId));
-				saved.add(row);
-				auditPayment(row, "Payment " + receiptNo + ": " + head + " " + MoneyText.of(amount) + " by "
-						+ request.mode() + " on " + DayText.on(paidOn) + ".", AuditAction.CREATED);
-			}
+		allocations.forEach((head, parts) -> parts.forEach(part -> saved.add(payments
+			.save(new FeePayment(receipt.getId(), studentId, session.getId(), part.month(), head, part.amount(),
+					null)))));
+		payments.flush();
+		for (FeePayment row : saved) {
+			auditPayment(row, "Payment " + receiptNo + ": " + row.getFeeHead() + " " + MoneyText.of(row.getAmount())
+					+ " for " + row.getMonth() + " by " + request.mode() + ".", AuditAction.CREATED);
 		}
-		return receiptOf(receiptNo, saved, plan, studentId, session);
+		return receiptOf(receipt, saved, studentId, session);
 	}
 
 	/**
-	 * Adds a correction: a row below 0 with a note. Only for a receipt of this child and head, and not more than
-	 * what that receipt still holds.
-	 * Example: receipt R-2026-0412 holds SCHOOL 7,500. A correction of -500 is fine. Another of -7,500 is refused.
+	 * Cancels a whole receipt, by the owner only. Every line gets a negative line that reverses it, and the
+	 * months it covered become unpaid again.
+	 * Example: receipt R-2026-0412 (school 2500 for September) is cancelled → one line of -2500 for September,
+	 * and September is due again.
 	 *
-	 * @throws ApiException 404 NOT_FOUND (child), 409 NO_FEE_PLAN, 400 VALIDATION (amount, receipt, too much)
+	 * @throws ApiException 404 NOT_FOUND (child or receipt), 409 ALREADY_CANCELLED
 	 */
 	@Transactional
 	public ReceiptResponse correct(Long studentId, CorrectionRequest request, Long userId) {
 		requireStudent(studentId);
-		if (request.amount().signum() >= 0) {
-			throw ApiException.validation("amount", "must be below 0 (a correction takes money back)");
+		Receipt receipt = receipts.findByReceiptNo(request.receiptNo().strip())
+			.orElseThrow(() -> ApiException.validation("receiptNo", "does not exist"));
+		if (receipt.getStatus() == ReceiptStatus.CANCELLED) {
+			throw new ApiException(HttpStatus.CONFLICT, "ALREADY_CANCELLED", "This receipt was cancelled already.");
 		}
-		AcademicSession session = sessions.current();
-		FeePlan plan = lockedPlan(studentId, session);
-		List<FeePayment> rows = payments.findByStudentIdAndReceiptNoAndFeeHead(studentId, request.receiptNo().strip(),
-				request.feeHead())
-			.stream()
-			.filter(p -> p.getSessionId().equals(session.getId()))
-			.toList();
-		if (rows.isEmpty()) {
-			throw ApiException.validation("receiptNo", "this child has no " + request.feeHead()
-					+ " payment with this receipt number");
+		List<FeePayment> lines = payments.findByReceiptIdOrderById(receipt.getId());
+		boolean belongsToStudent = lines.stream().anyMatch(l -> l.getStudentId().equals(studentId));
+		if (!belongsToStudent) {
+			throw new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "This receipt does not belong to this child.");
 		}
-		BigDecimal held = rows.stream().map(FeePayment::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
-		if (held.add(request.amount()).signum() < 0) {
-			throw ApiException.validation("amount", "the receipt holds only " + MoneyText.of(held) + " for "
-					+ request.feeHead());
+		Instant now = Instant.now(clock).truncatedTo(ChronoUnit.MICROS);
+		receipt.cancel(request.reason(), request.note().strip(), userId, now);
+		receipts.save(receipt);
+		List<FeePayment> reversals = new ArrayList<>();
+		for (FeePayment line : lines) {
+			reversals.add(payments.save(new FeePayment(receipt.getId(), line.getStudentId(), line.getSessionId(),
+					line.getMonth(), line.getFeeHead(), line.getAmount().negate(), line.getId())));
 		}
-		FeePayment original = rows.getFirst();
-		FeePayment row = payments.save(new FeePayment(studentId, session.getId(), request.feeHead(),
-				request.amount(), LocalDate.now(clock), original.getMode(), original.getReceiptNo(),
-				request.note().strip(), userId));
-		auditPayment(row, "Correction on " + row.getReceiptNo() + ": " + row.getFeeHead() + " "
-				+ MoneyText.of(row.getAmount()) + ". " + row.getNote(), AuditAction.CREATED);
-		return receiptOf(row.getReceiptNo(), List.of(row), plan, studentId, session);
+		payments.flush();
+		// The cancelled months are unpaid again: rebuild the schedule of every child this receipt touched.
+		AcademicSession session = sessions.get(receipt.getSessionId());
+		Set<Long> affected = lines.stream().map(FeePayment::getStudentId).collect(Collectors.toSet());
+		for (Long id : affected) {
+			students.basics(id).ifPresent(s -> dueGenerator.regenerate(s, session));
+		}
+		auditService(receipt, "Receipt " + receipt.getReceiptNo() + " cancelled (" + request.reason() + "): "
+				+ request.note(), studentId);
+		return receiptOf(receipt, reversals, studentId, session);
 	}
 
-	private FeePlan lockedPlan(Long studentId, AcademicSession session) {
-		return plans.lockByStudentIdAndSessionId(studentId, session.getId())
-			.orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "NO_FEE_PLAN",
-					"This child has no fee plan for " + session.getName() + ". Save the plan first."));
+	// Spends the amount on the oldest unpaid month of this head first.
+	private List<MonthAllocation> allocate(List<FeeMonthView> rows, FeeHead head, BigDecimal amount) {
+		if (head == FeeHead.LATE) {
+			// No due schedule for a late fee in this model yet: one line, this month.
+			return List.of(new MonthAllocation(LocalDate.now(clock).withDayOfMonth(1), amount));
+		}
+		BigDecimal remaining = amount;
+		List<MonthAllocation> result = new ArrayList<>();
+		for (FeeMonthView row : rows) {
+			if (remaining.signum() <= 0) {
+				break;
+			}
+			BigDecimal open = (head == FeeHead.SCHOOL)
+					? row.getSchoolAmount().subtract(row.getDiscountAmount()).subtract(row.getPaidSchool())
+					: row.getBusAmount().subtract(row.getPaidBus());
+			if (open.signum() <= 0) {
+				continue;
+			}
+			BigDecimal part = remaining.min(open);
+			result.add(new MonthAllocation(row.getMonth(), part));
+			remaining = remaining.subtract(part);
+		}
+		if (remaining.signum() > 0) {
+			BigDecimal unpaid = amount.subtract(remaining);
+			throw new ApiException(HttpStatus.CONFLICT, "PAYMENT_TOO_LARGE", "Only " + MoneyText.of(unpaid)
+					+ " is still unpaid for " + head + ". Check the amount.");
+		}
+		return result;
 	}
 
-	// Dues of the head minus money received (corrections count as negative money), never below 0.
-	private BigDecimal unpaid(FeePlan plan, Long studentId, AcademicSession session, FeeHead head) {
-		BigDecimal due = dues.totalOf(plan.getId(), head);
-		BigDecimal paid = payments.paidFor(studentId, session.getId(), head);
-		return due.subtract(paid).max(BigDecimal.ZERO);
-	}
-
-	private ReceiptResponse receiptOf(String receiptNo, List<FeePayment> rows, FeePlan plan, Long studentId,
+	private ReceiptResponse receiptOf(Receipt receipt, List<FeePayment> lines, Long studentId,
 			AcademicSession session) {
-		BigDecimal total = rows.stream().map(FeePayment::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
-		BigDecimal stillToPay = BigDecimal.ZERO;
-		for (FeeHead head : FeeHead.values()) {
-			stillToPay = stillToPay.add(unpaid(plan, studentId, session, head));
-		}
-		return new ReceiptResponse(receiptNo, total, stillToPay, rows.stream().map(PaymentResponse::of).toList());
+		BigDecimal total = lines.stream().map(FeePayment::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+		BigDecimal stillToPay = months.findByStudentIdAndSessionIdOrderByMonthAsc(studentId, session.getId())
+			.stream()
+			.map(FeeMonthView::getBalance)
+			.reduce(BigDecimal.ZERO, BigDecimal::add);
+		return ReceiptResponse.of(receipt, total, stillToPay, lines.stream().map(PaymentResponse::of).toList());
 	}
 
 	private void auditPayment(FeePayment row, String summary, AuditAction action) {
 		Map<String, Object> details = new LinkedHashMap<>();
 		details.put("paymentId", row.getId());
-		details.put("receiptNo", row.getReceiptNo());
+		details.put("receiptId", row.getReceiptId());
 		details.put("feeHead", row.getFeeHead().name());
 		details.put("amount", row.getAmount());
-		details.put("mode", row.getMode().name());
+		details.put("month", row.getMonth().toString());
 		audit.record("STUDENT", row.getStudentId(), action, summary, details);
+	}
+
+	private void auditService(Receipt receipt, String summary, Long studentId) {
+		Map<String, Object> details = new LinkedHashMap<>();
+		details.put("receiptId", receipt.getId());
+		details.put("receiptNo", receipt.getReceiptNo());
+		audit.record("STUDENT", studentId, AuditAction.UPDATED, summary, details);
 	}
 
 	private StudentBasics requireStudent(Long studentId) {
 		return students.basics(studentId)
 			.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "This student does not exist."));
-	}
-
-	private static String tidy(String note) {
-		return (note == null || note.isBlank()) ? null : note.strip();
 	}
 
 }

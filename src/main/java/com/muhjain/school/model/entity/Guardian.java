@@ -16,8 +16,9 @@ public class Guardian extends BaseEntity {
 	@Column(length = 120)
 	private String name;
 
-	// Always +91XXXXXXXXXX (PhoneNumbers.normalize).
-	@Column(nullable = false, updatable = false, length = 13)
+	// Always +91XXXXXXXXXX (PhoneNumbers.normalize). The database allows this to be empty (a parent with
+	// no phone), but every current path through GuardianService always supplies one.
+	@Column(updatable = false, length = 13)
 	private String phone;
 
 	@Column(name = "preferred_language", nullable = false, length = 5)

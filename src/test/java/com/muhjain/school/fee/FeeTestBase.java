@@ -33,15 +33,17 @@ abstract class FeeTestBase extends AbstractIntegrationTest {
 		transport = tokenFor(addUser("+919812340003", Role.TRANSPORT_INCHARGE));
 	}
 
+	// FeeTestBase fixes "now" to 7 Oct 2026, so the current session is the one whose dates include it.
 	long currentSessionId() {
-		return jdbc.queryForObject("select id from academic_session where is_current", Long.class);
+		return jdbc.queryForObject(
+				"select id from academic_session where date '2026-10-07' between starts_on and ends_on", Long.class);
 	}
 
 	/** Adds a child of class 3 straight into the database. */
 	long addStudent(String admissionNo, String joinedOn) {
 		return jdbc.queryForObject("insert into student (admission_no, name, dob, gender, class_name, village, "
-				+ "father_occupation, joined_on) values (?, 'Aryan', date '2018-05-14', 'M', '3', 'Jakhal', 'OTHER', "
-				+ "?::date) returning id", Long.class, admissionNo, joinedOn);
+				+ "father_occupation, joined_on, created_by) values (?, 'Aryan', date '2018-05-14', 'M', '3', 'Jakhal', "
+				+ "'OTHER', ?::date, ?) returning id", Long.class, admissionNo, joinedOn, anyUserId());
 	}
 
 	/** Adds a van, a route and one stop straight into the database. Returns {routeId, stopId}. */

@@ -7,9 +7,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import java.util.Set;
+
 import com.muhjain.school.model.enums.AuditAction;
 import com.muhjain.school.service.audit.AuditService;
 import com.muhjain.school.exception.ApiException;
+import com.muhjain.school.util.PhoneNumbers;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.muhjain.school.model.dto.response.SettingResponse;
@@ -26,7 +29,15 @@ public class SettingService {
 
 	static final String ENTITY = "SETTING";
 
-	private static final String TEXT_KEY = "school.name";
+	// Free text, must not be blank.
+	private static final Set<String> REQUIRED_TEXT_KEYS = Set.of("school.name", "school.short_name",
+			"school.address");
+
+	// Free text, may be left blank (they are seeded blank until the office fills them in).
+	private static final Set<String> OPTIONAL_TEXT_KEYS = Set.of("school.principal_name", "school.affiliation_no",
+			"school.school_code");
+
+	private static final String PHONE_KEY = "school.office_phone";
 
 	private static final String PERCENT_KEY = "transport.collection_pct";
 
@@ -81,17 +92,32 @@ public class SettingService {
 		return list();
 	}
 
-	// school.name is text. Every other setting is a whole number of 0 or more. A percent is at most 100.
+	// A few keys are free text (some may be left blank), one is a phone number, the rest are whole
+	// numbers of 0 or more. A percent is at most 100.
 	private static String checkValue(String key, String raw) {
 		String value = (raw == null) ? "" : raw.strip();
-		if (value.isEmpty()) {
-			throw ApiException.validation(key, "must not be empty");
-		}
-		if (key.equals(TEXT_KEY)) {
+		if (OPTIONAL_TEXT_KEYS.contains(key)) {
 			if (value.length() > 300) {
 				throw ApiException.validation(key, "must be at most 300 characters");
 			}
 			return value;
+		}
+		if (value.isEmpty()) {
+			throw ApiException.validation(key, "must not be empty");
+		}
+		if (REQUIRED_TEXT_KEYS.contains(key)) {
+			if (value.length() > 300) {
+				throw ApiException.validation(key, "must be at most 300 characters");
+			}
+			return value;
+		}
+		if (key.equals(PHONE_KEY)) {
+			try {
+				return PhoneNumbers.normalize(value);
+			}
+			catch (ApiException ex) {
+				throw ApiException.validation(key, "must be a valid Indian mobile number, like 98123 45678");
+			}
 		}
 		long number;
 		try {

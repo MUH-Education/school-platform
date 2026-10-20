@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.muhjain.school.config.OtpProperties;
 import com.muhjain.school.security.JwtProperties;
+import com.muhjain.school.security.SessionProperties;
 
 class AuthPropertiesTest extends AbstractIntegrationTest {
 
@@ -20,14 +21,19 @@ class AuthPropertiesTest extends AbstractIntegrationTest {
 	private JwtProperties jwtProperties;
 
 	@Autowired
+	private SessionProperties sessionProperties;
+
+	@Autowired
 	private OtpProperties otpProperties;
 
 	@Test
 	void valuesFromApplicationYmlAreBound() {
-		assertThat(jwtProperties.ttl()).isEqualTo(Duration.ofDays(30));
+		assertThat(jwtProperties.secretBytes()).isNotEmpty();
+		assertThat(sessionProperties.idleTimeout()).isEqualTo(Duration.ofMinutes(15));
+		assertThat(sessionProperties.maxLifetime()).isEqualTo(Duration.ofHours(12));
 		assertThat(otpProperties.length()).isEqualTo(6);
 		assertThat(otpProperties.ttl()).isEqualTo(Duration.ofMinutes(5));
-		assertThat(otpProperties.maxAttempts()).isEqualTo(5);
+		assertThat(otpProperties.maxAttempts()).isEqualTo(3);
 		assertThat(otpProperties.resendAfter()).isEqualTo(Duration.ofSeconds(60));
 		assertThat(otpProperties.maxPerHour()).isEqualTo(5);
 		assertThat(otpProperties.maxPerIpPerHour()).isEqualTo(20);
@@ -36,19 +42,27 @@ class AuthPropertiesTest extends AbstractIntegrationTest {
 
 	@Test
 	void jwtSecretShorterThan32BytesStopsTheApp() {
-		assertThatThrownBy(() -> new JwtProperties("x".repeat(31), Duration.ofDays(30)))
+		assertThatThrownBy(() -> new JwtProperties("x".repeat(31)))
 			.isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining("at least 32 bytes");
-		assertThat(new JwtProperties(SECRET_32, Duration.ofDays(30)).secretBytes()).hasSize(32);
+		assertThat(new JwtProperties(SECRET_32).secretBytes()).hasSize(32);
 	}
 
 	@Test
 	void missingSecretsStopTheApp() {
-		assertThatThrownBy(() -> new JwtProperties(null, Duration.ofDays(30))).hasMessageContaining("APP_JWT_SECRET");
+		assertThatThrownBy(() -> new JwtProperties(null)).hasMessageContaining("APP_JWT_SECRET");
 		assertThatThrownBy(() -> otp(" ")).hasMessageContaining("APP_OTP_SECRET");
 		assertThatThrownBy(() -> otp("short")).hasMessageContaining("at least 32 bytes");
-		assertThatThrownBy(() -> new JwtProperties("${APP_JWT_SECRET}", Duration.ofDays(30)))
-			.hasMessageContaining("not set");
+		assertThatThrownBy(() -> new JwtProperties("${APP_JWT_SECRET}")).hasMessageContaining("not set");
+		assertThatThrownBy(() -> session(" ")).hasMessageContaining("APP_SESSION_SECRET");
+		assertThatThrownBy(() -> session("short")).hasMessageContaining("at least 32 bytes");
+	}
+
+	@Test
+	void sessionMaxLifetimeMustBeAtLeastTheIdleTimeout() {
+		assertThatThrownBy(() -> new SessionProperties(Duration.ofMinutes(15), Duration.ofMinutes(10), SECRET_32))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("at least app.session.idle-timeout");
 	}
 
 	@Test
@@ -57,8 +71,12 @@ class AuthPropertiesTest extends AbstractIntegrationTest {
 	}
 
 	private static OtpProperties otp(String hashSecret) {
-		return new OtpProperties(6, Duration.ofMinutes(5), 5, Duration.ofSeconds(60), 5, 20, List.of(" whatsapp", "sms"),
+		return new OtpProperties(6, Duration.ofMinutes(5), 3, Duration.ofSeconds(60), 5, 20, List.of(" whatsapp", "sms"),
 				hashSecret);
+	}
+
+	private static SessionProperties session(String hashSecret) {
+		return new SessionProperties(Duration.ofMinutes(15), Duration.ofHours(12), hashSecret);
 	}
 
 }

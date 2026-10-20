@@ -13,6 +13,7 @@ import com.muhjain.school.model.enums.AuditAction;
 import com.muhjain.school.service.audit.AuditService;
 import com.muhjain.school.exception.ApiException;
 import com.muhjain.school.util.PhoneNumbers;
+import com.muhjain.school.service.auth.SessionService;
 import com.muhjain.school.service.staff.StaffService;
 import com.muhjain.school.model.enums.StaffType;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -24,6 +25,7 @@ import com.muhjain.school.model.dto.response.RolesResponse;
 import com.muhjain.school.model.dto.request.UpdateUserRequest;
 import com.muhjain.school.model.dto.response.UserResponse;
 import com.muhjain.school.model.entity.AppUser;
+import com.muhjain.school.model.enums.LoginClient;
 import com.muhjain.school.model.enums.Permission;
 import com.muhjain.school.model.enums.Role;
 import com.muhjain.school.model.repository.AppUserRepository;
@@ -43,12 +45,16 @@ public class UserService {
 
 	private final StaffService staffService;
 
+	private final SessionService sessionService;
+
 	private final Clock clock;
 
-	public UserService(AppUserRepository users, AuditService auditService, StaffService staffService, Clock clock) {
+	public UserService(AppUserRepository users, AuditService auditService, StaffService staffService,
+			SessionService sessionService, Clock clock) {
 		this.users = users;
 		this.auditService = auditService;
 		this.staffService = staffService;
+		this.sessionService = sessionService;
 		this.clock = clock;
 	}
 
@@ -125,16 +131,18 @@ public class UserService {
 		if (changes.isEmpty()) {
 			return toResponse(user);
 		}
-		// Rule 6: phone change, role change, turn off → old tokens stop working.
-		if (changes.containsKey("phone") || changes.containsKey("role") || (user.isActive() && !active)) {
-			user.bumpTokenVersion();
-		}
+		// Rule 6: phone change, role change, turn off → every session of this user ends at once.
+		boolean endsSessions = changes.containsKey("phone") || changes.containsKey("role")
+				|| (user.isActive() && !active);
 		user.setPhone(phone);
 		user.setName(clean(request.name()));
 		user.setRole(role);
 		user.setStaffId(request.staffId());
 		user.setActive(active);
 		user = saveCheckingPhone(user);
+		if (endsSessions) {
+			sessionService.revokeAll(user.getId());
+		}
 		auditService.record(ENTITY, user.getId(), AuditAction.UPDATED, summary(changes), changes);
 		return toResponse(user);
 	}
@@ -158,17 +166,6 @@ public class UserService {
 	}
 
 	/**
-	 * Logout: every token of this user, on every device, stops working.
-	 * Example: Neelam logs out on the office computer → her phone is logged out too.
-	 */
-	@Transactional
-	public void logout(Long userId) {
-		AppUser user = users.findById(userId).orElseThrow();
-		user.bumpTokenVersion();
-		auditService.record(ENTITY, user.getId(), AuditAction.UPDATED, "Logged out on all devices", null);
-	}
-
-	/**
 	 * Names for "who changed this". A user with no name shows a masked phone. Example: {2 → "Neelam", 5 → "+91XXXXXX0005"}.
 	 * An id that does not exist is not in the map.
 	 */
@@ -189,11 +186,15 @@ public class UserService {
 		return users.findById(id);
 	}
 
-	/** Sets "last login" to now. Called after a right OTP. */
+	/**
+	 * Sets "last login" to now. Called after a right OTP. The client app is not sent by the caller: it
+	 * is always the attendant app for an ATTENDANT, and the office web app for every other role.
+	 */
 	@Transactional
 	public AppUser recordLogin(Long userId, Instant now) {
 		AppUser user = users.findById(userId).orElseThrow();
 		user.setLastLoginAt(now);
+		user.setLastLoginClient(user.getRole() == Role.ATTENDANT ? LoginClient.ATTENDANT_APP : LoginClient.WEB);
 		return user;
 	}
 

@@ -13,6 +13,7 @@ import com.muhjain.school.util.NameKeys;
 import com.muhjain.school.model.dto.response.PageResponse;
 import com.muhjain.school.util.PhoneNumbers;
 import com.muhjain.school.util.ClassNames;
+import com.muhjain.school.service.fee.AcademicSessionService;
 import com.muhjain.school.service.student.GuardianService;
 import com.muhjain.school.service.user.UserService;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -29,13 +30,14 @@ import com.muhjain.school.model.dto.response.PrefillResponse;
 import com.muhjain.school.model.dto.request.StatusRequest;
 import com.muhjain.school.model.entity.Enquiry;
 import com.muhjain.school.model.entity.EnquiryFollowUp;
+import com.muhjain.school.model.entity.EnquiryStage;
 import com.muhjain.school.model.enums.EnquirySource;
 import com.muhjain.school.model.enums.EnquiryStatus;
 import com.muhjain.school.model.enums.NeedsBus;
 import com.muhjain.school.model.repository.EnquiryFollowUpRepository;
 import com.muhjain.school.model.repository.EnquiryRepository;
+import com.muhjain.school.model.repository.EnquiryStageRepository;
 import com.muhjain.school.util.EnquiryTransitions;
-import com.muhjain.school.util.SessionNames;
 
 /**
  * Admission enquiries. Rules 1 to 7 of docs/phases/phase-6-enquiries.md.
@@ -48,22 +50,28 @@ public class EnquiryService {
 
 	private final EnquiryFollowUpRepository followUps;
 
+	private final EnquiryStageRepository stages;
+
 	private final GuardianService guardianService;
 
 	private final UserService userService;
+
+	private final AcademicSessionService sessionService;
 
 	private final AuditService auditService;
 
 	private final Clock clock;
 
 	public EnquiryService(EnquiryRepository enquiries, EnquiryFollowUpRepository followUps,
-			GuardianService guardianService, UserService userService, AuditService auditService,
-			Clock clock) {
+			EnquiryStageRepository stages, GuardianService guardianService, UserService userService,
+			AcademicSessionService sessionService, AuditService auditService, Clock clock) {
 		this.userService = userService;
 		this.auditService = auditService;
 		this.enquiries = enquiries;
 		this.followUps = followUps;
+		this.stages = stages;
 		this.guardianService = guardianService;
+		this.sessionService = sessionService;
 		this.clock = clock;
 	}
 
@@ -79,6 +87,7 @@ public class EnquiryService {
 		apply(enquiry, request);
 		checkNoOpenTwin(enquiry);
 		Enquiry saved = save(enquiry);
+		stages.save(new EnquiryStage(saved.getId(), EnquiryStatus.NEW, today(), userId));
 		auditService.record(ENTITY, saved.getId(), AuditAction.CREATED,
 				"Enquiry added: " + saved.getParentName() + ", " + saved.getVillage() + ", class "
 						+ saved.getClassSought() + " (" + saved.getSource() + ")",
@@ -97,7 +106,7 @@ public class EnquiryService {
 		// Check a copy first. Changing the saved object before the check would make the database complain (a unique
 		// index) before we can answer with a clear 409.
 		Enquiry candidate = new Enquiry(null);
-		candidate.setSessionName(enquiry.getSessionName());
+		candidate.setSessionId(enquiry.getSessionId());
 		candidate.setStatus(enquiry.getStatus());
 		apply(candidate, request);
 		if (candidate.getStatus().isOpen()) {
@@ -126,25 +135,26 @@ public class EnquiryService {
 			.filter(java.util.Objects::nonNull)
 			.collect(java.util.stream.Collectors.toSet()));
 		return rows.stream()
-			.map(f -> new FollowUpResponse(f.getId(), f.getNote(), f.getNextActionOn(),
-					f.getCreatedAt().atZone(clock.getZone()).toOffsetDateTime(),
+			.map(f -> new FollowUpResponse(f.getId(), f.getHappenedOn(), f.getFollowType(), f.getNote(),
+					f.getNextType(), f.getNextOn(), f.getCreatedAt().atZone(clock.getZone()).toOffsetDateTime(),
 					(f.getCreatedBy() == null) ? null : names.get(f.getCreatedBy())))
 			.toList();
 	}
 
 	/**
-	 * Moves an enquiry to another stage (rule 3, see {@link EnquiryTransitions}). LOST needs a reason. Opening a LOST
-	 * enquiry again (to CONTACTED) clears the reason, and is refused when another open enquiry has the same phone and
-	 * class.
+	 * Moves an enquiry to another stage (rule 3, see {@link EnquiryTransitions}). LOST needs a reason. Opening a
+	 * LOST enquiry again goes back to exactly the stage it was lost from, and is refused when another open
+	 * enquiry has the same phone and class.
 	 *
 	 * @throws ApiException 404 NOT_FOUND, 400 VALIDATION (no reason, or ADMITTED by hand), 409 STATUS_CHANGE_NOT_ALLOWED,
 	 * 409 ENQUIRY_EXISTS
 	 */
 	@Transactional
-	public EnquiryResponse changeStatus(Long id, StatusRequest request) {
+	public EnquiryResponse changeStatus(Long id, StatusRequest request, Long userId) {
 		Enquiry enquiry = find(id);
+		EnquiryStatus from = enquiry.getStatus();
 		EnquiryStatus to = request.status();
-		EnquiryTransitions.Move move = EnquiryTransitions.check(enquiry.getStatus(), to);
+		EnquiryTransitions.Move move = EnquiryTransitions.check(from, to);
 		switch (move) {
 			case UNCHANGED -> {
 				return respond(enquiry);
@@ -152,26 +162,38 @@ public class EnquiryService {
 			case ADMITTED_BY_HAND -> throw ApiException.validation("status",
 					"ADMITTED is set only by an admission made from this enquiry");
 			case NOT_ALLOWED -> throw new ApiException(HttpStatus.CONFLICT, "STATUS_CHANGE_NOT_ALLOWED",
-					"An enquiry cannot go from " + enquiry.getStatus() + " to " + to + ".");
+					"An enquiry cannot go from " + from + " to " + to + ".");
 			case ALLOWED -> {
 			}
 		}
-		String reason = (request.lostReason() == null) ? null : request.lostReason().strip();
-		if (to == EnquiryStatus.LOST && (reason == null || reason.isEmpty())) {
-			throw ApiException.validation("lostReason", "is needed when the enquiry is lost");
+		if (to == EnquiryStatus.LOST) {
+			if (request.lostReason() == null) {
+				throw ApiException.validation("lostReason", "is needed when the enquiry is lost");
+			}
+			enquiry.setStatusBeforeLost(from);
+			enquiry.setLostReason(request.lostReason());
+			enquiry.setLostNote(NameKeys.tidy(request.lostNote()));
 		}
-		if (enquiry.getStatus() == EnquiryStatus.LOST) {
+		else if (from == EnquiryStatus.LOST) {
+			if (!to.equals(enquiry.getStatusBeforeLost())) {
+				throw new ApiException(HttpStatus.CONFLICT, "STATUS_CHANGE_NOT_ALLOWED",
+						"A lost enquiry can only be opened again to " + enquiry.getStatusBeforeLost() + ".");
+			}
 			// Opening again: no other open enquiry may have the same phone and class.
 			enquiries.findOpen(enquiry.getPhone(), enquiry.getClassSought()).ifPresent(other -> {
 				throw twin(other.getId());
 			});
+			enquiry.setStatusBeforeLost(null);
+			enquiry.setLostReason(null);
+			enquiry.setLostNote(null);
 		}
-		EnquiryStatus from = enquiry.getStatus();
 		enquiry.setStatus(to);
-		enquiry.setLostReason((to == EnquiryStatus.LOST) ? NameKeys.tidy(reason) : null);
 		Enquiry saved = save(enquiry);
+		stages.save(new EnquiryStage(id, to, today(), userId));
+		String lostText = (saved.getLostNote() != null) ? saved.getLostNote()
+				: (saved.getLostReason() != null) ? saved.getLostReason().name() : null;
 		auditService.record(ENTITY, id, AuditAction.UPDATED,
-				"Status changed from " + from + " to " + to + ((to == EnquiryStatus.LOST) ? ": " + saved.getLostReason() : ""),
+				"Status changed from " + from + " to " + to + ((to == EnquiryStatus.LOST) ? ": " + lostText : ""),
 				details("from", from.name(), "to", to.name()));
 		return respond(saved);
 	}
@@ -191,17 +213,21 @@ public class EnquiryService {
 		if (note.isEmpty()) {
 			throw ApiException.validation("note", "must not be blank");
 		}
-		if (request.nextActionOn() != null && request.nextActionOn().isBefore(today())) {
-			throw ApiException.validation("nextActionOn", "cannot be in the past");
+		if (request.nextOn() != null && request.nextOn().isBefore(today())) {
+			throw ApiException.validation("nextOn", "cannot be in the past");
 		}
-		followUps.save(new EnquiryFollowUp(id, note, request.nextActionOn(), userId));
+		LocalDate happenedOn = (request.happenedOn() != null) ? request.happenedOn() : today();
+		followUps.save(new EnquiryFollowUp(id, happenedOn, request.followType(), note, request.nextType(),
+				request.nextOn(), userId));
 		if (enquiry.getStatus().isOpen()) {
-			enquiry.setNextFollowUpOn(request.nextActionOn());
+			enquiry.setNextFollowUpOn(request.nextOn());
+			enquiry.setNextFollowUpType(request.nextType());
+			save(enquiry);
 		}
 		auditService.record(ENTITY, id, AuditAction.UPDATED,
-				"Follow-up added: " + shorten(note) + ((request.nextActionOn() != null)
-						? ", next " + DayText.on(request.nextActionOn()) : ", no next date"),
-				details("nextActionOn", (request.nextActionOn() != null) ? request.nextActionOn().toString() : null));
+				"Follow-up added: " + shorten(note) + ((request.nextOn() != null)
+						? ", next " + DayText.on(request.nextOn()) : ", no next date"),
+				details("nextOn", (request.nextOn() != null) ? request.nextOn().toString() : null));
 		return get(id);
 	}
 
@@ -288,13 +314,16 @@ public class EnquiryService {
 	 * may be admitted too (the parent came back).
 	 */
 	@Transactional
-	public void markAdmitted(Long enquiryId, Long studentId) {
+	public void markAdmitted(Long enquiryId, Long studentId, Long userId) {
 		requireAdmittable(enquiryId);
 		Enquiry enquiry = find(enquiryId);
+		enquiry.setStatusBeforeLost(null);
 		enquiry.setStatus(EnquiryStatus.ADMITTED);
 		enquiry.setLostReason(null);
+		enquiry.setLostNote(null);
 		enquiry.setAdmittedStudentId(studentId);
 		enquiries.saveAndFlush(enquiry);
+		stages.save(new EnquiryStage(enquiryId, EnquiryStatus.ADMITTED, today(), userId));
 		auditService.record(ENTITY, enquiryId, AuditAction.UPDATED, "Admitted: the child was admitted from this enquiry",
 				details("studentId", String.valueOf(studentId)));
 	}
@@ -414,9 +443,12 @@ public class EnquiryService {
 		if (request.referredByGuardianId() != null && !guardianService.exists(request.referredByGuardianId())) {
 			throw ApiException.validation("referredByGuardianId", "does not exist");
 		}
-		String session = blankToNull(request.sessionName());
-		if (session != null && !session.matches("\\d{4}-\\d{2}")) {
-			throw ApiException.validation("sessionName", "must look like 2027-28");
+		Long sessionId = request.sessionId();
+		if (sessionId == null) {
+			sessionId = sessionService.nextOrCurrent().getId();
+		}
+		else if (!sessionService.exists(sessionId)) {
+			throw ApiException.validation("sessionId", "does not exist");
 		}
 		enquiry.setParentName(parentName);
 		enquiry.setPhone(PhoneNumbers.normalize(request.phone()));
@@ -430,10 +462,11 @@ public class EnquiryService {
 		enquiry.setReferredBy(referredBy);
 		enquiry.setReferredByGuardianId(request.referredByGuardianId());
 		enquiry.setNeedsBus((request.needsBus() != null) ? request.needsBus() : NeedsBus.UNKNOWN);
+		enquiry.setNeedsBusFrom(blankToNull(request.needsBusFrom()));
 		enquiry.setNextFollowUpOn(request.nextFollowUpOn());
+		enquiry.setNextFollowUpType(request.nextFollowUpType());
 		enquiry.setNote((request.note() == null || request.note().isBlank()) ? null : request.note().strip());
-		enquiry.setSessionName((session != null) ? session
-				: (enquiry.getSessionName() != null) ? enquiry.getSessionName() : SessionNames.nextSession(today()));
+		enquiry.setSessionId(sessionId);
 	}
 
 	private static String blankToNull(String text) {

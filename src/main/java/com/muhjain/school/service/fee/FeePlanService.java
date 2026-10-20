@@ -1,6 +1,7 @@
 package com.muhjain.school.service.fee;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -10,7 +11,6 @@ import java.util.Optional;
 import com.muhjain.school.model.enums.AuditAction;
 import com.muhjain.school.service.audit.AuditService;
 import com.muhjain.school.exception.ApiException;
-import com.muhjain.school.util.DayText;
 import com.muhjain.school.model.dto.response.StudentBasics;
 import com.muhjain.school.service.student.StudentQueryService;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -24,31 +24,28 @@ import com.muhjain.school.model.entity.AcademicSession;
 import com.muhjain.school.model.entity.FeeDue;
 import com.muhjain.school.model.entity.FeePlan;
 import com.muhjain.school.model.enums.DiscountReason;
-import com.muhjain.school.model.enums.FeeHead;
-import com.muhjain.school.model.repository.FeeDueRepository;
 import com.muhjain.school.model.repository.FeePlanRepository;
-import com.muhjain.school.util.DueScheduleBuilder;
 import com.muhjain.school.util.MoneyText;
 
 /**
  * The fee plan of a child (rules 3 to 7 of phase 7).
  * <ul>
- * <li>One plan per child per session.</li>
+ * <li>A plan is a timeline: each change adds a new, time-sliced row from a month on. Old rows are never
+ * changed (db-design, docs/08-decisions.md).</li>
  * <li>The discount comes off the school fee, and a discount above 0 needs a reason.</li>
- * <li>Changing a plan deletes its dues and makes them again from the plan. Payments are never touched.</li>
+ * <li>Changing a plan rewrites only its UNPAID months (never the ones already paid).</li>
  * </ul>
- * Example: school ₹30,000, bus ₹8,800, QUARTERLY, child joined 1 Apr → 8 dues. The clerk then gives a ₹2,000
- * sibling discount. The 8 dues are deleted and made again (school 4 × ₹7,000, bus 4 × ₹2,200). The ₹9,700 the family
- * paid on 1 Apr is still there.
+ * Example: Ishaan, school 2500 a month from April. In January a sibling joins: a new row from January,
+ * discount 250. February and March (unpaid) are rewritten; April to December (paid) are untouched.
  */
 @Service
 public class FeePlanService {
 
 	private final FeePlanRepository plans;
 
-	private final FeeDueRepository dues;
+	private final FeeDueGenerator dueGenerator;
 
-	private final SessionService sessions;
+	private final AcademicSessionService sessions;
 
 	private final StudentQueryService students;
 
@@ -56,18 +53,22 @@ public class FeePlanService {
 
 	private final ClassFeeService classFees;
 
-	public FeePlanService(FeePlanRepository plans, FeeDueRepository dues, SessionService sessions,
-			StudentQueryService students, AuditService audit, ClassFeeService classFees) {
+	private final Clock clock;
+
+	public FeePlanService(FeePlanRepository plans, FeeDueGenerator dueGenerator, AcademicSessionService sessions,
+			StudentQueryService students, AuditService audit, ClassFeeService classFees, Clock clock) {
 		this.classFees = classFees;
 		this.plans = plans;
-		this.dues = dues;
+		this.dueGenerator = dueGenerator;
 		this.sessions = sessions;
 		this.students = students;
 		this.audit = audit;
+		this.clock = clock;
 	}
 
 	/**
-	 * Creates or changes the plan of the current session.
+	 * Creates or changes the plan of the current session. A new time slice starts from the first day of the
+	 * current month (or the child's joining month, for the first plan ever).
 	 *
 	 * @throws ApiException 404 NOT_FOUND (child), 400 VALIDATION (discount, joining day), 409 TRY_AGAIN
 	 */
@@ -76,7 +77,6 @@ public class FeePlanService {
 		StudentBasics student = requireStudent(studentId);
 		AcademicSession session = sessions.current();
 		BigDecimal schoolFee = request.schoolFee();
-		BigDecimal busFee = (request.busFee() != null) ? request.busFee() : BigDecimal.ZERO;
 		BigDecimal discount = (request.discount() != null) ? request.discount() : BigDecimal.ZERO;
 		DiscountReason reason = (request.discountReason() != null) ? request.discountReason() : DiscountReason.NONE;
 		if (discount.compareTo(schoolFee) > 0) {
@@ -89,28 +89,32 @@ public class FeePlanService {
 			reason = DiscountReason.NONE;
 		}
 
-		Optional<FeePlan> existing = plans.lockByStudentIdAndSessionId(studentId, session.getId());
-		FeePlan plan = existing.orElseGet(() -> new FeePlan(studentId, session.getId(), userId));
+		Optional<FeePlan> existing = plans.lockNewestByStudentIdAndSessionId(studentId, session.getId());
+		LocalDate today = LocalDate.now(clock);
+		LocalDate schoolStart = student.joinedOn().isAfter(session.getStartsOn()) ? student.joinedOn()
+				: session.getStartsOn();
+		LocalDate fromMonth = existing.isEmpty() ? schoolStart.withDayOfMonth(1) : today.withDayOfMonth(1);
+		if (fromMonth.isAfter(session.getEndsOn())) {
+			throw ApiException.validation("studentId", "joined after the end of the school year " + session.getName());
+		}
 		String before = existing.map(FeePlanService::describe).orElse(null);
-		plan.setSchoolFee(schoolFee);
-		plan.setBusFee(busFee);
-		plan.setDiscount(discount);
+		FeePlan plan = new FeePlan(studentId, session.getId(), fromMonth, schoolFee, true, userId);
+		plan.setDiscountPerMonth(discount);
 		plan.setDiscountReason(reason);
 		plan.setPayFrequency(request.payFrequency());
 		try {
 			plan = plans.saveAndFlush(plan);
 		}
 		catch (DataIntegrityViolationException e) {
-			// Two clerks made the first plan of the same child at the same moment.
+			// Two clerks made the first plan of the same child at the same moment, or saved twice in the same month.
 			throw new ApiException(HttpStatus.CONFLICT, "TRY_AGAIN", "Someone saved this plan just now. Please try again.");
 		}
-		List<FeeDue> made = remakeDues(plan, session, student);
+		List<FeeDue> made = dueGenerator.regenerate(student, session);
 
 		String after = describe(plan);
 		Map<String, Object> details = new LinkedHashMap<>();
 		details.put("sessionName", session.getName());
 		details.put("schoolFee", schoolFee);
-		details.put("busFee", busFee);
 		details.put("discount", discount);
 		details.put("discountReason", reason.name());
 		details.put("payFrequency", plan.getPayFrequency().name());
@@ -120,14 +124,13 @@ public class FeePlanService {
 	}
 
 	/**
-	 * The plan of a new admission (rule 17). The school fee comes from the class fee when the clerk left it empty,
-	 * the bus fee from the bus part of the admission. Same checks and same dues as {@link #save}.
+	 * The plan of a new admission (rule 17). The school fee comes from the class fee when the clerk left it empty.
+	 * The bus fee is not set here any more: it lives on the bus part of the admission (transport_enrolment).
 	 *
 	 * @throws ApiException 400 VALIDATION (no school fee and no standard fee for the class)
 	 */
 	@Transactional
-	public FeePlanResponse saveAtAdmission(Long studentId, String className, AdmissionFeeRequest fee,
-			BigDecimal busFeeOfBus, Long userId) {
+	public FeePlanResponse saveAtAdmission(Long studentId, String className, AdmissionFeeRequest fee, Long userId) {
 		AcademicSession session = sessions.current();
 		BigDecimal schoolFee = fee.schoolFee();
 		if (schoolFee == null) {
@@ -135,44 +138,28 @@ public class FeePlanService {
 				.orElseThrow(() -> ApiException.validation("fee.schoolFee",
 						"is needed: no standard fee is set for class " + className));
 		}
-		BigDecimal busFee = (fee.busFee() != null) ? fee.busFee() : busFeeOfBus;
-		return save(studentId,
-				new FeePlanRequest(schoolFee, busFee, fee.discount(), fee.discountReason(), fee.payFrequency()), userId);
+		return save(studentId, new FeePlanRequest(schoolFee, fee.discount(), fee.discountReason(),
+				fee.payFrequency()), userId);
 	}
 
 	/**
-	 * Rule 8: the bus starts later. The amount is added to the plan's bus fee, and BUS dues are added from the start
-	 * day, split over the standard due dates after it. Nothing is deleted and no school due is touched.
-	 * Example: bus starts 2 Nov, ₹4,000, QUARTERLY → BUS ₹2,000 on 2 Nov and ₹2,000 on 1 Jan.
-	 * <p>
-	 * Does nothing when there is no amount, when the child has no plan yet (the plan will carry the bus fee when it
-	 * is made), or when the bus starts after the end of the current session.
+	 * Rebuilds the unpaid months of this child's current-session plan. Called whenever the bus starts, changes
+	 * or stops, since the bus fee of unpaid months comes from {@code transport_enrolment}. Does nothing when
+	 * the child has no plan yet (the plan will read the bus fee when it is made) or there is no current session.
 	 */
 	@Transactional
-	public void addBusFee(Long studentId, BigDecimal amount, LocalDate startsOn, Long userId) {
-		if (amount == null || amount.signum() <= 0) {
+	public void regenerateDues(Long studentId) {
+		AcademicSession session;
+		try {
+			session = sessions.current();
+		}
+		catch (ApiException ex) {
 			return;
 		}
-		AcademicSession session = sessions.current();
-		if (startsOn.isAfter(session.getEndsOn())) {
+		if (plans.findByStudentIdAndSessionIdOrderByFromMonthAsc(studentId, session.getId()).isEmpty()) {
 			return;
 		}
-		Optional<FeePlan> found = plans.lockByStudentIdAndSessionId(studentId, session.getId());
-		if (found.isEmpty()) {
-			return;
-		}
-		FeePlan plan = found.get();
-		plan.setBusFee(plan.getBusFee().add(amount));
-		plans.saveAndFlush(plan);
-		dues.saveAll(DueScheduleBuilder
-			.build(FeeHead.BUS, amount, plan.getPayFrequency(), session.getStartsOn(), session.getEndsOn(), startsOn)
-			.stream()
-			.map(d -> new FeeDue(plan.getId(), d.head(), d.dueOn(), d.amount()))
-			.toList());
-		audit.record("STUDENT", studentId, AuditAction.UPDATED, "Bus fee " + MoneyText.of(amount)
-				+ " added to the fee plan from " + DayText.on(startsOn) + ". Bus fee is now "
-				+ MoneyText.of(plan.getBusFee()) + ".",
-				Map.of("busFeeAdded", amount, "busFee", plan.getBusFee(), "from", startsOn.toString()));
+		students.basics(studentId).ifPresent(student -> dueGenerator.regenerate(student, session));
 	}
 
 	/** True when any child has a plan in the current session. The dev data uses it to load once. */
@@ -181,34 +168,10 @@ public class FeePlanService {
 		return !plans.findBySessionId(sessions.current().getId()).isEmpty();
 	}
 
-	/** The plan of the current session, if the child has one. */
+	/** The newest slice of the plan of the current session, if the child has one. */
 	@Transactional(readOnly = true)
 	public Optional<FeePlan> currentPlan(Long studentId) {
-		return plans.findByStudentIdAndSessionId(studentId, sessions.current().getId());
-	}
-
-	// Deletes the old dues and makes them again. The school dues start on the joining day (or the session start).
-	// The bus dues start on the first day of the child's bus in the session, or on the joining day if no bus row yet.
-	private List<FeeDue> remakeDues(FeePlan plan, AcademicSession session, StudentBasics student) {
-		dues.deleteByFeePlanId(plan.getId());
-		LocalDate schoolFrom = student.joinedOn().isAfter(session.getStartsOn()) ? student.joinedOn()
-				: session.getStartsOn();
-		if (schoolFrom.isAfter(session.getEndsOn())) {
-			throw ApiException.validation("studentId", "joined after the end of the school year " + session.getName());
-		}
-		LocalDate busFrom = students.firstBusDay(student.id(), session.getStartsOn(), session.getEndsOn())
-			.map(day -> day.isBefore(schoolFrom) ? schoolFrom : day)
-			.orElse(schoolFrom);
-		List<DueScheduleBuilder.Due> built = new java.util.ArrayList<>(DueScheduleBuilder.build(FeeHead.SCHOOL,
-				plan.getSchoolFee().subtract(plan.getDiscount()), plan.getPayFrequency(), session.getStartsOn(),
-				session.getEndsOn(), schoolFrom));
-		built.addAll(DueScheduleBuilder.build(FeeHead.BUS, plan.getBusFee(), plan.getPayFrequency(),
-				session.getStartsOn(), session.getEndsOn(), busFrom));
-		built.sort(java.util.Comparator.comparing(DueScheduleBuilder.Due::dueOn)
-			.thenComparing(DueScheduleBuilder.Due::head));
-		return dues.saveAll(built.stream()
-			.map(d -> new FeeDue(plan.getId(), d.head(), d.dueOn(), d.amount()))
-			.toList());
+		return plans.findFirstByStudentIdAndSessionIdOrderByFromMonthDesc(studentId, sessions.current().getId());
 	}
 
 	private StudentBasics requireStudent(Long studentId) {
@@ -217,11 +180,11 @@ public class FeePlanService {
 	}
 
 	private static String describe(FeePlan plan) {
-		String text = "school " + MoneyText.of(plan.getSchoolFee()) + ", bus " + MoneyText.of(plan.getBusFee());
-		if (plan.getDiscount().signum() > 0) {
-			text += ", discount " + MoneyText.of(plan.getDiscount()) + " (" + plan.getDiscountReason() + ")";
+		String text = "school " + MoneyText.of(plan.getSchoolFeePerMonth()) + " a month";
+		if (plan.getDiscountPerMonth().signum() > 0) {
+			text += ", discount " + MoneyText.of(plan.getDiscountPerMonth()) + " (" + plan.getDiscountReason() + ")";
 		}
-		return text + ", " + plan.getPayFrequency();
+		return text + ", from " + plan.getFromMonth() + ", " + plan.getPayFrequency();
 	}
 
 }

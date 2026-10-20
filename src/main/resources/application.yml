@@ -28,11 +28,14 @@ app:
   zone: Asia/Kolkata
   jwt:
     secret: ${APP_JWT_SECRET}      # at least 32 bytes
-    ttl: 30d
+  session:
+    idle-timeout: 15m              # slides forward on every request; an active login never times out mid-use
+    max-lifetime: 12h              # hard cap from login, no matter how active: one school day
+    hash-secret: ${APP_SESSION_SECRET}
   otp:
     length: 6
     ttl: 5m
-    max-attempts: 5
+    max-attempts: 3
     resend-after: 60s
     max-per-hour: 5
     max-per-ip-per-hour: 20
@@ -74,6 +77,9 @@ app:
   jwt:
     # DEV ONLY. Not secret. prod has no default and needs APP_JWT_SECRET.
     secret: ${APP_JWT_SECRET:dev-only-jwt-secret-not-for-production-0001}
+  session:
+    # DEV ONLY. Not secret. prod has no default and needs APP_SESSION_SECRET.
+    hash-secret: ${APP_SESSION_SECRET:dev-only-session-secret-not-for-production-01}
   otp:
     channels: log
     # DEV ONLY. Not secret. prod has no default and needs APP_OTP_SECRET.
@@ -96,6 +102,9 @@ app:
   jwt:
     # TEST ONLY. Not secret. prod has no default and needs APP_JWT_SECRET.
     secret: ${APP_JWT_SECRET:dev-only-jwt-secret-not-for-production-0001}
+  session:
+    # TEST ONLY. Not secret. prod has no default and needs APP_SESSION_SECRET.
+    hash-secret: ${APP_SESSION_SECRET:dev-only-session-secret-not-for-production-01}
   otp:
     channels: log
     # TEST ONLY. Not secret. prod has no default and needs APP_OTP_SECRET.

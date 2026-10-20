@@ -192,9 +192,9 @@ public class StudentImportService {
 					: "Class '" + rawClass + "' must be Nursery, LKG, UKG or 1 to 12");
 		}
 
-		String section = value(row, columns, "section");
-		if (section.length() > 4) {
-			problems.add("Section is longer than 4 letters");
+		String section = value(row, columns, "section").strip().toUpperCase(Locale.ROOT);
+		if (!section.isEmpty() && !section.equals("A") && !section.equals("B") && !section.equals("C")) {
+			problems.add("Section '" + section + "' must be A, B or C");
 		}
 
 		String village = NameKeys.tidy(value(row, columns, "village"));

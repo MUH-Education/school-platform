@@ -69,10 +69,12 @@ abstract class EnquiryTestBase extends AbstractIntegrationTest {
 
 	/** Saves an enquiry straight into the database and returns its id. */
 	long addEnquiry(String phone, String cls, String status, String village, String nextFollowUp) {
+		long sessionId = jdbc.queryForObject("select id from academic_session where name = '2026-27'", Long.class);
 		return jdbc.queryForObject("insert into enquiry (parent_name, phone, village, class_sought, source, status, "
-				+ "next_follow_up_on, session_name, lost_reason) values ('Parent', ?, ?, ?, 'WALK_IN', ?, ?::date, "
-				+ "'2027-28', case when ? = 'LOST' then 'far away' end) returning id", Long.class, phone, village, cls,
-				status, nextFollowUp, status);
+				+ "next_follow_up_on, session_id, lost_reason, status_before_lost, created_by) values ('Parent', ?, "
+				+ "?, ?, 'WALK_IN', ?, ?::date, ?, case when ? = 'LOST' then 'OTHER' end, "
+				+ "case when ? = 'LOST' then 'NEW' end, ?) returning id", Long.class, phone, village, cls, status,
+				nextFollowUp, sessionId, status, status, anyUserId());
 	}
 
 	long idOf(org.springframework.test.web.servlet.ResultActions result) throws Exception {

@@ -86,6 +86,7 @@ class BusStatusApiTest extends TripTestBase {
 	void withoutPhaseItIsMorningBeforeNoonAndEveningAfter() throws Exception {
 		getAs(officeToken, "/api/v1/bus-status").andExpect(jsonPath("$.phase").value("MORNING"));
 		clock.advance(java.time.Duration.ofHours(5)); // 12:48
+		refreshTokens();
 		getAs(officeToken, "/api/v1/bus-status").andExpect(jsonPath("$.phase").value("EVENING"));
 		getAs(officeToken, "/api/v1/bus-status?phase=MORNING").andExpect(jsonPath("$.phase").value("MORNING"));
 	}
@@ -110,6 +111,7 @@ class BusStatusApiTest extends TripTestBase {
 	@Test
 	void eveningStatusFollowsBoardingAndHomeTaps() throws Exception {
 		clock.advance(java.time.Duration.ofHours(7)); // 14:48
+		refreshTokens();
 		getAs(officeToken, "/api/v1/bus-status?phase=EVENING")
 			.andExpect(jsonPath("$.routes[?(@.name=='Route 4')].state").value("NOT_STARTED"));
 		tap(aryan, "BOARDED_EVENING", "DONE", "14:40:00");

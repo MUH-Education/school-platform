@@ -16,6 +16,8 @@ public interface StudentGuardianRepository extends JpaRepository<StudentGuardian
 
 	Optional<StudentGuardian> findByStudentIdAndGuardianId(Long studentId, Long guardianId);
 
+	Optional<StudentGuardian> findByStudentIdAndPrimaryTrue(Long studentId);
+
 	/** How many children use this phone. Example: Aryan and Siya share one → 2. */
 	long countByGuardianId(Long guardianId);
 

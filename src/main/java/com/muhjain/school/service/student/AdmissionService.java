@@ -17,6 +17,7 @@ import com.muhjain.school.model.dto.response.DueResponse;
 import com.muhjain.school.model.dto.response.FeePlanResponse;
 import com.muhjain.school.service.fee.FeePlanService;
 import com.muhjain.school.service.fee.PaymentService;
+import com.muhjain.school.service.fee.AcademicSessionService;
 import com.muhjain.school.model.dto.response.ReceiptResponse;
 import com.muhjain.school.exception.ApiException;
 import com.muhjain.school.util.NameKeys;
@@ -29,6 +30,7 @@ import com.muhjain.school.model.dto.request.GuardianRequest;
 import com.muhjain.school.model.dto.response.GuardianResponse;
 import com.muhjain.school.model.dto.response.TransportWarning;
 import com.muhjain.school.model.entity.Student;
+import com.muhjain.school.model.enums.TransportReason;
 import com.muhjain.school.model.repository.StudentRepository;
 import com.muhjain.school.util.ClassNames;
 
@@ -59,12 +61,14 @@ public class AdmissionService {
 
 	private final PaymentService paymentService;
 
+	private final AcademicSessionService sessionService;
+
 	private final Clock clock;
 
 	public AdmissionService(StudentRepository students, AdmissionNumberService numbers,
 			GuardianService guardianService, TransportEnrolmentService transportService, AuditService auditService,
 			EnquiryService enquiryService, FeePlanService feePlanService, PaymentService paymentService,
-			Clock clock) {
+			AcademicSessionService sessionService, Clock clock) {
 		this.feePlanService = feePlanService;
 		this.paymentService = paymentService;
 		this.enquiryService = enquiryService;
@@ -73,6 +77,7 @@ public class AdmissionService {
 		this.guardianService = guardianService;
 		this.transportService = transportService;
 		this.auditService = auditService;
+		this.sessionService = sessionService;
 		this.clock = clock;
 	}
 
@@ -105,9 +110,11 @@ public class AdmissionService {
 
 		// The number is taken last among the checks above, so a bad request never touches the counter.
 		String admissionNo = numbers.next();
-		Student student = students.save(new Student(admissionNo, NameKeys.tidy(request.name()), request.dob(),
-				request.gender(), className, StudentService.tidySection(request.section()), NameKeys.tidy(request.village()),
-				StudentService.tidyOrNull(request.address()), request.fatherOccupation(), joinedOn, userId));
+		Student newStudent = new Student(admissionNo, NameKeys.tidy(request.name()), request.dob(), request.gender(),
+				className, StudentService.tidySection(request.section()), NameKeys.tidy(request.village()),
+				StudentService.tidyOrNull(request.address()), request.fatherOccupation(), joinedOn, userId);
+		newStudent.setAdmissionSessionId(sessionService.current().getId());
+		Student student = students.save(newStudent);
 
 		Set<String> linked = new HashSet<>();
 		for (GuardianRequest guardian : typed) {
@@ -126,8 +133,14 @@ public class AdmissionService {
 		if (request.bus() != null) {
 			AdmissionBus bus = request.bus();
 			LocalDate from = (bus.fromDate() != null) ? bus.fromDate() : joinedOn;
-			warning = transportService.start(student.getId(), bus.routeId(), bus.stopId(), from, bus.busFee(), userId)
+			warning = transportService
+				.start(student.getId(), bus.routeId(), bus.stopId(), from, bus.busFee(), TransportReason.ADMISSION,
+						null, userId)
 				.warning();
+		}
+		else {
+			// db-design: "no bus" is itself a period, so the history has a row from day one either way.
+			transportService.openWithNoBus(student.getId(), joinedOn, userId);
 		}
 
 		// Rule 17 of Phase 7: the fee plan and the first payment, in this same transaction. The plan is made after
@@ -135,10 +148,8 @@ public class AdmissionService {
 		String receiptNo = null;
 		BigDecimal stillToPay = null;
 		if (request.fee() != null) {
-			BigDecimal busFee = (request.bus() != null) ? request.bus().busFee() : null;
-			FeePlanResponse plan = feePlanService.saveAtAdmission(student.getId(), className, request.fee(), busFee,
-					userId);
-			stillToPay = plan.dues().stream().map(DueResponse::amount).reduce(BigDecimal.ZERO, BigDecimal::add);
+			FeePlanResponse plan = feePlanService.saveAtAdmission(student.getId(), className, request.fee(), userId);
+			stillToPay = plan.dues().stream().map(DueResponse::total).reduce(BigDecimal.ZERO, BigDecimal::add);
 			if (request.firstPayment() != null) {
 				ReceiptResponse receipt = paymentService.record(student.getId(), request.firstPayment(), userId);
 				receiptNo = receipt.receiptNo();
@@ -148,7 +159,7 @@ public class AdmissionService {
 
 		if (request.enquiryId() != null) {
 			// Rule 8 of Phase 6: the enquiry becomes ADMITTED in this same transaction.
-			enquiryService.markAdmitted(request.enquiryId(), student.getId());
+			enquiryService.markAdmitted(request.enquiryId(), student.getId(), userId);
 		}
 
 		auditAdmission(student, request.siblingStudentId(), linked.size(), request.bus() != null);

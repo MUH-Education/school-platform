@@ -125,7 +125,7 @@ class EndpointSecurityTest extends AbstractIntegrationTest {
 				Arguments.of("GET", "/api/v1/messages", null, Role.ATTENDANT),
 				Arguments.of("GET", "/api/v1/messages/summary", null, Role.ATTENDANT),
 				Arguments.of("GET", "/api/v1/message-templates", null, Role.ATTENDANT),
-				Arguments.of("PUT", "/api/v1/message-templates/REACHED_SCHOOL_M", TEMPLATE_BODY, Role.OFFICE_ADMIN),
+				Arguments.of("PUT", "/api/v1/message-templates/1", TEMPLATE_BODY, Role.OFFICE_ADMIN),
 				// Phase 6: enquiries need ENQUIRIES_VIEW / ENQUIRIES_EDIT (not the transport in-charge); the prefill
 				// needs ADMISSIONS_CREATE (not the transport in-charge).
 				Arguments.of("GET", "/api/v1/enquiries", null, Role.TRANSPORT_INCHARGE),

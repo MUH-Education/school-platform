@@ -248,6 +248,22 @@ One route in `GET /bus-status`:
 | `GET /message-templates` | `MESSAGES_VIEW` | The templates |
 | `PUT /message-templates/{code}` | `SETTINGS_EDIT` | Change text or provider template id |
 
+## Marketing — Phase 11
+
+| Method and URL | Permission | What it does |
+|---|---|---|
+| `GET /marketing-templates` | `MARKETING_VIEW` | List templates (Marketing + Notice), with WhatsApp approval status |
+| `POST /marketing-templates` | `MARKETING_EDIT` | New template (name, kind, language, text, poster, buttons) |
+| `PUT /marketing-templates/{id}` | `MARKETING_EDIT` | Change a template. Sends it to WhatsApp for checking again |
+| `GET /broadcasts` | `MARKETING_VIEW` | List of broadcasts: sent, scheduled, cancelled, with counts |
+| `POST /broadcasts` | `MARKETING_SEND` | Step 1–2: template + who gets it. Answers the family count before sending |
+| `POST /broadcasts/{id}/test` | `MARKETING_SEND` | Send a test copy to the caller's own phone |
+| `POST /broadcasts/{id}/send` | `MARKETING_SEND` | Step 3: send now, or schedule for later |
+| `DELETE /broadcasts/{id}` | `MARKETING_SEND` | Cancel a `DRAFT`/`SCHEDULED` broadcast |
+| `GET /broadcasts/{id}/report` | `MARKETING_VIEW` | Delivered/read/tapped counts, replies, who said stop |
+| `GET /message-stops` | `MARKETING_VIEW` | Families who said stop to marketing messages |
+| `DELETE /message-stops/{guardianId}` | `MARKETING_SEND` | Take a family off the stop list (they asked again) |
+
 ## Enquiries — Phase 6
 
 | Method and URL | Permission | What it does |

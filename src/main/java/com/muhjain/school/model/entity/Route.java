@@ -24,11 +24,12 @@ public class Route extends BaseEntity {
 	@Column(nullable = false)
 	private boolean active = true;
 
-	@Column(name = "school_due_morning")
-	private LocalTime schoolDueMorning;
+	// When the route is due at school: morning arrival, and evening leave to start the drop-off.
+	@Column(name = "school_arrival_time", nullable = false)
+	private LocalTime schoolArrivalTime = LocalTime.of(8, 10);
 
-	@Column(name = "school_due_evening")
-	private LocalTime schoolDueEvening;
+	@Column(name = "school_leave_time", nullable = false)
+	private LocalTime schoolLeaveTime = LocalTime.of(14, 40);
 
 	protected Route() {
 	}
@@ -62,20 +63,20 @@ public class Route extends BaseEntity {
 		this.active = active;
 	}
 
-	public LocalTime getSchoolDueMorning() {
-		return schoolDueMorning;
+	public LocalTime getSchoolArrivalTime() {
+		return schoolArrivalTime;
 	}
 
-	public void setSchoolDueMorning(LocalTime schoolDueMorning) {
-		this.schoolDueMorning = schoolDueMorning;
+	public void setSchoolArrivalTime(LocalTime schoolArrivalTime) {
+		this.schoolArrivalTime = schoolArrivalTime;
 	}
 
-	public LocalTime getSchoolDueEvening() {
-		return schoolDueEvening;
+	public LocalTime getSchoolLeaveTime() {
+		return schoolLeaveTime;
 	}
 
-	public void setSchoolDueEvening(LocalTime schoolDueEvening) {
-		this.schoolDueEvening = schoolDueEvening;
+	public void setSchoolLeaveTime(LocalTime schoolLeaveTime) {
+		this.schoolLeaveTime = schoolLeaveTime;
 	}
 
 }

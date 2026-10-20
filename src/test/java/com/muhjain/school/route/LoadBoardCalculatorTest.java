@@ -11,21 +11,23 @@ import com.muhjain.school.util.LoadBoardCalculator;
 
 /**
  * Rule 16 of docs/phases/phase-2-vehicles-staff-routes.md. No Spring, no database.
- * Settings in every example: 11 months, bus fee 8800 a year, 95 percent collected.
+ * Settings in every example: 11 months, 95 percent collected. The bus fee is no longer a flat yearly
+ * setting: each child pays 800 a month (8800 a year), added up per route.
  * Money is compared with {@code isEqualTo(new BigDecimal("..."))}, so the number of decimals counts too.
  */
 class LoadBoardCalculatorTest {
 
 	private static final int MONTHS = 11;
 
-	private static final BigDecimal FEE = new BigDecimal("8800");
+	private static final BigDecimal FEE_PER_MONTH = new BigDecimal("800");
 
 	private static final BigDecimal PCT = new BigDecimal("95");
 
 	private static final BigDecimal VAN_COST = new BigDecimal("30300.00");
 
 	private static LoadBoardCalculator.RouteLoad calc(Integer seats, BigDecimal monthlyCost, int children) {
-		return LoadBoardCalculator.route(seats, monthlyCost, children, MONTHS, FEE, PCT);
+		BigDecimal sumBusFeePerMonth = BigDecimal.valueOf(children).multiply(FEE_PER_MONTH);
+		return LoadBoardCalculator.route(seats, monthlyCost, children, MONTHS, sumBusFeePerMonth, PCT);
 	}
 
 	private static BigDecimal money(String text) {
@@ -61,7 +63,7 @@ class LoadBoardCalculatorTest {
 		assertThat(row.surplus()).isNull();
 		assertThat(row.overBy()).isZero();
 		assertThat(row.spare()).isZero();
-		// The children still pay their fee: 6 x 8800 x 95 / 100.
+		// The children still pay their fee: 6 x 800 a month x 11 months x 95 / 100.
 		assertThat(row.children()).isEqualTo(6);
 		assertThat(row.feeGot()).isEqualTo(money("50160.00"));
 	}
@@ -136,7 +138,8 @@ class LoadBoardCalculatorTest {
 
 	@Test
 	void settingsChangeTheMoney() {
-		// 10 months, fee 9000, 100 percent: yearly cost 303,000. Fee got 10 x 9000 = 90,000.
+		// 10 months, the route's children pay 9000 a month between them, 100 percent collected:
+		// yearly cost 303,000. Fee got 9000 x 10 months = 90,000.
 		LoadBoardCalculator.RouteLoad row = LoadBoardCalculator.route(14, VAN_COST, 10, 10, new BigDecimal("9000"),
 				new BigDecimal("100"));
 

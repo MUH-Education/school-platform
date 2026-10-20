@@ -21,6 +21,10 @@ public class RouteStop extends BaseEntity {
 	@Column(nullable = false, length = 80)
 	private String name;
 
+	// For the attendant app. Example: "जाखल" for "Jakhal".
+	@Column(name = "name_hindi", length = 80)
+	private String nameHindi;
+
 	// 1, 2, 3 in morning order. Set by the server from the order of the list (rule 14).
 	@Column(name = "seq_no", nullable = false)
 	private int seqNo;
@@ -30,6 +34,10 @@ public class RouteStop extends BaseEntity {
 
 	@Column(name = "evening_time")
 	private LocalTime eveningTime;
+
+	// A removed stop is set to false, not deleted: old bus rows still point at it.
+	@Column(nullable = false)
+	private boolean active = true;
 
 	protected RouteStop() {
 	}
@@ -54,6 +62,14 @@ public class RouteStop extends BaseEntity {
 		this.name = name;
 	}
 
+	public String getNameHindi() {
+		return nameHindi;
+	}
+
+	public void setNameHindi(String nameHindi) {
+		this.nameHindi = nameHindi;
+	}
+
 	public int getSeqNo() {
 		return seqNo;
 	}
@@ -76,6 +92,14 @@ public class RouteStop extends BaseEntity {
 
 	public void setEveningTime(LocalTime eveningTime) {
 		this.eveningTime = eveningTime;
+	}
+
+	public boolean isActive() {
+		return active;
+	}
+
+	public void setActive(boolean active) {
+		this.active = active;
 	}
 
 }

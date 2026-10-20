@@ -59,13 +59,19 @@ class VehicleRepositoryTest extends AbstractIntegrationTest {
 		assertThat(vehicles.existsByNameKey(NameKeys.key("Van 4"), saved.getId())).isFalse();
 	}
 
+	// db-design's unique column is case/space-sensitive (see docs/08-decisions.md): the database alone
+	// allows "hr23a1104" next to "HR 23 A 1104". VehicleService.create still refuses it first, through
+	// existsByRegistrationKey above - this only shows what the raw repository/database does.
 	@Test
-	void databaseRejectsTheSameRegistrationWithOtherSpacing() {
+	void databaseAllowsTheSameRegistrationWithOtherSpacingButRejectsAnExactRepeat() {
 		vehicles.saveAndFlush(van4());
-		Vehicle twin = new Vehicle("Van 9", "hr23a1104", VehicleType.SMALL_VAN, 14, BigDecimal.TEN,
+		Vehicle respaced = new Vehicle("Van 9", "hr23a1104", VehicleType.SMALL_VAN, 14, BigDecimal.TEN,
 				OwnedBy.SCHOOL);
+		assertThat(vehicles.saveAndFlush(respaced).getId()).isPositive();
 
-		assertThatThrownBy(() -> vehicles.saveAndFlush(twin)).isInstanceOf(DataIntegrityViolationException.class);
+		Vehicle exactTwin = new Vehicle("Van 10", "HR 23 A 1104", VehicleType.SMALL_VAN, 14, BigDecimal.TEN,
+				OwnedBy.SCHOOL);
+		assertThatThrownBy(() -> vehicles.saveAndFlush(exactTwin)).isInstanceOf(DataIntegrityViolationException.class);
 	}
 
 	@Test

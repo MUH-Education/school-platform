@@ -4,9 +4,11 @@ import java.time.LocalTime;
 
 /**
  * One stop in {@code PUT /routes/{id}/stops}. The list order is the morning order.
- * A stop with an {@code id} is kept. A stop without an {@code id} is new.
- * Example: {@code { "id": 12, "name": "Jakhal", "morningTime": "07:40", "eveningTime": "13:50" }}
+ * A stop with an {@code id} is kept. A stop without an {@code id} is new. {@code nameHindi} is for
+ * the attendant app and is optional.
+ * Example: {@code { "id": 12, "name": "Jakhal", "nameHindi": "जाखल", "morningTime": "07:40",
+ * "eveningTime": "13:50" }}
  */
-public record StopRequest(Long id, String name, LocalTime morningTime, LocalTime eveningTime) {
+public record StopRequest(Long id, String name, String nameHindi, LocalTime morningTime, LocalTime eveningTime) {
 
 }

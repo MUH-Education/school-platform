@@ -20,7 +20,7 @@ import com.muhjain.school.model.dto.request.ClassFeesRequest;
 import com.muhjain.school.model.dto.request.CreateSessionRequest;
 import com.muhjain.school.model.dto.response.SessionResponse;
 import com.muhjain.school.service.fee.ClassFeeService;
-import com.muhjain.school.service.fee.SessionService;
+import com.muhjain.school.service.fee.AcademicSessionService;
 
 /**
  * School years and the standard fee of each class.
@@ -36,11 +36,11 @@ import com.muhjain.school.service.fee.SessionService;
 @RequestMapping("/api/v1/sessions")
 public class SessionController {
 
-	private final SessionService sessionService;
+	private final AcademicSessionService sessionService;
 
 	private final ClassFeeService classFeeService;
 
-	public SessionController(SessionService sessionService, ClassFeeService classFeeService) {
+	public SessionController(AcademicSessionService sessionService, ClassFeeService classFeeService) {
 		this.sessionService = sessionService;
 		this.classFeeService = classFeeService;
 	}

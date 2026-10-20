@@ -225,6 +225,9 @@ public class StudentService {
 			if (student.getStatus() == StudentStatus.LEFT) {
 				throw new ApiException(HttpStatus.CONFLICT, "ALREADY_LEFT", "This child has already left the school.");
 			}
+			if (request.leftReason() == null) {
+				throw ApiException.validation("leftReason", "is required");
+			}
 			LocalDate today = LocalDate.now(clock);
 			LocalDate leftOn = (request.leftOn() != null) ? request.leftOn() : today;
 			if (leftOn.isAfter(today)) {
@@ -235,16 +238,20 @@ public class StudentService {
 			}
 			student.setStatus(StudentStatus.LEFT);
 			student.setLeftOn(leftOn);
+			student.setLeftReason(request.leftReason());
+			student.setLeftNote(tidyOrNull(request.leftNote()));
 			students.save(student);
 			boolean busClosed = transportService.closeForLeaving(id, leftOn);
 			auditService.record(ENTITY, id, AuditAction.UPDATED,
 					"Left school on " + DayText.on(leftOn) + "." + (busClosed ? " Bus ended." : ""),
 					Map.of("status", Map.of("old", "ACTIVE", "new", "LEFT"), "leftOn", leftOn.toString(),
-							"busClosed", busClosed));
+							"leftReason", request.leftReason().name(), "busClosed", busClosed));
 		}
 		else if (student.getStatus() == StudentStatus.LEFT) {
 			student.setStatus(StudentStatus.ACTIVE);
 			student.setLeftOn(null);
+			student.setLeftReason(null);
+			student.setLeftNote(null);
 			students.save(student);
 			auditService.record(ENTITY, id, AuditAction.UPDATED, "Back in school. Turned on again.",
 					Map.of("status", Map.of("old", "LEFT", "new", "ACTIVE")));
@@ -264,12 +271,20 @@ public class StudentService {
 		EnrolmentResponse bus = transportService.current(s.getId(), LocalDate.now(clock)).orElse(null);
 		return new StudentResponse(s.getId(), s.getAdmissionNo(), s.getName(), s.getDob(), s.getGender(),
 				s.getClassName(), s.getSection(), s.getVillage(), s.getAddress(), s.getFatherOccupation(),
-				s.getStatus(), s.getJoinedOn(), s.getLeftOn(), s.getPhotoKey() != null, guardians, bus);
+				s.getStatus(), s.getJoinedOn(), s.getLeftOn(), s.getLeftReason(), s.getLeftNote(),
+				s.getPhotoKey() != null, guardians, bus);
 	}
 
 	static String tidySection(String section) {
 		String tidy = tidyOrNull(section);
-		return (tidy == null) ? null : tidy.toUpperCase(Locale.ROOT);
+		if (tidy == null) {
+			return null;
+		}
+		String upper = tidy.toUpperCase(Locale.ROOT);
+		if (!upper.equals("A") && !upper.equals("B") && !upper.equals("C")) {
+			throw ApiException.validation("section", "must be A, B or C");
+		}
+		return upper;
 	}
 
 	static String tidyOrNull(String text) {

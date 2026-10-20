@@ -1,17 +1,20 @@
 package com.muhjain.school.model.dto.response;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import com.muhjain.school.model.entity.FeePlan;
 import com.muhjain.school.model.enums.DiscountReason;
 import com.muhjain.school.model.enums.PayFrequency;
 
-/** The plan without its dues (the dues come with the coverage). Example: school 30000, bus 8800, QUARTERLY. */
-public record FeePlanSummary(Long id, BigDecimal schoolFee, BigDecimal busFee, BigDecimal discount,
-		DiscountReason discountReason, BigDecimal netSchoolFee, PayFrequency payFrequency) {
+/** The current time slice of the plan, without its dues. Example: school 2500 a month, from April, MONTHLY. */
+public record FeePlanSummary(Long id, LocalDate fromMonth, BigDecimal schoolFeePerMonth,
+		BigDecimal discountPerMonth, DiscountReason discountReason, BigDecimal netSchoolFeePerMonth,
+		PayFrequency payFrequency) {
 
 	public static FeePlanSummary of(FeePlan plan) {
-	return new FeePlanSummary(plan.getId(), plan.getSchoolFee(), plan.getBusFee(), plan.getDiscount(),
-				plan.getDiscountReason(), plan.getSchoolFee().subtract(plan.getDiscount()), plan.getPayFrequency());
+		return new FeePlanSummary(plan.getId(), plan.getFromMonth(), plan.getSchoolFeePerMonth(),
+				plan.getDiscountPerMonth(), plan.getDiscountReason(),
+				plan.getSchoolFeePerMonth().subtract(plan.getDiscountPerMonth()), plan.getPayFrequency());
 	}
 
 }

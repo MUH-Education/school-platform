@@ -1,6 +1,7 @@
 package com.muhjain.school.model.entity;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 import com.muhjain.school.model.entity.BaseEntity;
 import jakarta.persistence.Column;
@@ -11,7 +12,12 @@ import jakarta.persistence.Table;
 import com.muhjain.school.model.enums.DiscountReason;
 import com.muhjain.school.model.enums.PayFrequency;
 
-/** What one child must pay in one session. Example: school 30000, bus 8800, discount 0, QUARTERLY. */
+/**
+ * What one child pays, from a month on. The plan for month M is the row with the biggest {@code fromMonth}
+ * that is {@code <= M}. The bus fee is not here: it is on {@code transport_enrolment}.
+ * Example: Ishaan, 2500 a month from April. From January, 250 off because his brother joins: row 1 (from
+ * April, 2500, no discount), row 2 (from January, 2500, discount 250, SIBLING).
+ */
 @Entity
 @Table(name = "fee_plan")
 public class FeePlan extends BaseEntity {
@@ -22,38 +28,43 @@ public class FeePlan extends BaseEntity {
 	@Column(name = "session_id", nullable = false)
 	private Long sessionId;
 
-	@Column(name = "school_fee", nullable = false)
-	private BigDecimal schoolFee;
+	@Column(name = "from_month", nullable = false)
+	private LocalDate fromMonth;
 
-	@Column(name = "bus_fee", nullable = false)
-	private BigDecimal busFee;
+	@Column(name = "school_fee_per_month", nullable = false, precision = 12, scale = 2)
+	private BigDecimal schoolFeePerMonth;
 
-	@Column(nullable = false)
-	private BigDecimal discount;
+	@Column(name = "follows_class_fee", nullable = false)
+	private boolean followsClassFee = true;
+
+	@Column(name = "discount_per_month", nullable = false, precision = 12, scale = 2)
+	private BigDecimal discountPerMonth = BigDecimal.ZERO;
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = "discount_reason", nullable = false, length = 20)
-	private DiscountReason discountReason;
+	private DiscountReason discountReason = DiscountReason.NONE;
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = "pay_frequency", nullable = false, length = 12)
-	private PayFrequency payFrequency;
+	private PayFrequency payFrequency = PayFrequency.MONTHLY;
 
-	@Column(name = "created_by")
+	@Column(length = 200)
+	private String note;
+
+	@Column(name = "created_by", nullable = false)
 	private Long createdBy;
 
 	protected FeePlan() {
 	}
 
-	public FeePlan(Long studentId, Long sessionId, Long createdBy) {
+	public FeePlan(Long studentId, Long sessionId, LocalDate fromMonth, BigDecimal schoolFeePerMonth,
+			boolean followsClassFee, Long createdBy) {
 		this.studentId = studentId;
 		this.sessionId = sessionId;
+		this.fromMonth = fromMonth;
+		this.schoolFeePerMonth = schoolFeePerMonth;
+		this.followsClassFee = followsClassFee;
 		this.createdBy = createdBy;
-		this.schoolFee = BigDecimal.ZERO;
-		this.busFee = BigDecimal.ZERO;
-		this.discount = BigDecimal.ZERO;
-		this.discountReason = DiscountReason.NONE;
-		this.payFrequency = PayFrequency.QUARTERLY;
 	}
 
 	public Long getStudentId() {
@@ -64,28 +75,32 @@ public class FeePlan extends BaseEntity {
 		return sessionId;
 	}
 
-	public BigDecimal getSchoolFee() {
-		return schoolFee;
+	public LocalDate getFromMonth() {
+		return fromMonth;
 	}
 
-	public void setSchoolFee(BigDecimal schoolFee) {
-		this.schoolFee = schoolFee;
+	public BigDecimal getSchoolFeePerMonth() {
+		return schoolFeePerMonth;
 	}
 
-	public BigDecimal getBusFee() {
-		return busFee;
+	public void setSchoolFeePerMonth(BigDecimal schoolFeePerMonth) {
+		this.schoolFeePerMonth = schoolFeePerMonth;
 	}
 
-	public void setBusFee(BigDecimal busFee) {
-		this.busFee = busFee;
+	public boolean isFollowsClassFee() {
+		return followsClassFee;
 	}
 
-	public BigDecimal getDiscount() {
-		return discount;
+	public void setFollowsClassFee(boolean followsClassFee) {
+		this.followsClassFee = followsClassFee;
 	}
 
-	public void setDiscount(BigDecimal discount) {
-		this.discount = discount;
+	public BigDecimal getDiscountPerMonth() {
+		return discountPerMonth;
+	}
+
+	public void setDiscountPerMonth(BigDecimal discountPerMonth) {
+		this.discountPerMonth = discountPerMonth;
 	}
 
 	public DiscountReason getDiscountReason() {
@@ -102,6 +117,14 @@ public class FeePlan extends BaseEntity {
 
 	public void setPayFrequency(PayFrequency payFrequency) {
 		this.payFrequency = payFrequency;
+	}
+
+	public String getNote() {
+		return note;
+	}
+
+	public void setNote(String note) {
+		this.note = note;
 	}
 
 	public Long getCreatedBy() {

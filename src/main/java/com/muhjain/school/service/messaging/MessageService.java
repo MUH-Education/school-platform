@@ -117,18 +117,19 @@ public class MessageService {
 
 	@Transactional(readOnly = true)
 	public List<TemplateResponse> templates() {
-		return templates.findAllByOrderByCodeAsc().stream().map(TemplateResponse::of).toList();
+		return templates.findAllByOrderByCodeAscGenderAsc().stream().map(TemplateResponse::of).toList();
 	}
 
 	/**
 	 * Changes the text and the provider id of a template. The text must keep {name} and {time}, and must fit in
-	 * 70 characters with a long name (rule 7).
+	 * 70 characters with a long name (rule 7). This changes {@code body} only: {@code approvedBody} (what is
+	 * actually sent) changes separately, once the phone company approves the new text.
 	 *
 	 * @throws ApiException 404 NOT_FOUND, 400 VALIDATION
 	 */
 	@Transactional
-	public TemplateResponse updateTemplate(String code, UpdateTemplateRequest request) {
-		MessageTemplate template = templates.findById(code)
+	public TemplateResponse updateTemplate(Long id, UpdateTemplateRequest request, Long actorId) {
+		MessageTemplate template = templates.findById(id)
 			.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "This template does not exist."));
 		String body = request.body().strip();
 		if (!body.contains("{name}") || !body.contains("{time}")) {
@@ -151,9 +152,9 @@ public class MessageService {
 				|| !java.util.Objects.equals(providerId, template.getProviderTemplateId())
 				|| request.active() != template.isActive();
 		if (changed) {
-			template.change(body, providerId, request.active(), Instant.now(clock));
-			auditService.record(ENTITY, 0L, AuditAction.UPDATED, "Template " + code + " changed",
-					Map.of("code", code));
+			template.change(body, providerId, request.active(), actorId);
+			auditService.record(ENTITY, 0L, AuditAction.UPDATED, "Template " + template.getCode() + " changed",
+					Map.of("code", template.getCode()));
 		}
 		return TemplateResponse.of(template);
 	}
@@ -171,10 +172,12 @@ public class MessageService {
 			return result;
 		}
 		for (MessageOutbox m : outbox.boardingFor(studentIds, day)) {
+			// DELIVERED and CANCELLED do not happen for a boarding SMS today (this view is bus-only); they
+			// are mapped to the closest state so the switch stays exhaustive if that ever changes.
 			SmsState state = switch (m.getStatus()) {
-				case FAILED -> SmsState.FAILED;
+				case FAILED, CANCELLED -> SmsState.FAILED;
 				case QUEUED -> SmsState.QUEUED;
-				case SENT -> SmsState.SENT;
+				case SENT, DELIVERED -> SmsState.SENT;
 				case TEST_ONLY -> SmsState.TEST_ONLY;
 			};
 			SmsDelivery now = new SmsDelivery(state,

@@ -78,6 +78,18 @@ abstract class TripTestBase extends AbstractIntegrationTest {
 		officeToken = tokenFor(office);
 	}
 
+	/**
+	 * A session's idle timeout is 15 minutes (docs/08-decisions.md). These tests jump the clock
+	 * forward by hours to simulate "later in the day" with no real requests in between, which an
+	 * idle session would not survive — call this after such a jump to log back in, the same way a
+	 * real attendant or office user would if they really had been idle that long.
+	 */
+	void refreshTokens() {
+		balwanToken = tokenFor(balwan);
+		hariToken = tokenFor(hari);
+		officeToken = tokenFor(office);
+	}
+
 	long addRoute(String name, long vehicleId) {
 		return jdbc.queryForObject("insert into route (name, vehicle_id) values (?, ?) returning id", Long.class,
 				name, vehicleId);
@@ -90,11 +102,13 @@ abstract class TripTestBase extends AbstractIntegrationTest {
 	}
 
 	long addChild(String name, String gender, long routeId, long stopId, String from) {
+		long userId = anyUserId();
 		long id = jdbc.queryForObject("insert into student (admission_no, name, dob, gender, class_name, village, "
-				+ "father_occupation, joined_on) values (?, ?, '2018-05-14', ?, '3', 'Jakhal', 'OTHER', '2026-04-01') "
-				+ "returning id", Long.class, "T-" + (System.nanoTime() % 1_000_000_000_000L), name, gender);
-		jdbc.update("insert into transport_enrolment (student_id, route_id, stop_id, from_date) values (?, ?, ?, "
-				+ "?::date)", id, routeId, stopId, from);
+				+ "father_occupation, joined_on, created_by) values (?, ?, '2018-05-14', ?, '3', 'Jakhal', 'OTHER', "
+				+ "'2026-04-01', ?) returning id", Long.class,
+				"A-2026-" + (100 + (System.nanoTime() % 1_000_000_000L)), name, gender, userId);
+		jdbc.update("insert into transport_enrolment (student_id, uses_bus, route_id, stop_id, from_date, created_by) "
+				+ "values (?, true, ?, ?, ?::date, ?)", id, routeId, stopId, from, userId);
 		return id;
 	}
 

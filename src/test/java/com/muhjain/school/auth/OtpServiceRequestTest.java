@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verifyNoInteractions;
 import com.muhjain.school.model.dto.response.OtpRequestResponse;
 import com.muhjain.school.service.auth.OtpService;
+import com.muhjain.school.service.auth.RedisOtpStore;
 import com.muhjain.school.util.OtpHasher;
 
 class OtpServiceRequestTest extends AbstractIntegrationTest {
@@ -24,6 +25,9 @@ class OtpServiceRequestTest extends AbstractIntegrationTest {
 
 	@Autowired
 	private OtpHasher hasher;
+
+	@Autowired
+	private RedisOtpStore otpStore;
 
 	@Test
 	void knownPhoneGetsAHashedCodeUnknownPhoneGetsNothing() {
@@ -37,10 +41,10 @@ class OtpServiceRequestTest extends AbstractIntegrationTest {
 		assertThat(known.resendAfterSeconds()).isEqualTo(60);
 		String code = lastCodeSentTo(KNOWN);
 		assertThat(code).matches("\\d{6}");
-		assertThat(jdbc.queryForObject("select count(*) from otp_code", Integer.class)).isEqualTo(1);
-		String hash = jdbc.queryForObject("select code_hash from otp_code", String.class);
-		assertThat(hash).isEqualTo(hasher.hash(KNOWN, code)).doesNotContain(code);
-		assertThat(jdbc.queryForObject("select channel from otp_code", String.class)).isEqualTo("LOG");
+		RedisOtpStore.ActiveCode active = otpStore.find(KNOWN).orElseThrow();
+		assertThat(active.codeHash()).isEqualTo(hasher.hash(KNOWN, code)).doesNotContain(code);
+		assertThat(active.channel()).isEqualTo("LOG");
+		assertThat(otpStore.find("+919812349999")).as("an unknown phone gets no code").isEmpty();
 	}
 
 	@Test
@@ -87,9 +91,9 @@ class OtpServiceRequestTest extends AbstractIntegrationTest {
 		otpService.request(KNOWN, "10.0.0.1");
 
 		verifyNoInteractions(logOtpSender);
-		assertThat(jdbc.queryForObject("select channel from otp_code", String.class)).isEqualTo("WHITELIST");
-		String hash = jdbc.queryForObject("select code_hash from otp_code", String.class);
-		assertThat(hash).isEqualTo(hasher.hash(KNOWN, "123456"));
+		RedisOtpStore.ActiveCode active = otpStore.find(KNOWN).orElseThrow();
+		assertThat(active.channel()).isEqualTo("WHITELIST");
+		assertThat(active.codeHash()).isEqualTo(hasher.hash(KNOWN, "123456"));
 	}
 
 }

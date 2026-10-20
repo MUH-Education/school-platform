@@ -19,4 +19,10 @@ public interface StudentCounts {
 	/** Children per stop of the route on that day. A stop with no children may be missing from the map. */
 	Map<Long, Integer> childrenByStop(Long routeId, LocalDate date);
 
+	/**
+	 * The sum of the monthly bus fee of the children on the route that day. There is no more flat yearly fee
+	 * setting: each child's own fee, from {@code transport_enrolment}, is added up.
+	 */
+	java.math.BigDecimal busFeePerMonthOnRoute(Long routeId, LocalDate date);
+
 }

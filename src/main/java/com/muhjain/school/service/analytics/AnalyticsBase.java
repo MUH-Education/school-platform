@@ -10,7 +10,7 @@ import com.muhjain.school.exception.ApiException;
 import com.muhjain.school.util.FeeStatusCalculator;
 import com.muhjain.school.service.fee.FeeStatusService;
 import com.muhjain.school.model.dto.response.SessionResponse;
-import com.muhjain.school.service.fee.SessionService;
+import com.muhjain.school.service.fee.AcademicSessionService;
 import com.muhjain.school.service.route.RouteService;
 import com.muhjain.school.service.student.StudentQueryService;
 import com.muhjain.school.model.dto.response.StudentReportRow;
@@ -34,13 +34,13 @@ public class AnalyticsBase {
 
 	private final FeeStatusService feeStatus;
 
-	private final SessionService sessions;
+	private final AcademicSessionService sessions;
 
 	private final RouteService routeService;
 
 	private final Clock clock;
 
-	public AnalyticsBase(StudentQueryService studentQuery, FeeStatusService feeStatus, SessionService sessions,
+	public AnalyticsBase(StudentQueryService studentQuery, FeeStatusService feeStatus, AcademicSessionService sessions,
 			RouteService routeService, Clock clock) {
 		this.studentQuery = studentQuery;
 		this.feeStatus = feeStatus;

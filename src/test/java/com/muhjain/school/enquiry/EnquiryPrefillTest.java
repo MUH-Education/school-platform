@@ -35,8 +35,8 @@ class EnquiryPrefillTest extends EnquiryTestBase {
 	void admittedEnquiryHasNothingToCopy() throws Exception {
 		long id = idOf(create(desk, FIVE));
 		long student = jdbc.queryForObject("insert into student (admission_no, name, dob, gender, class_name, village, "
-				+ "father_occupation, joined_on) values ('T-1', 'Aryan', '2018-05-14', 'M', '3', 'Jakhal', 'OTHER', "
-				+ "'2026-04-01') returning id", Long.class);
+				+ "father_occupation, joined_on, created_by) values ('A-2026-101', 'Aryan', '2018-05-14', 'M', '3', 'Jakhal', "
+				+ "'OTHER', '2026-04-01', ?) returning id", Long.class, anyUserId());
 		jdbc.update("update enquiry set status = 'ADMITTED', admitted_student_id = ? where id = ?", student, id);
 		read(desk, "/api/v1/enquiries/" + id + "/prefill").andExpect(status().isConflict());
 		read(desk, "/api/v1/enquiries/99999/prefill").andExpect(status().isNotFound());
