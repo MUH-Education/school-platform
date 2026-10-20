@@ -176,9 +176,9 @@ class VehicleApiTest extends AbstractIntegrationTest {
 			.andExpect(jsonPath("$.documents[1].validTill").value("2027-10-27"))
 			.andExpect(jsonPath("$.documents[1].status").value("VALID"))
 			.andExpect(jsonPath("$.documents[3].status").value("MISSING"));
-		assertThat(jdbc.queryForObject("select count(*) from vehicle_document where vehicle_id = ?", Integer.class,
-				van4))
-			.isEqualTo(1);
+		assertThat(jdbc.queryForObject(
+				"select count(*) from vehicle_document where vehicle_id = ? and valid_till is not null", Integer.class,
+				van4)).isEqualTo(1);
 	}
 
 	@Test

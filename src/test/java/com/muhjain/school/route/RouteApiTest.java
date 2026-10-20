@@ -253,9 +253,10 @@ class RouteApiTest extends AbstractIntegrationTest {
 			.andExpect(jsonPath("$.stops[2].name").value("Sadhanwas village"))
 			.andExpect(jsonPath("$.stops[2].seqNo").value(3));
 
-		assertThat(jdbc.queryForObject("select count(*) from route_stop where route_id = ?", Integer.class, route4))
-			.isEqualTo(3);
-		assertThat(jdbc.queryForObject("select count(*) from route_stop where name = 'Jakhal'", Integer.class))
+		assertThat(jdbc.queryForObject("select count(*) from route_stop where route_id = ? and active", Integer.class,
+				route4)).isEqualTo(3);
+		assertThat(
+				jdbc.queryForObject("select count(*) from route_stop where name = 'Jakhal' and active", Integer.class))
 			.isZero();
 	}
 

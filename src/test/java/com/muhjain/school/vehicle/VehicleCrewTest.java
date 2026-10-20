@@ -3,6 +3,7 @@ package com.muhjain.school.vehicle;
 import java.time.Instant;
 
 import com.muhjain.school.AbstractIntegrationTest;
+import com.muhjain.school.model.entity.AppUser;
 import com.muhjain.school.model.enums.Role;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,6 +20,8 @@ class VehicleCrewTest extends AbstractIntegrationTest {
 
 	private String token;
 
+	private AppUser transportUser;
+
 	private long van4;
 
 	private long van1;
@@ -32,7 +35,8 @@ class VehicleCrewTest extends AbstractIntegrationTest {
 	@BeforeEach
 	void addStory() {
 		clock.setInstant(Instant.parse("2026-10-07T04:30:00Z"));
-		token = tokenFor(addUser("+919812340003", Role.TRANSPORT_INCHARGE));
+		transportUser = addUser("+919812340003", Role.TRANSPORT_INCHARGE);
+		token = tokenFor(transportUser);
 		van4 = addVehicle("Van 4");
 		van1 = addVehicle("Van 1");
 		jagdish = addStaff("Jagdish", "DRIVER");
@@ -62,11 +66,13 @@ class VehicleCrewTest extends AbstractIntegrationTest {
 	void insideTheLeaveTheNewDriverShowsAndOutsideTheOldOne() throws Exception {
 		// "Today" is moved with the clock. 14 Oct is inside the leave.
 		clock.setInstant(Instant.parse("2026-10-14T04:30:00Z"));
+		token = tokenFor(transportUser);
 		getJson("/api/v1/vehicles/" + van4).andExpect(jsonPath("$.driver.name").value("Surender"))
 			.andExpect(jsonPath("$.driver.temporary").value(true))
 			.andExpect(jsonPath("$.attendant.name").value("Balwan"));
 
 		clock.setInstant(Instant.parse("2026-10-17T04:30:00Z"));
+		token = tokenFor(transportUser);
 		getJson("/api/v1/vehicles/" + van4).andExpect(jsonPath("$.driver.name").value("Jagdish"))
 			.andExpect(jsonPath("$.driver.temporary").value(false));
 	}
@@ -118,6 +124,7 @@ class VehicleCrewTest extends AbstractIntegrationTest {
 
 		// 14 Oct: Surender drives Van 4. Jagdish is on leave, so he works on no vehicle that day.
 		clock.setInstant(Instant.parse("2026-10-14T04:30:00Z"));
+		token = tokenFor(transportUser);
 		getJson("/api/v1/staff").andExpect(jsonPath("$[0].worksOn").isEmpty())
 			.andExpect(jsonPath("$[1].worksOn.vehicleName").value("Van 4"))
 			.andExpect(jsonPath("$[1].worksOn.temporary").value(true));

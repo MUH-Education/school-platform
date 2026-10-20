@@ -2,11 +2,13 @@ package com.muhjain.school;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /** The database rules of V7__fees.sql. They hold even if the Java code has a bug. */
+@Transactional
 class MigrationV7Test extends AbstractIntegrationTest {
 
 	private long sessionId() {
