@@ -15,6 +15,9 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import com.muhjain.school.model.entity.AcademicSession;
+import com.muhjain.school.model.repository.AcademicSessionRepository;
+import com.muhjain.school.service.fee.ReceiptNumberService;
 
 /** Rule 11 of phase 7: receipt numbers are R-<start year>-<4 digits>, from a locked counter. */
 class ReceiptNumberServiceTest extends AbstractIntegrationTest {

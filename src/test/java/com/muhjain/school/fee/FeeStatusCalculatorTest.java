@@ -9,11 +9,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import com.muhjain.school.fee.FeeStatusCalculator.DueInput;
-import com.muhjain.school.fee.FeeStatusCalculator.Summary;
+import com.muhjain.school.util.FeeStatusCalculator.DueInput;
+import com.muhjain.school.util.FeeStatusCalculator.Summary;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import com.muhjain.school.model.enums.FeeHead;
+import com.muhjain.school.model.enums.FeeStatus;
+import com.muhjain.school.util.FeeStatusCalculator;
 
 /**
  * Pure Java, no Spring. Every state, with a fixed clock. Grace is 10 days, "defaulted" after 60 days

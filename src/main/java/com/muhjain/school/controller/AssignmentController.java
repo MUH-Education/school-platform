@@ -1,0 +1,59 @@
+package com.muhjain.school.controller;
+
+import java.util.List;
+
+import com.muhjain.school.security.CurrentUser;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+import com.muhjain.school.model.dto.response.AssignmentResponse;
+import com.muhjain.school.model.dto.request.ChangeAssignmentRequest;
+import com.muhjain.school.model.entity.Staff;
+import com.muhjain.school.service.staff.AssignmentService;
+
+/**
+ * Who works on a vehicle. {@code GET /api/v1/vehicles/{id}/assignments} (history) needs VEHICLES_VIEW,
+ * {@code POST} (change) needs VEHICLES_EDIT.
+ * The URL is under /vehicles, but the code lives in the staff package, next to the assignment rules.
+ */
+@Tag(name = "Staff")
+@RestController
+@RequestMapping("/api/v1/vehicles/{vehicleId}/assignments")
+public class AssignmentController {
+
+	private final AssignmentService assignmentService;
+
+	private final CurrentUser currentUser;
+
+	public AssignmentController(AssignmentService assignmentService, CurrentUser currentUser) {
+		this.assignmentService = assignmentService;
+		this.currentUser = currentUser;
+	}
+
+	/** Who worked on the vehicle, newest first. */
+	@Operation(summary = "Who drove this vehicle, and when")
+	@GetMapping
+	@PreAuthorize("hasAuthority('VEHICLES_VIEW')")
+	public List<AssignmentResponse> history(@PathVariable Long vehicleId) {
+		return assignmentService.history(vehicleId);
+	}
+
+	@Operation(summary = "Change the driver or attendant of a vehicle")
+	@PostMapping
+	@PreAuthorize("hasAuthority('VEHICLES_EDIT')")
+	@ResponseStatus(HttpStatus.CREATED)
+	public AssignmentResponse change(@PathVariable Long vehicleId,
+			@Valid @RequestBody ChangeAssignmentRequest request) {
+		return assignmentService.change(vehicleId, request, currentUser.id());
+	}
+
+}

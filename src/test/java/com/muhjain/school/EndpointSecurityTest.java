@@ -2,7 +2,7 @@ package com.muhjain.school;
 
 import java.util.stream.Stream;
 
-import com.muhjain.school.user.Role;
+import com.muhjain.school.model.enums.Role;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;

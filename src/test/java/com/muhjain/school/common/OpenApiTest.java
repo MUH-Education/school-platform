@@ -7,11 +7,11 @@ import java.util.Set;
 
 import com.jayway.jsonpath.JsonPath;
 import com.muhjain.school.AbstractIntegrationTest;
-import com.muhjain.school.analytics.AnalyticsController;
-import com.muhjain.school.fee.FeeController;
-import com.muhjain.school.fee.PaymentController;
-import com.muhjain.school.fee.SessionController;
-import com.muhjain.school.user.Role;
+import com.muhjain.school.controller.AnalyticsController;
+import com.muhjain.school.controller.FeeController;
+import com.muhjain.school.controller.PaymentController;
+import com.muhjain.school.controller.SessionController;
+import com.muhjain.school.model.enums.Role;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

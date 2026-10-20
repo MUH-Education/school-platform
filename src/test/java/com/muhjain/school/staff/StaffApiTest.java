@@ -3,7 +3,7 @@ package com.muhjain.school.staff;
 import java.time.Instant;
 
 import com.muhjain.school.AbstractIntegrationTest;
-import com.muhjain.school.user.Role;
+import com.muhjain.school.model.enums.Role;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -17,6 +17,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import com.muhjain.school.model.entity.Staff;
 
 /** The "Staff" tests of docs/phases/phase-2-vehicles-staff-routes.md (rule 4). */
 class StaffApiTest extends AbstractIntegrationTest {

@@ -70,7 +70,7 @@ class EnquiryListTest extends EnquiryTestBase {
 	void listIsInTheOfficeAndAdmissionsDeskButNotTheTransportIncharge() throws Exception {
 		read(office, "/api/v1/enquiries").andExpect(status().isOk());
 		read(owner, "/api/v1/enquiries").andExpect(status().isOk());
-		String transport = tokenFor(addUser("+919812340033", com.muhjain.school.user.Role.TRANSPORT_INCHARGE));
+		String transport = tokenFor(addUser("+919812340033", com.muhjain.school.model.enums.Role.TRANSPORT_INCHARGE));
 		read(transport, "/api/v1/enquiries").andExpect(status().isForbidden());
 		mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/v1/enquiries"))
 			.andExpect(status().isUnauthorized());

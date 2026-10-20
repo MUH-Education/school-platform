@@ -6,6 +6,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import com.muhjain.school.model.enums.PaperStatus;
 
 /** Rule 3. "Today" is 7 Oct 2026 in every example. */
 class PaperStatusTest {

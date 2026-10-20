@@ -8,6 +8,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import com.muhjain.school.model.entity.OtpCode;
+import com.muhjain.school.model.repository.OtpCodeRepository;
+import com.muhjain.school.service.auth.OtpCleanupJob;
 
 class OtpCleanupJobTest extends AbstractIntegrationTest {
 

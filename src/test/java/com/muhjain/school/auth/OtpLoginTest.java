@@ -3,8 +3,8 @@ package com.muhjain.school.auth;
 import java.time.Duration;
 
 import com.muhjain.school.AbstractIntegrationTest;
-import com.muhjain.school.user.AppUser;
-import com.muhjain.school.user.Role;
+import com.muhjain.school.model.entity.AppUser;
+import com.muhjain.school.model.enums.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -16,6 +16,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import com.muhjain.school.service.auth.OtpService;
 
 /** The "Login" tests of docs/phases/phase-1-login-users.md, over HTTP. */
 class OtpLoginTest extends AbstractIntegrationTest {

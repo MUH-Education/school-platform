@@ -111,8 +111,8 @@ class EnquiryCreateTest extends EnquiryTestBase {
 
 	@Test
 	void transportInchargeAndAttendantGet403AndNoTokenGets401() throws Exception {
-		String transport = tokenFor(addUser("+919812340003", com.muhjain.school.user.Role.TRANSPORT_INCHARGE));
-		String attendant = tokenFor(addUser("+919812340011", com.muhjain.school.user.Role.ATTENDANT));
+		String transport = tokenFor(addUser("+919812340003", com.muhjain.school.model.enums.Role.TRANSPORT_INCHARGE));
+		String attendant = tokenFor(addUser("+919812340011", com.muhjain.school.model.enums.Role.ATTENDANT));
 		for (String token : new String[] { transport, attendant }) {
 			create(token, FIVE).andExpect(status().isForbidden());
 			read(token, "/api/v1/enquiries/1").andExpect(status().isForbidden());

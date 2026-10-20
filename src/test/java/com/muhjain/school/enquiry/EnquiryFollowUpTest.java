@@ -88,7 +88,7 @@ class EnquiryFollowUpTest extends EnquiryTestBase {
 
 	@Test
 	void transportInchargeGets403() throws Exception {
-		String transport = tokenFor(addUser("+919812340003", com.muhjain.school.user.Role.TRANSPORT_INCHARGE));
+		String transport = tokenFor(addUser("+919812340003", com.muhjain.school.model.enums.Role.TRANSPORT_INCHARGE));
 		followUp(transport, 1, "{\"note\":\"x\"}").andExpect(status().isForbidden());
 		mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 			.post("/api/v1/enquiries/1/follow-ups").contentType("application/json").content("{}"))

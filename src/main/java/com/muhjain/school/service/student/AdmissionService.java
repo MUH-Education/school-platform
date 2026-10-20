@@ -1,0 +1,185 @@
+package com.muhjain.school.service.student;
+
+import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import com.muhjain.school.model.enums.AuditAction;
+import com.muhjain.school.service.audit.AuditService;
+import com.muhjain.school.service.enquiry.EnquiryService;
+import com.muhjain.school.model.dto.response.DueResponse;
+import com.muhjain.school.model.dto.response.FeePlanResponse;
+import com.muhjain.school.service.fee.FeePlanService;
+import com.muhjain.school.service.fee.PaymentService;
+import com.muhjain.school.model.dto.response.ReceiptResponse;
+import com.muhjain.school.exception.ApiException;
+import com.muhjain.school.util.NameKeys;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import com.muhjain.school.model.dto.response.AdmissionBus;
+import com.muhjain.school.model.dto.request.AdmissionRequest;
+import com.muhjain.school.model.dto.response.AdmissionResponse;
+import com.muhjain.school.model.dto.request.GuardianRequest;
+import com.muhjain.school.model.dto.response.GuardianResponse;
+import com.muhjain.school.model.dto.response.TransportWarning;
+import com.muhjain.school.model.entity.Student;
+import com.muhjain.school.model.repository.StudentRepository;
+import com.muhjain.school.util.ClassNames;
+
+/**
+ * A new admission. Rules 1 to 4 of docs/phases/phase-3-students-admission.md.
+ * <p>
+ * Everything happens in <b>one transaction</b>: the number, the student, the parents' phones and the bus.
+ * If any part fails, nothing is saved, not even the admission number.
+ * Example: the clerk picks a stop that is not on the chosen route. The answer is 400 STOP_NOT_ON_ROUTE and the
+ * database has no new student, no new guardian and no used number.
+ */
+@Service
+public class AdmissionService {
+
+	private final StudentRepository students;
+
+	private final AdmissionNumberService numbers;
+
+	private final GuardianService guardianService;
+
+	private final TransportEnrolmentService transportService;
+
+	private final AuditService auditService;
+
+	private final EnquiryService enquiryService;
+
+	private final FeePlanService feePlanService;
+
+	private final PaymentService paymentService;
+
+	private final Clock clock;
+
+	public AdmissionService(StudentRepository students, AdmissionNumberService numbers,
+			GuardianService guardianService, TransportEnrolmentService transportService, AuditService auditService,
+			EnquiryService enquiryService, FeePlanService feePlanService, PaymentService paymentService,
+			Clock clock) {
+		this.feePlanService = feePlanService;
+		this.paymentService = paymentService;
+		this.enquiryService = enquiryService;
+		this.students = students;
+		this.numbers = numbers;
+		this.guardianService = guardianService;
+		this.transportService = transportService;
+		this.auditService = auditService;
+		this.clock = clock;
+	}
+
+	/**
+	 * @param userId the logged-in user, from the token
+	 * @throws ApiException 400 VALIDATION (class, date, phone, no phone at all, bad route or stop), 400
+	 * STOP_NOT_ON_ROUTE, 409 PHONE_ALREADY_LINKED (the same phone typed twice), 409 FROM_DATE_TOO_EARLY
+	 */
+	@Transactional
+	public AdmissionResponse admit(AdmissionRequest request, Long userId) {
+		LocalDate today = LocalDate.now(clock);
+		String className = ClassNames.parse(request.className())
+			.orElseThrow(() -> ApiException.validation("className", "must be Nursery, LKG, UKG or 1 to 12"));
+		if (request.dob().isAfter(today)) {
+			throw ApiException.validation("dob", "cannot be in the future");
+		}
+		LocalDate joinedOn = (request.joinedOn() != null) ? request.joinedOn() : today;
+		List<GuardianRequest> typed = (request.guardians() == null) ? List.of() : request.guardians();
+		List<GuardianResponse> siblingPhones = siblingPhones(request.siblingStudentId());
+		if (typed.isEmpty() && siblingPhones.isEmpty()) {
+			throw ApiException.validation("guardians", "at least one parent phone is needed");
+		}
+
+		if (request.firstPayment() != null && request.fee() == null) {
+			throw ApiException.validation("firstPayment", "needs a fee plan: send the fee part too");
+		}
+		if (request.enquiryId() != null) {
+			enquiryService.requireAdmittable(request.enquiryId());
+		}
+
+		// The number is taken last among the checks above, so a bad request never touches the counter.
+		String admissionNo = numbers.next();
+		Student student = students.save(new Student(admissionNo, NameKeys.tidy(request.name()), request.dob(),
+				request.gender(), className, StudentService.tidySection(request.section()), NameKeys.tidy(request.village()),
+				StudentService.tidyOrNull(request.address()), request.fatherOccupation(), joinedOn, userId));
+
+		Set<String> linked = new HashSet<>();
+		for (GuardianRequest guardian : typed) {
+			GuardianResponse saved = guardianService.linkPhone(student.getId(), guardian.name(), guardian.phone(),
+					guardian.relation(), guardian.sms());
+			linked.add(saved.phone());
+		}
+		for (GuardianResponse phone : siblingPhones) {
+			if (linked.add(phone.phone())) {
+				// A copied phone starts with SMS on. A parent who wants it off for this child says so later.
+				guardianService.linkPhone(student.getId(), phone.name(), phone.phone(), phone.relation(), true);
+			}
+		}
+
+		TransportWarning warning = null;
+		if (request.bus() != null) {
+			AdmissionBus bus = request.bus();
+			LocalDate from = (bus.fromDate() != null) ? bus.fromDate() : joinedOn;
+			warning = transportService.start(student.getId(), bus.routeId(), bus.stopId(), from, bus.busFee(), userId)
+				.warning();
+		}
+
+		// Rule 17 of Phase 7: the fee plan and the first payment, in this same transaction. The plan is made after
+		// the bus, so its bus dues start on the first bus day. A refused payment rolls back the whole admission.
+		String receiptNo = null;
+		BigDecimal stillToPay = null;
+		if (request.fee() != null) {
+			BigDecimal busFee = (request.bus() != null) ? request.bus().busFee() : null;
+			FeePlanResponse plan = feePlanService.saveAtAdmission(student.getId(), className, request.fee(), busFee,
+					userId);
+			stillToPay = plan.dues().stream().map(DueResponse::amount).reduce(BigDecimal.ZERO, BigDecimal::add);
+			if (request.firstPayment() != null) {
+				ReceiptResponse receipt = paymentService.record(student.getId(), request.firstPayment(), userId);
+				receiptNo = receipt.receiptNo();
+				stillToPay = receipt.stillToPay();
+			}
+		}
+
+		if (request.enquiryId() != null) {
+			// Rule 8 of Phase 6: the enquiry becomes ADMITTED in this same transaction.
+			enquiryService.markAdmitted(request.enquiryId(), student.getId());
+		}
+
+		auditAdmission(student, request.siblingStudentId(), linked.size(), request.bus() != null);
+		return new AdmissionResponse(student.getId(), admissionNo, student.getName(), warning, receiptNo,
+				stillToPay);
+	}
+
+	// Rule 4: the phones of the brother or sister.
+	private List<GuardianResponse> siblingPhones(Long siblingStudentId) {
+		if (siblingStudentId == null) {
+			return List.of();
+		}
+		if (!students.existsById(siblingStudentId)) {
+			throw ApiException.validation("siblingStudentId", "does not exist");
+		}
+		return guardianService.list(siblingStudentId);
+	}
+
+	private void auditAdmission(Student student, Long siblingId, int phones, boolean withBus) {
+		Map<String, Object> details = new LinkedHashMap<>();
+		details.put("admissionNo", student.getAdmissionNo());
+		details.put("phones", phones);
+		details.put("bus", withBus);
+		if (siblingId != null) {
+			details.put("siblingStudentId", siblingId);
+		}
+		List<String> parts = new ArrayList<>();
+		parts.add("Admitted as " + student.getAdmissionNo());
+		parts.add("class " + student.getClassName() + ((student.getSection() != null) ? " " + student.getSection() : ""));
+		parts.add(student.getVillage());
+		auditService.record("STUDENT", student.getId(), AuditAction.CREATED, String.join(", ", parts), details);
+	}
+
+}

@@ -6,6 +6,8 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import com.muhjain.school.config.OtpProperties;
+import com.muhjain.school.util.OtpHasher;
 
 class OtpHasherTest {
 

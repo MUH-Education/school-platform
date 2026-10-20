@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Test;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import com.muhjain.school.model.enums.Permission;
+import com.muhjain.school.model.enums.Role;
 
 class RolesControllerTest extends AbstractIntegrationTest {
 

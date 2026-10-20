@@ -3,10 +3,11 @@ package com.muhjain.school.messaging;
 import java.util.List;
 import java.util.Set;
 
-import com.muhjain.school.trip.EventType;
+import com.muhjain.school.model.enums.EventType;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import com.muhjain.school.util.SmsPolicy;
 
 /** All 15 classes x 4 events. */
 class SmsPolicyTest {
@@ -51,7 +52,7 @@ class SmsPolicyTest {
 
 	@Test
 	void everyClassOfTheSchoolIsCovered() {
-		assertThat(com.muhjain.school.student.ClassNames.ALL).containsExactlyElementsOf(ALL_CLASSES);
+		assertThat(com.muhjain.school.util.ClassNames.ALL).containsExactlyElementsOf(ALL_CLASSES);
 	}
 
 }

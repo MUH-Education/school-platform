@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.muhjain.school.AbstractIntegrationTest;
-import com.muhjain.school.user.Role;
+import com.muhjain.school.model.enums.Role;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;

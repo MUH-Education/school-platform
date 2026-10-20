@@ -91,7 +91,7 @@ class EnquiryStatusApiTest extends EnquiryTestBase {
 	@Test
 	void noTokenGives401AndTransportInchargeGets403() throws Exception {
 		long id = newEnquiry();
-		String transport = tokenFor(addUser("+919812340003", com.muhjain.school.user.Role.TRANSPORT_INCHARGE));
+		String transport = tokenFor(addUser("+919812340003", com.muhjain.school.model.enums.Role.TRANSPORT_INCHARGE));
 		move(transport, id, "{\"status\":\"CONTACTED\"}").andExpect(status().isForbidden());
 		mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 			.post("/api/v1/enquiries/" + id + "/status").contentType("application/json").content("{}"))

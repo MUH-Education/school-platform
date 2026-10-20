@@ -69,7 +69,7 @@ class EnquirySummaryTest extends EnquiryTestBase {
 
 	@Test
 	void transportInchargeGets403() throws Exception {
-		String transport = tokenFor(addUser("+919812340003", com.muhjain.school.user.Role.TRANSPORT_INCHARGE));
+		String transport = tokenFor(addUser("+919812340003", com.muhjain.school.model.enums.Role.TRANSPORT_INCHARGE));
 		read(transport, "/api/v1/enquiries/summary").andExpect(status().isForbidden());
 		mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/v1/enquiries/summary"))
 			.andExpect(status().isUnauthorized());

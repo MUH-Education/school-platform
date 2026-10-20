@@ -9,6 +9,9 @@ import org.springframework.dao.DataIntegrityViolationException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import com.muhjain.school.model.entity.AppUser;
+import com.muhjain.school.model.enums.Role;
+import com.muhjain.school.model.repository.AppUserRepository;
 
 class AppUserRepositoryTest extends AbstractIntegrationTest {
 

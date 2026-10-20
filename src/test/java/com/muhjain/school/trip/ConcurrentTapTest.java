@@ -18,6 +18,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import com.muhjain.school.model.enums.EventType;
+import com.muhjain.school.service.trip.BoardingNotifier;
 
 /**
  * Task 4.13. Two phones send the same tap at the same moment (bad signal, a retry). The unique row

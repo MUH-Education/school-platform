@@ -8,6 +8,10 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import com.muhjain.school.model.entity.VehicleAssignment;
+import com.muhjain.school.model.enums.ChangeReason;
+import com.muhjain.school.model.enums.Duty;
+import com.muhjain.school.util.AssignmentRules;
 
 /**
  * Rule 9: "Who is on the vehicle on day D? The temporary row covering D wins. Else the permanent row covering D."

@@ -4,11 +4,14 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-import com.muhjain.school.fee.DueScheduleBuilder.Due;
+import com.muhjain.school.util.DueScheduleBuilder.Due;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import com.muhjain.school.model.enums.FeeHead;
+import com.muhjain.school.model.enums.PayFrequency;
+import com.muhjain.school.util.DueScheduleBuilder;
 
 /** Pure Java, no Spring. Examples A and B come from phase-7-fees.md. */
 class DueScheduleBuilderTest {

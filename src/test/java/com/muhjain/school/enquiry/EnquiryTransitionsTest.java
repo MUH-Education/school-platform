@@ -1,19 +1,21 @@
 package com.muhjain.school.enquiry;
 
-import com.muhjain.school.enquiry.EnquiryTransitions.Move;
+import com.muhjain.school.util.EnquiryTransitions.Move;
 import org.junit.jupiter.api.Test;
 
-import static com.muhjain.school.enquiry.EnquiryStatus.ADMITTED;
-import static com.muhjain.school.enquiry.EnquiryStatus.APPLIED;
-import static com.muhjain.school.enquiry.EnquiryStatus.CONTACTED;
-import static com.muhjain.school.enquiry.EnquiryStatus.LOST;
-import static com.muhjain.school.enquiry.EnquiryStatus.NEW;
-import static com.muhjain.school.enquiry.EnquiryStatus.VISITED;
-import static com.muhjain.school.enquiry.EnquiryTransitions.Move.ADMITTED_BY_HAND;
-import static com.muhjain.school.enquiry.EnquiryTransitions.Move.ALLOWED;
-import static com.muhjain.school.enquiry.EnquiryTransitions.Move.NOT_ALLOWED;
-import static com.muhjain.school.enquiry.EnquiryTransitions.Move.UNCHANGED;
+import static com.muhjain.school.model.enums.EnquiryStatus.ADMITTED;
+import static com.muhjain.school.model.enums.EnquiryStatus.APPLIED;
+import static com.muhjain.school.model.enums.EnquiryStatus.CONTACTED;
+import static com.muhjain.school.model.enums.EnquiryStatus.LOST;
+import static com.muhjain.school.model.enums.EnquiryStatus.NEW;
+import static com.muhjain.school.model.enums.EnquiryStatus.VISITED;
+import static com.muhjain.school.util.EnquiryTransitions.Move.ADMITTED_BY_HAND;
+import static com.muhjain.school.util.EnquiryTransitions.Move.ALLOWED;
+import static com.muhjain.school.util.EnquiryTransitions.Move.NOT_ALLOWED;
+import static com.muhjain.school.util.EnquiryTransitions.Move.UNCHANGED;
 import static org.assertj.core.api.Assertions.assertThat;
+import com.muhjain.school.model.enums.EnquiryStatus;
+import com.muhjain.school.util.EnquiryTransitions;
 
 /** The whole table: 6 stages x 6 stages. */
 class EnquiryTransitionsTest {

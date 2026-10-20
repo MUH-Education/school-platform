@@ -1,6 +1,6 @@
 package com.muhjain.school.trip;
 
-import com.muhjain.school.messaging.OutboxWorker;
+import com.muhjain.school.service.messaging.OutboxWorker;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 

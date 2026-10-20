@@ -1,13 +1,16 @@
 package com.muhjain.school.user;
 
 import com.muhjain.school.AbstractIntegrationTest;
-import com.muhjain.school.common.ApiException;
+import com.muhjain.school.exception.ApiException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.DefaultApplicationArguments;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import com.muhjain.school.model.enums.Role;
+import com.muhjain.school.service.user.OwnerBootstrap;
+import com.muhjain.school.service.user.UserService;
 
 class OwnerBootstrapTest extends AbstractIntegrationTest {
 

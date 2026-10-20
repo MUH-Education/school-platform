@@ -15,7 +15,7 @@ Backend for MUH Jain Global School (Tohana, Haryana). One Spring Boot app serves
 |---|---|
 | Language | Java 25 |
 | Framework | Spring Boot 4.1.x (Spring Framework 7, Spring Security 7) |
-| Build | Gradle 9.x with Kotlin DSL (`build.gradle.kts`), use the wrapper `./gradlew` |
+| Build | Gradle 9.x with Groovy DSL (`build.gradle`), use the wrapper `./gradlew` |
 | Database | PostgreSQL 17 or newer, for every entity |
 | Schema changes | Flyway SQL files only |
 | Data access | Spring Data JPA (Hibernate), `ddl-auto=validate` |
@@ -65,9 +65,12 @@ Never start a new phase while the current phase has a failing "Done when" check.
 
 ## Architecture rules
 
-- **Package by feature**: `com.muhjain.school.<feature>`. Features: `auth`, `user`, `vehicle`, `staff`, `route`, `student`, `trip`, `messaging`, `enquiry`, `fee`, `analytics`, `audit`, `common`.
-- Inside a feature: `XController` → `XService` → `XRepository`. A controller never calls a repository.
-- A feature may call another feature's **service**, never its repository.
+- **Package by layer**: `com.muhjain.school.<layer>`. Top layers: `controller`, `service`, `model`, `config`, `security`, `exception`, `util`. See `docs/02-architecture.md` for the full list and examples.
+- `model` splits into `model.entity` (JPA entities), `model.repository` (Spring Data repositories), `model.enums` (plain enums), and `model.dto.request` / `model.dto.response` (the `...Request` / `...Response` records — a DTO that is neither goes in `response`).
+- `service` splits one sub-package per feature (`service.auth`, `service.student`, `service.fee`, ...). An interface (example: `OtpSender`) sits at the top of its feature's service package; its implementations sit in a `impl` sub-package under it (example: `service.auth.impl.WhatsAppOtpSender`).
+- `XController` → `XService` → `XRepository`. A controller never calls a repository.
+- A controller or service for one feature may call another feature's **service**, never its repository.
+- Any method, field, or nested type used from outside its own file must be `public`, even if it feels "internal" to one feature — the old same-package shortcut no longer applies now that a feature's classes are split across layer packages.
 - API input and output are Java `record` classes named `...Request` and `...Response`. **Never return a JPA entity from a controller.**
 - Entities are plain classes with getters and setters. Relations to other features are stored as ids (`Long routeId`), not as `@ManyToOne` objects.
 - All URLs start with `/api/v1/`.

@@ -3,6 +3,7 @@ package com.muhjain.school.common;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import com.muhjain.school.util.NameKeys;
 
 class NameKeysTest {
 

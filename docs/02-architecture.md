@@ -16,43 +16,54 @@ Real-life picture: Spring Boot is the office clerk. Everyone must show an ID car
 
 ## Packages
 
-Base package: `com.muhjain.school`. One package per feature.
+Base package: `com.muhjain.school`. One package per **layer**, not per feature. Every class for every feature (vehicle, staff, route, student, trip, ...) lives in the layer package that matches its job.
 
 ```
 com.muhjain.school
 ├── SchoolApplication.java
-├── common/          errors, paging, Clock bean, PhoneNumbers, Indian date helpers
-├── auth/            OTP request/verify, JwtService, SecurityConfig, CurrentUser
-├── user/            AppUser, Role, Permission, user CRUD
-├── audit/           AuditLog, AuditService
-├── vehicle/         Vehicle, VehicleDocument
-├── staff/           Staff, VehicleAssignment
-├── route/           Route, RouteStop, LoadBoardService
-├── student/         Student, Guardian, StudentGuardian, TransportEnrolment, photo
-├── trip/            BoardingEvent, ManifestService, BusStatusService, AlertService
-├── messaging/       MessageOutbox, templates, SmsSender, WhatsAppSender, OutboxWorker
-├── enquiry/         Enquiry, EnquiryFollowUp
-├── fee/             AcademicSession, ClassFee, FeePlan, FeeDue, FeePayment
-└── analytics/       read-only queries for graphs
+├── controller/           every XController (one per feature)
+├── service/
+│   ├── auth/              OtpService, JwtService's caller-side, OtpCleanupJob, OtpDeliveryService
+│   │   └── impl/           OtpSender implementations: LogOtpSender, SmsOtpSender, WhatsAppOtpSender
+│   ├── student/, fee/, trip/, route/, staff/, vehicle/, messaging/, enquiry/, user/, ...
+│   │   └── impl/           each feature's own interface implementations, where it has any
+│   └── analytics/, audit/, setting/, dev/   one sub-package per remaining feature
+├── model/
+│   ├── entity/            every @Entity (Vehicle, Staff, Route, Student, ...)
+│   ├── repository/        every Spring Data repository (VehicleRepository, StaffRepository, ...)
+│   ├── enums/             plain enums used by entities or requests (Gender, PayFrequency, Role, ...)
+│   └── dto/
+│       ├── request/        every ...Request record
+│       └── response/       every ...Response record, and any other DTO-shaped record (StudentFilter, Crew, ...)
+├── config/               @Configuration and @ConfigurationProperties classes
+├── security/             SecurityConfig, JwtService, CurrentUser, UserJwtConverter, TripAccess
+├── exception/            ApiException, ApiErrorResponse, GlobalExceptionHandler, and other XException classes
+└── util/                 small static helper classes with no state (PhoneNumbers, MoneyText, calculators)
 ```
 
-## Layers inside a feature
+A class keeps the feature name as a prefix when the plain name alone would collide (example: `AnalyticsStudentFilter` in `model.dto.response`, next to `StudentFilter` which is the Students-list filter).
 
-Example for `vehicle`:
+An interface with more than one implementation (example: `OtpSender`, implemented by `LogOtpSender`, `SmsOtpSender`, `WhatsAppOtpSender`) sits at the top of its feature's `service` sub-package; its implementations sit one level down, in `impl`. A couple of interfaces are implemented outside their own feature — `StudentCounts` (interface, in `service.route`) is implemented by `EnrolmentStudentCounts` (in `service.route.impl`, even though the class itself is about students), and `BoardingNotifier` (interface, in `service.trip`) is implemented by `OutboxBoardingNotifier` (in `service.trip.impl`, even though it is messaging code). The interface's home decides the package, so the contract and its implementations are always easy to find together.
 
-| Class | Job | Example |
-|---|---|---|
-| `VehicleController` | Reads the HTTP request, checks permission, returns a response record | `POST /api/v1/vehicles` |
-| `VehicleService` | Business rules and the transaction | "Registration number must be unique" |
-| `VehicleRepository` | Database access (Spring Data JPA) | `findByActiveTrueOrderByName()` |
-| `Vehicle` | JPA entity = one table row | `seats = 14` |
-| `VehicleRequest`, `VehicleResponse` | Java records for JSON in and out | `{ "name": "Van 4", "seats": 14 }` |
+## Layers
+
+Example for vehicles:
+
+| Class | Package | Job | Example |
+|---|---|---|---|
+| `VehicleController` | `controller` | Reads the HTTP request, checks permission, returns a response record | `POST /api/v1/vehicles` |
+| `VehicleService` | `service.vehicle` | Business rules and the transaction | "Registration number must be unique" |
+| `VehicleRepository` | `model.repository` | Database access (Spring Data JPA) | `findByActiveTrueOrderByName()` |
+| `Vehicle` | `model.entity` | JPA entity = one table row | `seats = 14` |
+| `VehicleRequest` | `model.dto.request` | Java record for JSON in | `{ "name": "Van 4", "seats": 14 }` |
+| `VehicleResponse` | `model.dto.response` | Java record for JSON out | `{ "id": 4, "name": "Van 4", "seats": 14 }` |
 
 Rules:
 
 - Controller → Service → Repository. Never skip a layer.
-- A feature calls another feature only through its service. Example: `TripService` asks `StudentService.findOnRoute(routeId, date)`. It does not touch `StudentRepository`.
+- A controller or service for one feature may call the service of another feature, never its repository directly. Example: `TripService` asks `StudentService.findOnRoute(routeId, date)`. It does not touch `StudentRepository`.
 - Entities hold ids of other features, not objects. Example: `Route` has `Long vehicleId`, not `Vehicle vehicle`. This keeps features separate and avoids lazy-loading errors.
+- A member (method, field, nested type) used by a class outside its own file must be `public`. Package-private only works when both classes sit in the same layer package by accident; do not rely on that — write `public` for anything meant to be used elsewhere.
 
 ## Request life cycle
 

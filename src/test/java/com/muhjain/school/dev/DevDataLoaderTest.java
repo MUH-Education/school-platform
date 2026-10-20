@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.List;
 
 import com.muhjain.school.AbstractIntegrationTest;
-import com.muhjain.school.user.Role;
+import com.muhjain.school.model.enums.Role;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import com.muhjain.school.service.dev.DevDataLoader;
 
 /**
  * The loader, run in a context with the {@code dev} profile on. The test cleans the tables before each test, so

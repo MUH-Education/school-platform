@@ -6,10 +6,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import com.muhjain.school.messaging.OutboxWorker;
-import com.muhjain.school.messaging.SendResult;
-import com.muhjain.school.messaging.SmsSendException;
-import com.muhjain.school.messaging.SmsSender;
+import com.muhjain.school.service.messaging.OutboxWorker;
+import com.muhjain.school.model.dto.response.SendResult;
+import com.muhjain.school.exception.SmsSendException;
+import com.muhjain.school.service.messaging.SmsSender;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

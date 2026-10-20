@@ -46,7 +46,7 @@ class EnquiryPrefillTest extends EnquiryTestBase {
 	void needsAdmissionsPermissionNotEnquiriesView() throws Exception {
 		long id = idOf(create(desk, FIVE));
 		read(office, "/api/v1/enquiries/" + id + "/prefill").andExpect(status().isOk());
-		String transport = tokenFor(addUser("+919812340003", com.muhjain.school.user.Role.TRANSPORT_INCHARGE));
+		String transport = tokenFor(addUser("+919812340003", com.muhjain.school.model.enums.Role.TRANSPORT_INCHARGE));
 		read(transport, "/api/v1/enquiries/" + id + "/prefill").andExpect(status().isForbidden());
 		mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 			.get("/api/v1/enquiries/" + id + "/prefill")).andExpect(status().isUnauthorized());

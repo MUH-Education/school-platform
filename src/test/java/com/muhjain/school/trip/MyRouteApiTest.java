@@ -35,7 +35,7 @@ class MyRouteApiTest extends TripTestBase {
 	@Test
 	void replacementAttendantSeesTheRouteOnlyOnHisDays() throws Exception {
 		// Naresh is a spare attendant. He covers Van 4 only today. Balwan is replaced today and is back tomorrow.
-		var naresh = addUser("+919812340013", com.muhjain.school.user.Role.ATTENDANT);
+		var naresh = addUser("+919812340013", com.muhjain.school.model.enums.Role.ATTENDANT);
 		String nareshToken = tokenFor(naresh);
 		long van4 = jdbc.queryForObject("select vehicle_id from route where id = ?", Long.class, route4);
 		addAssignment(van4, naresh.getStaffId(), "ATTENDANT", TODAY, TODAY, true);

@@ -5,7 +5,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 
 import com.muhjain.school.AbstractIntegrationTest;
-import com.muhjain.school.common.NameKeys;
+import com.muhjain.school.util.NameKeys;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -13,6 +13,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import com.muhjain.school.model.entity.Vehicle;
+import com.muhjain.school.model.entity.VehicleDocument;
+import com.muhjain.school.model.enums.DocType;
+import com.muhjain.school.model.enums.OwnedBy;
+import com.muhjain.school.model.enums.VehicleType;
+import com.muhjain.school.model.repository.VehicleDocumentRepository;
+import com.muhjain.school.model.repository.VehicleRepository;
 
 class VehicleRepositoryTest extends AbstractIntegrationTest {
 

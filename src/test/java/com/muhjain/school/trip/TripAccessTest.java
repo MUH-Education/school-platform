@@ -6,12 +6,12 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Optional;
 
-import com.muhjain.school.common.ApiException;
-import com.muhjain.school.route.AttendantRoute;
-import com.muhjain.school.route.AttendantRouteService;
-import com.muhjain.school.user.AppUser;
-import com.muhjain.school.user.Role;
-import com.muhjain.school.user.UserService;
+import com.muhjain.school.exception.ApiException;
+import com.muhjain.school.model.dto.response.AttendantRoute;
+import com.muhjain.school.service.route.AttendantRouteService;
+import com.muhjain.school.model.entity.AppUser;
+import com.muhjain.school.model.enums.Role;
+import com.muhjain.school.service.user.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -23,6 +23,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import com.muhjain.school.security.TripAccess;
 
 /** Rules 1 to 3. Pure test: users and routes are mocks. Today is 7 Oct 2026. Balwan (user 1) is on Route 4. */
 class TripAccessTest {

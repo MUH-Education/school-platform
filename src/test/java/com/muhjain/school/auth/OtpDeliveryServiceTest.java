@@ -9,6 +9,10 @@ import org.springframework.mock.env.MockEnvironment;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import com.muhjain.school.config.OtpProperties;
+import com.muhjain.school.exception.OtpSendException;
+import com.muhjain.school.service.auth.OtpDeliveryService;
+import com.muhjain.school.service.auth.OtpSender;
 
 class OtpDeliveryServiceTest {
 

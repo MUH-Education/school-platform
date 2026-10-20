@@ -3,7 +3,7 @@ package com.muhjain.school.dev;
 import java.time.Instant;
 
 import com.muhjain.school.AbstractIntegrationTest;
-import com.muhjain.school.user.Role;
+import com.muhjain.school.model.enums.Role;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import com.muhjain.school.service.dev.DevDataLoader;
 
 /** Task 6.11: the dev data has 29 enquiries across the stages. */
 @ActiveProfiles({ "test", "dev" })

@@ -1,0 +1,21 @@
+package com.muhjain.school.model.dto.response;
+
+import jakarta.validation.constraints.Size;
+import com.muhjain.school.model.entity.TeacherProfile;
+
+/**
+ * The extra file of a teacher. Sent and read only when {@code staffType} is TEACHER.
+ * {@code classTeacherOf} is one class of this school, or left out when the teacher has no class.
+ * Example: {@code { "qualification": "B.Ed, M.A. Hindi", "subjects": "Hindi, Social Science",
+ * "classTeacherOf": "3" }}
+ */
+public record Teaching(@Size(max = 120) String qualification, @Size(max = 200) String subjects,
+		@Size(max = 20) String classTeacherOf) {
+
+	public static final Teaching EMPTY = new Teaching(null, null, null);
+
+	public static Teaching of(TeacherProfile profile) {
+	return new Teaching(profile.getQualification(), profile.getSubjects(), profile.getClassTeacherOf());
+	}
+
+}

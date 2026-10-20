@@ -9,6 +9,10 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import com.muhjain.school.model.dto.request.MarkRequest;
+import com.muhjain.school.model.enums.EventType;
+import com.muhjain.school.model.enums.Outcome;
+import com.muhjain.school.service.trip.MarkService;
 
 /**
  * Rules 2 to 7 of Phase 5: the tap writes the parent SMS into the queue, in the same transaction.

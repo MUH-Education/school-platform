@@ -2,10 +2,10 @@ package com.muhjain.school.analytics;
 
 import java.util.List;
 
-import com.muhjain.school.common.ApiException;
-import com.muhjain.school.fee.FeeStatus;
-import com.muhjain.school.student.BusFilter;
-import com.muhjain.school.student.FatherOccupation;
+import com.muhjain.school.exception.ApiException;
+import com.muhjain.school.model.enums.FeeStatus;
+import com.muhjain.school.model.enums.BusFilter;
+import com.muhjain.school.model.enums.FatherOccupation;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,31 +13,34 @@ import org.springframework.beans.factory.annotation.Autowired;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import com.muhjain.school.model.dto.response.AnalyticsStudent;
+import com.muhjain.school.model.dto.response.AnalyticsStudentFilter;
+import com.muhjain.school.service.analytics.AnalyticsBase;
 
 class AnalyticsBaseTest extends AnalyticsTestBase {
 
 	@Autowired
 	AnalyticsBase base;
 
-	private static StudentFilter filter(String className, String village, Long routeId, BusFilter bus,
+	private static AnalyticsStudentFilter filter(String className, String village, Long routeId, BusFilter bus,
 			FatherOccupation occupation, FeeStatus feeStatus) {
-		return StudentFilter.of(null, className, village, routeId, bus, occupation, feeStatus);
+		return AnalyticsStudentFilter.of(null, className, village, routeId, bus, occupation, feeStatus);
 	}
 
-	private List<String> names(StudentFilter filter) {
+	private List<String> names(AnalyticsStudentFilter filter) {
 		return base.students(filter).stream().map(AnalyticsStudent::name).toList();
 	}
 
 	@Test
 	void noFilterGivesEveryActiveChildByName() {
-		assertThat(names(StudentFilter.none())).containsExactly("Aarav", "Bhavya", "Charu", "Dev", "Esha", "Farhan",
+		assertThat(names(AnalyticsStudentFilter.none())).containsExactly("Aarav", "Bhavya", "Charu", "Dev", "Esha", "Farhan",
 				"Gauri", "Harsh", "Ishan", "Jiya", "Kabir", "Lata");
 	}
 
 	@Test
 	void aChildWhoLeftIsNotCounted() {
 		jdbc.update("update student set status = 'LEFT', left_on = date '2026-09-01' where name = 'Dev'");
-		assertThat(names(StudentFilter.none())).hasSize(11).doesNotContain("Dev");
+		assertThat(names(AnalyticsStudentFilter.none())).hasSize(11).doesNotContain("Dev");
 	}
 
 	@Test
@@ -66,19 +69,19 @@ class AnalyticsBaseTest extends AnalyticsTestBase {
 
 	@Test
 	void eachChildCarriesHisFeeNumbersAndRoute() {
-		AnalyticsStudent charu = base.students(StudentFilter.none()).stream().filter(s -> s.name().equals("Charu")).findFirst().get();
+		AnalyticsStudent charu = base.students(AnalyticsStudentFilter.none()).stream().filter(s -> s.name().equals("Charu")).findFirst().get();
 		assertThat(charu.routeName()).isEqualTo("Route A");
 		assertThat(charu.feeStatus()).isEqualTo(FeeStatus.DEFAULTED);
-		assertThat(charu.headStatus(com.muhjain.school.fee.FeeHead.SCHOOL)).isEqualTo(FeeStatus.ON_TIME);
+		assertThat(charu.headStatus(com.muhjain.school.model.enums.FeeHead.SCHOOL)).isEqualTo(FeeStatus.ON_TIME);
 		assertThat(charu.pendingNow()).isEqualByComparingTo("3500");
-		AnalyticsStudent farhan = base.students(StudentFilter.none()).stream().filter(s -> s.name().equals("Farhan")).findFirst().get();
+		AnalyticsStudent farhan = base.students(AnalyticsStudentFilter.none()).stream().filter(s -> s.name().equals("Farhan")).findFirst().get();
 		assertThat(farhan.fee()).isNull();
 		assertThat(farhan.pendingNow()).isEqualByComparingTo("0");
 	}
 
 	@Test
 	void theStatusIsTheSameAsOnTheChildsOwnPage() throws Exception {
-		for (AnalyticsStudent s : base.students(StudentFilter.none())) {
+		for (AnalyticsStudent s : base.students(AnalyticsStudentFilter.none())) {
 			String body = get(owner, "/api/v1/students/" + s.id() + "/fees").andExpect(status().isOk())
 				.andReturn().getResponse().getContentAsString();
 			assertThat((String) JsonPath.read(body, "$.status")).isEqualTo((s.feeStatus() == null) ? null : s.feeStatus().name());
@@ -88,7 +91,7 @@ class AnalyticsBaseTest extends AnalyticsTestBase {
 
 	@Test
 	void anUnknownSessionOrRouteIsA404() {
-		assertThatThrownBy(() -> base.students(StudentFilter.of(999L, null, null, null, null, null, null)))
+		assertThatThrownBy(() -> base.students(AnalyticsStudentFilter.of(999L, null, null, null, null, null, null)))
 			.isInstanceOfSatisfying(ApiException.class, e -> assertThat(e.getStatus().value()).isEqualTo(404));
 		assertThatThrownBy(() -> base.students(filter(null, null, 999L, null, null, null)))
 			.isInstanceOfSatisfying(ApiException.class, e -> assertThat(e.getStatus().value()).isEqualTo(404));

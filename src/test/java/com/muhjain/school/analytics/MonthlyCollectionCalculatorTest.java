@@ -7,12 +7,13 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
 
-import com.muhjain.school.analytics.MonthlyCollectionCalculator.MonthRow;
-import com.muhjain.school.fee.FeeHead;
-import com.muhjain.school.fee.FeeStatusCalculator.CoveredDue;
+import com.muhjain.school.util.MonthlyCollectionCalculator.MonthRow;
+import com.muhjain.school.model.enums.FeeHead;
+import com.muhjain.school.util.FeeStatusCalculator.CoveredDue;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import com.muhjain.school.util.MonthlyCollectionCalculator;
 
 class MonthlyCollectionCalculatorTest {
 

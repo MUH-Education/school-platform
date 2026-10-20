@@ -7,11 +7,11 @@ import java.time.temporal.ChronoUnit;
 import java.time.ZoneId;
 
 import com.jayway.jsonpath.JsonPath;
-import com.muhjain.school.auth.JwtService;
-import com.muhjain.school.auth.LogOtpSender;
-import com.muhjain.school.user.AppUser;
-import com.muhjain.school.user.AppUserRepository;
-import com.muhjain.school.user.Role;
+import com.muhjain.school.security.JwtService;
+import com.muhjain.school.service.auth.impl.LogOtpSender;
+import com.muhjain.school.model.entity.AppUser;
+import com.muhjain.school.model.repository.AppUserRepository;
+import com.muhjain.school.model.enums.Role;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;

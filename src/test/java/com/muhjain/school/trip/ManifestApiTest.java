@@ -76,7 +76,7 @@ class ManifestApiTest extends TripTestBase {
 	void noTokenGives401AndWrongRoleGives403() throws Exception {
 		mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/v1/trips/manifest"))
 			.andExpect(status().isUnauthorized());
-		String desk = tokenFor(addUser("+919812340077", com.muhjain.school.user.Role.ADMISSIONS_DESK));
+		String desk = tokenFor(addUser("+919812340077", com.muhjain.school.model.enums.Role.ADMISSIONS_DESK));
 		getAs(desk, "/api/v1/trips/manifest?routeId=" + route4).andExpect(status().isForbidden());
 	}
 

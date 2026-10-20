@@ -13,6 +13,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import com.muhjain.school.model.enums.EventType;
+import com.muhjain.school.service.trip.BoardingNotifier;
 
 /** Rules 1 to 10: who may tap, and how a tap is saved. */
 class MarkApiTest extends TripTestBase {
@@ -156,7 +158,7 @@ class MarkApiTest extends TripTestBase {
 		mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/v1/trips/marks")
 			.contentType("application/json").content("{\"marks\":[]}"))
 			.andExpect(status().isUnauthorized());
-		String desk = tokenFor(addUser("+919812340077", com.muhjain.school.user.Role.ADMISSIONS_DESK));
+		String desk = tokenFor(addUser("+919812340077", com.muhjain.school.model.enums.Role.ADMISSIONS_DESK));
 		sendMarks(desk, morning(aryan, "DONE", "07:42:00")).andExpect(status().isForbidden());
 	}
 

@@ -1,7 +1,7 @@
 package com.muhjain.school.common;
 
 import com.muhjain.school.AbstractIntegrationTest;
-import com.muhjain.school.user.Role;
+import com.muhjain.school.model.enums.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.context.TestPropertySource;
 

@@ -3,10 +3,10 @@ package com.muhjain.school.messaging;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.muhjain.school.auth.OtpDeliveryService;
-import com.muhjain.school.auth.OtpProperties;
-import com.muhjain.school.auth.SmsOtpSender;
-import com.muhjain.school.auth.WhatsAppOtpSender;
+import com.muhjain.school.service.auth.OtpDeliveryService;
+import com.muhjain.school.config.OtpProperties;
+import com.muhjain.school.service.auth.impl.SmsOtpSender;
+import com.muhjain.school.service.auth.impl.WhatsAppOtpSender;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.mock.env.MockEnvironment;
@@ -15,6 +15,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import com.muhjain.school.config.ProviderProperties;
+import com.muhjain.school.model.dto.response.SendResult;
+import com.muhjain.school.exception.SmsSendException;
+import com.muhjain.school.service.messaging.ProviderApi;
+import com.muhjain.school.service.messaging.impl.ProviderSmsSender;
 
 /** Everything except the provider's own HTTP calls: a fake {@link ProviderApi} stands in for the one class to write. */
 class ProviderWiringTest {
@@ -79,7 +84,7 @@ class ProviderWiringTest {
 	@Test
 	void withoutAProviderClassTheOtpFailsInsteadOfPretending() {
 		assertThatThrownBy(() -> delivery(null).send("+919811100001", "123456"))
-			.isInstanceOf(com.muhjain.school.auth.OtpSendException.class);
+			.isInstanceOf(com.muhjain.school.exception.OtpSendException.class);
 	}
 
 	@Test

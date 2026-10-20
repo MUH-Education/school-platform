@@ -4,14 +4,16 @@ import java.time.Duration;
 import java.time.ZoneOffset;
 
 import com.muhjain.school.AbstractIntegrationTest;
-import com.muhjain.school.common.ApiException;
-import com.muhjain.school.user.AppUser;
-import com.muhjain.school.user.Role;
+import com.muhjain.school.exception.ApiException;
+import com.muhjain.school.model.entity.AppUser;
+import com.muhjain.school.model.enums.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import com.muhjain.school.model.dto.response.LoginResponse;
+import com.muhjain.school.service.auth.OtpService;
 
 class OtpServiceVerifyTest extends AbstractIntegrationTest {
 

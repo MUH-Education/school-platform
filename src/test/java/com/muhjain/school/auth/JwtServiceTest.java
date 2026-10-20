@@ -4,8 +4,8 @@ import java.time.Duration;
 import java.time.Instant;
 
 import com.muhjain.school.AbstractIntegrationTest;
-import com.muhjain.school.user.AppUser;
-import com.muhjain.school.user.Role;
+import com.muhjain.school.model.entity.AppUser;
+import com.muhjain.school.model.enums.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -14,6 +14,8 @@ import org.springframework.security.oauth2.jwt.JwtException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import com.muhjain.school.model.dto.response.IssuedToken;
+import com.muhjain.school.security.JwtService;
 
 class JwtServiceTest extends AbstractIntegrationTest {
 

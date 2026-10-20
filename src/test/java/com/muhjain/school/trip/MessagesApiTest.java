@@ -105,7 +105,7 @@ class MessagesApiTest extends TripTestBase {
 
 	@Test
 	void ownerCanSaveTheProviderIdAndTheTextAndOfficeCannot() throws Exception {
-		String owner = tokenFor(addUser("+919812340001", com.muhjain.school.user.Role.OWNER));
+		String owner = tokenFor(addUser("+919812340001", com.muhjain.school.model.enums.Role.OWNER));
 		String body = "{name} स्कूल पहुँच गया — {time}। MUH Jain School";
 		putTemplate(owner, "REACHED_SCHOOL_M", "{\"body\":\"" + body + "\",\"providerTemplateId\":\"1107001\","
 				+ "\"active\":true}").andExpect(status().isOk())
@@ -116,7 +116,7 @@ class MessagesApiTest extends TripTestBase {
 
 	@Test
 	void templateTextMustKeepPlaceholdersAndFitIn70Characters() throws Exception {
-		String owner = tokenFor(addUser("+919812340001", com.muhjain.school.user.Role.OWNER));
+		String owner = tokenFor(addUser("+919812340001", com.muhjain.school.model.enums.Role.OWNER));
 		putTemplate(owner, "REACHED_SCHOOL_M", "{\"body\":\"no placeholders\",\"active\":true}")
 			.andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.fields.body").exists());

@@ -13,6 +13,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import com.muhjain.school.model.enums.Permission;
+import com.muhjain.school.model.enums.Role;
 
 /**
  * Reads the table "Which role has which permission" in docs/05-roles-permissions.md and checks the enums,

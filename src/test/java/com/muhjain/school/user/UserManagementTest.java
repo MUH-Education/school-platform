@@ -12,6 +12,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import com.muhjain.school.model.entity.AppUser;
+import com.muhjain.school.model.enums.Role;
 
 /** The "Users" tests of docs/phases/phase-1-login-users.md. */
 class UserManagementTest extends AbstractIntegrationTest {

@@ -3,7 +3,7 @@ package com.muhjain.school.dev;
 import java.time.Instant;
 
 import com.muhjain.school.AbstractIntegrationTest;
-import com.muhjain.school.user.Role;
+import com.muhjain.school.model.enums.Role;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +14,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import com.muhjain.school.service.dev.DevDataLoader;
 
 /** Task 4.12: with the dev data, Bus status at the fixed time 7:48 shows 9 routes with the states of the design. */
 @ActiveProfiles({ "test", "dev" })

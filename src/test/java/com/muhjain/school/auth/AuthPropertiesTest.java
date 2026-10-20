@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import com.muhjain.school.config.OtpProperties;
+import com.muhjain.school.security.JwtProperties;
 
 class AuthPropertiesTest extends AbstractIntegrationTest {
 
