@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.ResultActions;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -21,8 +22,13 @@ import com.muhjain.school.service.dev.DevDataLoader;
 /**
  * The loader, run in a context with the {@code dev} profile on. The test cleans the tables before each test, so
  * the loader is called by hand here. Today is 7 Oct 2026.
+ * <p>
+ * {@code app.bootstrap.owner-phone} is set so OwnerBootstrap (@Order(0)) makes a real OWNER before this
+ * context's own, automatic startup run of the loader — the same order a real laptop boot has, needed
+ * now that {@code vehicle_assignment.created_by} is not null.
  */
 @ActiveProfiles({ "test", "dev" })
+@TestPropertySource(properties = "app.bootstrap.owner-phone=9999900000")
 class DevDataLoaderTest extends AbstractIntegrationTest {
 
 	@Autowired

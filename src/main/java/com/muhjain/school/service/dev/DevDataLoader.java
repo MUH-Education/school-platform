@@ -336,9 +336,12 @@ public class DevDataLoader implements ApplicationRunner {
 	private static final int FAMILIES = 28;
 
 	// db-design makes several created_by columns not null (student, enquiry, enquiry_follow_up, ...).
-	// Dev data used null for "nobody in particular" before; now it reuses the test office admin's id.
+	// Dev data used null for "nobody in particular" before; now it reuses a real user's id. loadFleet()
+	// runs before loadTestLogins(), so the test office admin does not exist yet — fall back to the
+	// OWNER that OwnerBootstrap (@Order(0)) made before this ApplicationRunner ever started.
 	private Long systemUserId() {
 		return userService.findActiveByPhone(com.muhjain.school.util.PhoneNumbers.normalize(TEST_OFFICE_ADMIN_PHONE))
+			.or(userService::findFirstActiveOwner)
 			.map(com.muhjain.school.model.entity.AppUser::getId)
 			.orElse(null);
 	}

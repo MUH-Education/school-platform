@@ -8,6 +8,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -15,8 +16,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import com.muhjain.school.service.dev.DevDataLoader;
 
-/** Task 6.11: the dev data has 29 enquiries across the stages. */
+/**
+ * Task 6.11: the dev data has 29 enquiries across the stages.
+ * {@code app.bootstrap.owner-phone} is set so this context's automatic startup run of the loader has a real
+ * OWNER to use as {@code created_by} — see {@link DevDataLoaderTest}.
+ */
 @ActiveProfiles({ "test", "dev" })
+@TestPropertySource(properties = "app.bootstrap.owner-phone=9999900000")
 class DevDataEnquiriesTest extends AbstractIntegrationTest {
 
 	@Autowired

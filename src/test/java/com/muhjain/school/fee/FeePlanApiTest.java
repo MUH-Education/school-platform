@@ -19,7 +19,7 @@ class FeePlanApiTest extends FeeTestBase {
 
 	@BeforeEach
 	void addChild() {
-		aryan = addStudent("A-2026-1", "2026-04-01");
+		aryan = addStudent("A-2026-101", "2026-04-01");
 	}
 
 	private String url() {
@@ -41,7 +41,7 @@ class FeePlanApiTest extends FeeTestBase {
 
 	@Test
 	void childWhoJoinsInNovemberHasDuesFromJoiningDay() throws Exception {
-		long ishaan = addStudent("A-2026-2", "2026-11-02");
+		long ishaan = addStudent("A-2026-102", "2026-11-02");
 		put(desk, "/api/v1/students/" + ishaan + "/fee-plan",
 				"{\"schoolFee\":12000,\"payFrequency\":\"QUARTERLY\"}").andExpect(status().isOk())
 			.andExpect(jsonPath("$.dues", hasSize(2)))

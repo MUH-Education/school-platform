@@ -25,7 +25,7 @@ class PaymentApiTest extends FeeTestBase {
 
 	@BeforeEach
 	void addChildWithPlan() throws Exception {
-		aryan = addStudent("A-2026-1", "2026-04-01");
+		aryan = addStudent("A-2026-101", "2026-04-01");
 		put(office, "/api/v1/students/" + aryan + "/fee-plan", FeePlanApiTest.QUARTERLY).andExpect(status().isOk());
 	}
 
@@ -106,7 +106,7 @@ class PaymentApiTest extends FeeTestBase {
 
 	@Test
 	void paymentNeedsAPlanAndAnExistingChild() throws Exception {
-		long ishaan = addStudent("A-2026-2", "2026-04-01");
+		long ishaan = addStudent("A-2026-102", "2026-04-01");
 		post(office, "/api/v1/students/" + ishaan + "/payments", upi("100", null)).andExpect(status().isConflict())
 			.andExpect(jsonPath("$.error").value("NO_FEE_PLAN"));
 		post(office, "/api/v1/students/99999/payments", upi("100", null)).andExpect(status().isNotFound());
@@ -259,7 +259,7 @@ class PaymentApiTest extends FeeTestBase {
 	@Test
 	void aReceiptOfAnotherChildCannotBeCorrected() throws Exception {
 		post(office, payments(), upi("7500", null)).andExpect(status().isCreated());
-		long ishaan = addStudent("A-2026-2", "2026-04-01");
+		long ishaan = addStudent("A-2026-102", "2026-04-01");
 		put(office, "/api/v1/students/" + ishaan + "/fee-plan", FeePlanApiTest.QUARTERLY).andExpect(status().isOk());
 
 		post(owner, "/api/v1/students/" + ishaan + "/payment-corrections",

@@ -14,7 +14,7 @@ class PaymentListApiTest extends FeeTestBase {
 
 	@BeforeEach
 	void threePaymentsOnThreeDays() throws Exception {
-		aryan = addStudent("A-2026-1", "2026-04-01");
+		aryan = addStudent("A-2026-101", "2026-04-01");
 		put(office, "/api/v1/students/" + aryan + "/fee-plan", FeePlanApiTest.QUARTERLY).andExpect(status().isOk());
 		for (String day : new String[] { "2026-10-01", "2026-10-05", "2026-10-07" }) {
 			post(office, "/api/v1/students/" + aryan + "/payments", "{\"mode\":\"CASH\",\"paidOn\":\"" + day
@@ -28,7 +28,7 @@ class PaymentListApiTest extends FeeTestBase {
 			.andExpect(jsonPath("$.totalItems").value(3))
 			.andExpect(jsonPath("$.items[0].paidOn").value("2026-10-07"))
 			.andExpect(jsonPath("$.items[0].studentName").value("Aryan"))
-			.andExpect(jsonPath("$.items[0].admissionNo").value("A-2026-1"))
+			.andExpect(jsonPath("$.items[0].admissionNo").value("A-2026-101"))
 			.andExpect(jsonPath("$.items[0].className").value("3"))
 			.andExpect(jsonPath("$.items[2].paidOn").value("2026-10-01"));
 	}

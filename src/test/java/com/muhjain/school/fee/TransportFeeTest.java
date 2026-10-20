@@ -21,7 +21,7 @@ class TransportFeeTest extends FeeTestBase {
 	@BeforeEach
 	void addChildWithSchoolOnlyPlan() throws Exception {
 		clock.setInstant(Instant.parse("2026-10-30T04:30:00Z"));
-		ishaan = addStudent("A-2026-2", "2026-04-01");
+		ishaan = addStudent("A-2026-102", "2026-04-01");
 		route = addBusRoute("Route 9");
 		put(office, "/api/v1/students/" + ishaan + "/fee-plan", "{\"schoolFee\":30000,\"payFrequency\":\"QUARTERLY\"}")
 			.andExpect(status().isOk());
@@ -55,7 +55,7 @@ class TransportFeeTest extends FeeTestBase {
 		assertThat(jdbc.queryForObject("select bus_fee from fee_plan", BigDecimal.class)).isEqualByComparingTo("0");
 		assertThat(jdbc.queryForObject("select count(*) from fee_due where fee_head = 'BUS'", Integer.class)).isZero();
 
-		long noPlan = addStudent("A-2026-3", "2026-04-01");
+		long noPlan = addStudent("A-2026-103", "2026-04-01");
 		put(office, "/api/v1/students/" + noPlan + "/transport", startBus("4000")).andExpect(status().isOk());
 		assertThat(jdbc.queryForObject("select count(*) from fee_plan", Integer.class)).isEqualTo(1);
 		assertThat(jdbc.queryForObject("select count(*) from fee_due where fee_head = 'BUS'", Integer.class)).isZero();

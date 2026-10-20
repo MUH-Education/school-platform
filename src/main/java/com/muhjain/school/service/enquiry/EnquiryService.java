@@ -452,7 +452,10 @@ public class EnquiryService {
 		}
 		enquiry.setParentName(parentName);
 		enquiry.setPhone(PhoneNumbers.normalize(request.phone()));
-		enquiry.setRelation(blankToNull(request.relation()));
+		// The database keeps a closed list (enquiry_relation_check): "mother", "Dadi" etc. become one
+		// of FATHER/MOTHER/GRANDFATHER/GRANDMOTHER/UNCLE_AUNT/OTHER before the row is ever written.
+		String relation = blankToNull(request.relation());
+		enquiry.setRelation(relation == null ? null : relationOf(relation).name());
 		enquiry.setVillage(village);
 		enquiry.setChildName(blankToNull(request.childName()));
 		enquiry.setClassSought(className);

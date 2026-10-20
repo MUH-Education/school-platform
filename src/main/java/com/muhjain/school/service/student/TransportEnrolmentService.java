@@ -273,7 +273,10 @@ public class TransportEnrolmentService {
 
 	private TransportSaveResponse insert(Student student, Target target, LocalDate fromDate, BigDecimal busFee,
 			TransportReason reason, String note, Long userId) {
-		BigDecimal fee = (busFee == null) ? null : busFee.setScale(2, java.math.RoundingMode.HALF_UP);
+		// A row on the bus always needs a fee (transport_enrolment_bus_fields): an admission or a
+		// change that does not type one gets the session's standard bus fee instead.
+		BigDecimal fee = (busFee != null) ? busFee : feePlans.defaultBusFeePerMonth();
+		fee = fee.setScale(2, java.math.RoundingMode.HALF_UP);
 		enrolments.saveAndFlush(new TransportEnrolment(student.getId(), true, target.route().id(), target.stop().id(),
 				fromDate, fee, reason, note, userId));
 		return TransportSaveResponse.ok(fullWarning(target.route(), fromDate));

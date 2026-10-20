@@ -25,6 +25,8 @@ import com.muhjain.school.model.entity.FeeDue;
 import com.muhjain.school.model.entity.FeePlan;
 import com.muhjain.school.model.enums.DiscountReason;
 import com.muhjain.school.model.repository.FeePlanRepository;
+import com.muhjain.school.model.entity.SessionFeeSetting;
+import com.muhjain.school.model.repository.SessionFeeSettingRepository;
 import com.muhjain.school.util.MoneyText;
 
 /**
@@ -53,17 +55,35 @@ public class FeePlanService {
 
 	private final ClassFeeService classFees;
 
+	private final SessionFeeSettingRepository sessionFeeSettings;
+
 	private final Clock clock;
 
 	public FeePlanService(FeePlanRepository plans, FeeDueGenerator dueGenerator, AcademicSessionService sessions,
-			StudentQueryService students, AuditService audit, ClassFeeService classFees, Clock clock) {
+			StudentQueryService students, AuditService audit, ClassFeeService classFees,
+			SessionFeeSettingRepository sessionFeeSettings, Clock clock) {
 		this.classFees = classFees;
 		this.plans = plans;
 		this.dueGenerator = dueGenerator;
 		this.sessions = sessions;
 		this.students = students;
 		this.audit = audit;
+		this.sessionFeeSettings = sessionFeeSettings;
 		this.clock = clock;
+	}
+
+	/**
+	 * The session's standard bus fee a month, used when an admission or a bus change does not type one.
+	 *
+	 * @throws ApiException 409 NO_FEE_SETTINGS if the current session has none yet
+	 */
+	@Transactional(readOnly = true)
+	public BigDecimal defaultBusFeePerMonth() {
+		AcademicSession session = sessions.current();
+		SessionFeeSetting setting = sessionFeeSettings.findBySessionId(session.getId())
+			.orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "NO_FEE_SETTINGS",
+					"Fee settings are not set for " + session.getName() + " yet."));
+		return setting.getBusFeePerMonth();
 	}
 
 	/**

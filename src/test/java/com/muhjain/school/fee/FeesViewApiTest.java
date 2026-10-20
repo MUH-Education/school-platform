@@ -18,7 +18,7 @@ class FeesViewApiTest extends FeeTestBase {
 	@BeforeEach
 	void addChildWithPlan() throws Exception {
 		clock.setInstant(Instant.parse("2026-04-01T04:30:00Z"));
-		aryan = addStudent("A-2026-1", "2026-04-01");
+		aryan = addStudent("A-2026-101", "2026-04-01");
 		put(office, "/api/v1/students/" + aryan + "/fee-plan", FeePlanApiTest.QUARTERLY).andExpect(status().isOk());
 	}
 
@@ -80,7 +80,7 @@ class FeesViewApiTest extends FeeTestBase {
 
 	@Test
 	void childWithoutAPlanGetsAnEmptyAnswerNotAnError() throws Exception {
-		long ishaan = addStudent("A-2026-2", "2026-04-01");
+		long ishaan = addStudent("A-2026-102", "2026-04-01");
 
 		get(desk, "/api/v1/students/" + ishaan + "/fees").andExpect(status().isOk())
 			.andExpect(jsonPath("$.plan").value(nullValue()))

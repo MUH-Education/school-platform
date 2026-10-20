@@ -127,7 +127,9 @@ class MarkApiTest extends TripTestBase {
 
 	@Test
 	void childWhoLeftIsUnknownStudent() throws Exception {
-		jdbc.update("update student set status = 'LEFT', left_on = '2026-10-01' where id = ?", aryan);
+		jdbc.update(
+				"update student set status = 'LEFT', left_on = '2026-10-01', left_reason = 'OTHER' where id = ?",
+				aryan);
 		sendMarks(officeToken, morning(aryan, "DONE", "07:42:00"))
 			.andExpect(jsonPath("$.results[0].error").value("UNKNOWN_STUDENT"));
 	}

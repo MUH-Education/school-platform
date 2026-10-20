@@ -204,6 +204,12 @@ public class UserService {
 		return users.findByPhoneAndActiveTrue(phone);
 	}
 
+	/** The first OWNER, made by {@code OwnerBootstrap} before anything else runs. */
+	@Transactional(readOnly = true)
+	public Optional<AppUser> findFirstActiveOwner() {
+		return users.findByRoleAndActiveTrue(Role.OWNER).stream().findFirst();
+	}
+
 	// An ATTENDANT must point at a real staff row of type ATTENDANT (so the server knows the route).
 	// Other roles have none. Example: staffId 14 is Balwan, ATTENDANT → fine. Staff 21 is a DRIVER → 400.
 	private void checkStaffId(Role role, Long staffId) {

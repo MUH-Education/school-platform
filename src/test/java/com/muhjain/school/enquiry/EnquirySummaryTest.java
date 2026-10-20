@@ -8,15 +8,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /** Rule 9. Today is 7 Oct 2026. */
 class EnquirySummaryTest extends EnquiryTestBase {
 
-	private long student;
+	private int admissionSeq = 100;
 
 	private void admitted(String phone, String village) {
 		long id = addEnquiry(phone, "3", "NEW", village, null);
-		if (student == 0) {
-			student = jdbc.queryForObject("insert into student (admission_no, name, dob, gender, class_name, village, "
-					+ "father_occupation, joined_on, created_by) values ('A-2026-101', 'Aryan', '2018-05-14', 'M', '3', "
-					+ "'Jakhal', 'OTHER', '2026-04-01', ?) returning id", Long.class, anyUserId());
-		}
+		long student = jdbc.queryForObject("insert into student (admission_no, name, dob, gender, class_name, "
+				+ "village, father_occupation, joined_on, created_by) values (?, 'Aryan', '2018-05-14', 'M', '3', "
+				+ "'Jakhal', 'OTHER', '2026-04-01', ?) returning id", Long.class, "A-2026-" + (++admissionSeq),
+				anyUserId());
 		jdbc.update("update enquiry set status = 'ADMITTED', admitted_student_id = ? where id = ?", student, id);
 	}
 

@@ -8,6 +8,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
@@ -16,8 +17,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import com.muhjain.school.service.dev.DevDataLoader;
 
-/** Task 4.12: with the dev data, Bus status at the fixed time 7:48 shows 9 routes with the states of the design. */
+/**
+ * Task 4.12: with the dev data, Bus status at the fixed time 7:48 shows 9 routes with the states of the design.
+ * {@code app.bootstrap.owner-phone} is set so this context's automatic startup run of the loader has a real
+ * OWNER to use as {@code created_by} — see {@link DevDataLoaderTest}.
+ */
 @ActiveProfiles({ "test", "dev" })
+@TestPropertySource(properties = "app.bootstrap.owner-phone=9999900000")
 class DevDataTripsTest extends AbstractIntegrationTest {
 
 	@Autowired

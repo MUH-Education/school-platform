@@ -11,10 +11,10 @@ class StudentListFeeStatusTest extends FeeTestBase {
 
 	@BeforeEach
 	void fourChildren() throws Exception {
-		long onTime = addStudent("A-2026-1", "2026-04-01");
-		long delayed = addStudent("A-2026-2", "2026-08-20");
-		long defaulted = addStudent("A-2026-3", "2026-04-01");
-		addStudent("A-2026-4", "2026-04-01"); // no plan
+		long onTime = addStudent("A-2026-101", "2026-04-01");
+		long delayed = addStudent("A-2026-102", "2026-08-20");
+		long defaulted = addStudent("A-2026-103", "2026-04-01");
+		addStudent("A-2026-104", "2026-04-01"); // no plan
 		put(office, "/api/v1/students/" + onTime + "/fee-plan", FeePlanApiTest.QUARTERLY).andExpect(status().isOk());
 		post(office, "/api/v1/students/" + onTime + "/payments", "{\"mode\":\"CASH\",\"lines\":[{\"feeHead\":\"SCHOOL\","
 				+ "\"amount\":22500},{\"feeHead\":\"BUS\",\"amount\":6600}]}").andExpect(status().isCreated());
