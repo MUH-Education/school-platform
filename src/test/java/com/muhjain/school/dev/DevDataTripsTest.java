@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -37,27 +38,30 @@ class DevDataTripsTest extends AbstractIntegrationTest {
 	@Test
 	void busStatusAt0748ShowsNineRoutesWithTheDesignStates() throws Exception {
 		read("/api/v1/bus-status").andExpect(status().isOk())
-			.andExpect(jsonPath("$.length()").value(9))
-			.andExpect(jsonPath("$[0].state").value("ON_THE_WAY"))
-			.andExpect(jsonPath("$[1].state").value("REACHED_SCHOOL"))
-			.andExpect(jsonPath("$[1].reachedAt").value("07:46"))
-			.andExpect(jsonPath("$[2].state").value("NO_TAPS"))
-			.andExpect(jsonPath("$[2].lateMinutes").value(33))
-			.andExpect(jsonPath("$[3].state").value("LATE"))
-			.andExpect(jsonPath("$[4].state").value("LATE"))
-			.andExpect(jsonPath("$[4].lateMinutes").value(16))
-			.andExpect(jsonPath("$[5].state").value("ON_THE_WAY"))
-			.andExpect(jsonPath("$[6].state").value("NOT_STARTED"))
-			.andExpect(jsonPath("$[7].state").value("ON_THE_WAY"))
-			.andExpect(jsonPath("$[8].state").value("NOT_STARTED"));
+			.andExpect(jsonPath("$.date").value("2026-10-07"))
+			.andExpect(jsonPath("$.phase").value("MORNING"))
+			.andExpect(jsonPath("$.routes.length()").value(9))
+			.andExpect(jsonPath("$.routes[0].state").value("ON_THE_WAY"))
+			.andExpect(jsonPath("$.routes[1].state").value("REACHED_SCHOOL"))
+			.andExpect(jsonPath("$.routes[1].school.reachedAt").value("07:46"))
+			.andExpect(jsonPath("$.routes[2].state").value("NO_TAPS"))
+			.andExpect(jsonPath("$.routes[2].lateMinutes").value(33))
+			.andExpect(jsonPath("$.routes[3].state").value("LATE"))
+			.andExpect(jsonPath("$.routes[4].state").value("LATE"))
+			.andExpect(jsonPath("$.routes[4].lateMinutes").value(16))
+			.andExpect(jsonPath("$.routes[5].state").value("ON_THE_WAY"))
+			.andExpect(jsonPath("$.routes[6].state").value("NOT_STARTED"))
+			.andExpect(jsonPath("$.routes[7].state").value("ON_THE_WAY"))
+			.andExpect(jsonPath("$.routes[8].state").value("NOT_STARTED"));
 	}
 
 	@Test
 	void attentionListShowsTheNoTapsAndLateRoutes() throws Exception {
-		read("/api/v1/bus-status/attention").andExpect(jsonPath("$.routes.length()").value(3))
-			.andExpect(jsonPath("$.routes[?(@.name=='Route 3')].state").value("NO_TAPS"))
-			.andExpect(jsonPath("$.routes[?(@.name=='Route 4')].state").value("LATE"))
-			.andExpect(jsonPath("$.routes[?(@.name=='Route 5')].state").value("LATE"));
+		read("/api/v1/bus-status/attention")
+			.andExpect(jsonPath("$[?(@.kind=='NO_TAPS' || @.kind=='LATE')]", hasSize(3)))
+			.andExpect(jsonPath("$[?(@.title=='Route 3 has no taps yet')]").exists())
+			.andExpect(jsonPath("$[?(@.title=='Route 4 is late')]").exists())
+			.andExpect(jsonPath("$[?(@.title=='Route 5 is late')]").exists());
 	}
 
 	@Test

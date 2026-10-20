@@ -186,6 +186,7 @@ public abstract class AbstractIntegrationTest {
 		jdbc.update("update app_setting set updated_by = null");
 		jdbc.update("delete from audit_log");
 		jdbc.update("delete from otp_code");
+		jdbc.update("delete from otp_whitelist");
 		jdbc.update("delete from app_user");
 		jdbc.update("delete from staff");
 		jdbc.update("delete from vehicle");

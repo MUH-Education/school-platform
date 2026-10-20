@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 class OtpServiceRequestTest extends AbstractIntegrationTest {
 
@@ -73,6 +74,19 @@ class OtpServiceRequestTest extends AbstractIntegrationTest {
 	void badPhoneIsValidationError() {
 		assertThatThrownBy(() -> otpService.request("12345", "10.0.0.1"))
 			.isInstanceOfSatisfying(ApiException.class, ex -> assertThat(ex.getCode()).isEqualTo("VALIDATION"));
+	}
+
+	@Test
+	void whitelistedPhoneGetsFixedCodeAndNoMessageIsSent() {
+		addUser(KNOWN, Role.OFFICE_ADMIN);
+		otpService.addToWhitelist(KNOWN, "Dev test login");
+
+		otpService.request(KNOWN, "10.0.0.1");
+
+		verifyNoInteractions(logOtpSender);
+		assertThat(jdbc.queryForObject("select channel from otp_code", String.class)).isEqualTo("WHITELIST");
+		String hash = jdbc.queryForObject("select code_hash from otp_code", String.class);
+		assertThat(hash).isEqualTo(hasher.hash(KNOWN, "123456"));
 	}
 
 }

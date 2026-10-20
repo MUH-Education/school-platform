@@ -1,5 +1,7 @@
 package com.muhjain.school.route;
 
+import java.time.LocalTime;
+
 import com.muhjain.school.common.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -21,6 +23,12 @@ public class Route extends BaseEntity {
 
 	@Column(nullable = false)
 	private boolean active = true;
+
+	@Column(name = "school_due_morning")
+	private LocalTime schoolDueMorning;
+
+	@Column(name = "school_due_evening")
+	private LocalTime schoolDueEvening;
 
 	protected Route() {
 	}
@@ -52,6 +60,22 @@ public class Route extends BaseEntity {
 
 	public void setActive(boolean active) {
 		this.active = active;
+	}
+
+	public LocalTime getSchoolDueMorning() {
+		return schoolDueMorning;
+	}
+
+	public void setSchoolDueMorning(LocalTime schoolDueMorning) {
+		this.schoolDueMorning = schoolDueMorning;
+	}
+
+	public LocalTime getSchoolDueEvening() {
+		return schoolDueEvening;
+	}
+
+	public void setSchoolDueEvening(LocalTime schoolDueEvening) {
+		this.schoolDueEvening = schoolDueEvening;
 	}
 
 }

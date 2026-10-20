@@ -56,8 +56,8 @@ class RouteDayService {
 					.put(event.getEventType(), event);
 			}
 		}
-		return new RouteDay(route.id(), route.name(), route.vehicleId(), routeService.stopTimes(route.id()), children,
-				taps);
+		return new RouteDay(route.id(), route.name(), route.vehicleId(), route.schoolDueMorning(),
+				route.schoolDueEvening(), routeService.stopTimes(route.id()), children, taps);
 	}
 
 }

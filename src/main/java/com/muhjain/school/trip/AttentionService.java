@@ -16,7 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * The attention list (rules 20 to 22).
+ * The attention list (rules 20 to 22). One flat list of plain English sentences, so the wording lives in one
+ * place (here), not in the web app.
  * <ul>
  * <li>NO_TAPS and LATE routes of the morning (rule 15). Shown on today's morning only, because a morning
  * warning is useless in the afternoon.</li>
@@ -25,7 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
  * in the evening is not missing: someone answered for them.</li>
  * </ul>
  * Example: Neha boarded in the morning. Evening boarding started at 14:40. At 14:50 Neha has no evening tap →
- * she is on the list with her class and stop.
+ * she is on the list with a CHILD_MISSING entry.
  */
 @Service
 public class AttentionService {
@@ -39,7 +40,7 @@ public class AttentionService {
 	}
 
 	@Transactional(readOnly = true)
-	public AttentionResponse attention(LocalDate date) {
+	public List<AttentionEntry> attention(LocalDate date) {
 		LocalDate day = (date != null) ? date : busStatus.today();
 		// One load of every route. The morning status also gives us the route's children and taps.
 		List<BusStatusService.Computed> computed = busStatus.computeAll(day, BusPhase.MORNING);
@@ -47,11 +48,63 @@ public class AttentionService {
 		List<BusStatusService.Computed> late = morningNow ? computed.stream()
 			.filter(c -> c.status().state() == RouteState.NO_TAPS || c.status().state() == RouteState.LATE)
 			.toList() : List.of();
-		List<MissingChild> missing = new ArrayList<>();
-		for (BusStatusService.Computed c : computed) {
-			missing.addAll(missingIn(c.route()));
+		List<AttentionEntry> entries = new ArrayList<>();
+		for (RouteStatusResponse route : busStatus.respond(late, day)) {
+			entries.add(routeEntry(route));
 		}
-		return new AttentionResponse(day, busStatus.respond(late, day), missing);
+		for (BusStatusService.Computed c : computed) {
+			for (MissingChild child : missingIn(c.route())) {
+				entries.add(childEntry(child));
+			}
+		}
+		return entries;
+	}
+
+	// NO_TAPS: no stop has a tap yet, compared with the first stop. LATE: the last tapped stop, compared with its due.
+	private static AttentionEntry routeEntry(RouteStatusResponse route) {
+		if (route.state() == RouteState.NO_TAPS) {
+			StopStatusResponse first = route.stops().get(0);
+			String title = route.name() + " has no taps yet";
+			String message = "The first stop, " + first.name() + ", was due at " + first.due() + ". That is "
+					+ route.lateMinutes() + " minutes ago. Attendant: " + attendantOrNone(route) + ".";
+			return new AttentionEntry(route.routeId(), AttentionKind.NO_TAPS, title, message);
+		}
+		StopStatusResponse lastDone = lastDoneStop(route.stops());
+		String title = route.name() + " is late";
+		String message = (lastDone != null)
+				? lastDone.name() + " was due at " + lastDone.due() + ", tapped at " + lastDone.tappedAt()
+						+ ". That is " + route.lateMinutes() + " minutes late. Attendant: " + attendantOrNone(route)
+						+ "."
+				: route.name() + " is " + route.lateMinutes() + " minutes late. Attendant: " + attendantOrNone(route)
+						+ ".";
+		return new AttentionEntry(route.routeId(), AttentionKind.LATE, title, message);
+	}
+
+	private static AttentionEntry childEntry(MissingChild child) {
+		String title = child.name() + " has no evening tap";
+		String message = child.name() + ", class " + classLabel(child.className(), child.section()) + ", stop "
+				+ child.stopName() + " on " + child.routeName() + ". Evening boarding started at "
+				+ child.eveningBoardingStartedAt() + ".";
+		return new AttentionEntry(child.routeId(), AttentionKind.CHILD_MISSING, title, message);
+	}
+
+	private static String classLabel(String className, String section) {
+		return (section != null && !section.isBlank()) ? className + "-" + section : className;
+	}
+
+	private static String attendantOrNone(RouteStatusResponse route) {
+		return (route.attendant() != null) ? route.attendant() : "not assigned";
+	}
+
+	// The last stop tapped so far (rule 14's DONE stops), the one rule 16 compares against its due time.
+	private static StopStatusResponse lastDoneStop(List<StopStatusResponse> stops) {
+		StopStatusResponse last = null;
+		for (StopStatusResponse stop : stops) {
+			if (stop.state() == StopState.DONE) {
+				last = stop;
+			}
+		}
+		return last;
 	}
 
 	private List<MissingChild> missingIn(RouteDay route) {

@@ -36,6 +36,8 @@ public class OtpService {
 
 	private static final Duration ONE_HOUR = Duration.ofHours(1);
 
+	static final String WHITELIST_CHANNEL = "WHITELIST";
+
 	private final OtpCodeRepository codes;
 
 	private final OtpHasher hasher;
@@ -50,13 +52,15 @@ public class OtpService {
 
 	private final AuditService auditService;
 
+	private final OtpWhitelistRepository whitelist;
+
 	private final Clock clock;
 
 	private final SecureRandom random = new SecureRandom();
 
 	public OtpService(OtpCodeRepository codes, OtpHasher hasher, OtpDeliveryService delivery,
 			OtpProperties properties, UserService userService, JwtService jwtService, AuditService auditService,
-			Clock clock) {
+			OtpWhitelistRepository whitelist, Clock clock) {
 		this.codes = codes;
 		this.hasher = hasher;
 		this.delivery = delivery;
@@ -64,6 +68,7 @@ public class OtpService {
 		this.userService = userService;
 		this.jwtService = jwtService;
 		this.auditService = auditService;
+		this.whitelist = whitelist;
 		this.clock = clock;
 	}
 
@@ -81,18 +86,39 @@ public class OtpService {
 
 		Optional<AppUser> user = userService.findActiveByPhone(phone);
 		if (user.isPresent()) {
-			String code = newCode();
-			try {
-				String channel = delivery.send(phone, code);
-				codes.save(new OtpCode(phone, hasher.hash(phone, code), channel, now.plus(properties.ttl()), ip));
+			if (whitelist.existsById(phone)) {
+				// Example: +919999900001 is whitelisted -> code is always "123456", no WhatsApp/SMS goes out.
+				String code = fixedCode();
+				codes.save(new OtpCode(phone, hasher.hash(phone, code), WHITELIST_CHANNEL, now.plus(properties.ttl()),
+						ip));
 			}
-			catch (OtpSendException ex) {
-				// Same answer as always, so the failure does not tell a stranger the number is known.
-				log.error("Could not send an OTP to {}: {}", PhoneNumbers.mask(phone), ex.getMessage());
+			else {
+				String code = newCode();
+				try {
+					String channel = delivery.send(phone, code);
+					codes.save(new OtpCode(phone, hasher.hash(phone, code), channel, now.plus(properties.ttl()), ip));
+				}
+				catch (OtpSendException ex) {
+					// Same answer as always, so the failure does not tell a stranger the number is known.
+					log.error("Could not send an OTP to {}: {}", PhoneNumbers.mask(phone), ex.getMessage());
+				}
 			}
 		}
 		return new OtpRequestResponse("If this number is registered, a code has been sent.",
 				properties.ttl().toSeconds(), properties.resendAfter().toSeconds());
+	}
+
+	/**
+	 * Adds a phone to the fixed-OTP whitelist. Example: "9999900001" -> every future code for this number is
+	 * "123456" (or "1234" if {@code app.otp.length} is 4), and no real message is sent. Does nothing if the
+	 * phone is whitelisted already.
+	 */
+	@Transactional
+	public void addToWhitelist(String rawPhone, String note) {
+		String phone = PhoneNumbers.normalize(rawPhone);
+		if (!whitelist.existsById(phone)) {
+			whitelist.save(new OtpWhitelist(phone, note, now()));
+		}
 	}
 
 	/**
@@ -178,6 +204,11 @@ public class OtpService {
 	private String newCode() {
 		int bound = (int) Math.pow(10, properties.length());
 		return String.format("%0" + properties.length() + "d", random.nextInt(bound));
+	}
+
+	// The one fixed code for a whitelisted phone: "1234" for a 4-digit setup, "123456" for anything else.
+	private String fixedCode() {
+		return (properties.length() == 4) ? "1234" : "123456";
 	}
 
 }

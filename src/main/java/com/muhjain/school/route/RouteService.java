@@ -92,7 +92,10 @@ public class RouteService {
 		String name = NameKeys.tidy(request.name());
 		checkName(name, 0L);
 		VehicleSummary vehicle = checkVehicle(request.vehicleId(), true, 0L);
-		Route route = save(new Route(name, request.vehicleId()));
+		Route route = new Route(name, request.vehicleId());
+		route.setSchoolDueMorning(request.schoolDueMorning());
+		route.setSchoolDueEvening(request.schoolDueEvening());
+		route = save(route);
 		auditService.record(ENTITY, route.getId(), AuditAction.CREATED,
 				name + " added" + ((vehicle != null) ? " on " + vehicle.name() : " with no vehicle"), null);
 		return response(route);
@@ -120,10 +123,14 @@ public class RouteService {
 		AuditChanges changes = new AuditChanges().field("Name", "name", route.getName(), name)
 			.field("Vehicle", "vehicle", (oldVehicle != null) ? oldVehicle.name() : null,
 					(newVehicle != null) ? newVehicle.name() : null)
-			.active(route.isActive(), active);
+			.active(route.isActive(), active)
+			.field("School due (morning)", "schoolDueMorning", route.getSchoolDueMorning(), request.schoolDueMorning())
+			.field("School due (evening)", "schoolDueEvening", route.getSchoolDueEvening(), request.schoolDueEvening());
 		route.setName(name);
 		route.setVehicleId(request.vehicleId());
 		route.setActive(active);
+		route.setSchoolDueMorning(request.schoolDueMorning());
+		route.setSchoolDueEvening(request.schoolDueEvening());
 		route = save(route);
 		if (!changes.isEmpty()) {
 			auditService.record(ENTITY, id, AuditAction.UPDATED, changes.summary(), changes.details());
@@ -262,16 +269,18 @@ public class RouteService {
 	/** One route in short, turned off ones too. Empty if the route does not exist. */
 	@Transactional(readOnly = true)
 	public Optional<RouteSummary> summary(Long routeId) {
-		return routes.findById(routeId).map(r -> new RouteSummary(r.getId(), r.getName(), r.getVehicleId()));
+		return routes.findById(routeId).map(RouteService::toSummary);
 	}
 
 	/** The routes that are turned on, oldest first. Bus status shows these. */
 	@Transactional(readOnly = true)
 	public List<RouteSummary> activeSummaries() {
-		return routes.findByActiveTrueOrderByIdAsc()
-			.stream()
-			.map(r -> new RouteSummary(r.getId(), r.getName(), r.getVehicleId()))
-			.toList();
+		return routes.findByActiveTrueOrderByIdAsc().stream().map(RouteService::toSummary).toList();
+	}
+
+	private static RouteSummary toSummary(Route r) {
+		return new RouteSummary(r.getId(), r.getName(), r.getVehicleId(), r.getSchoolDueMorning(),
+				r.getSchoolDueEvening());
 	}
 
 	/** The stops of a route in morning order, with their times. Example: Sadhanwas 07:25, Jakhal 07:40, ... */
@@ -311,7 +320,7 @@ public class RouteService {
 			.map(s -> StopResponse.of(s, children.getOrDefault(s.getId(), 0)))
 			.toList();
 		return new RouteResponse(route.getId(), route.getName(), route.isActive(), RouteResponse.VehicleRef.of(vehicle),
-				items);
+				route.getSchoolDueMorning(), route.getSchoolDueEvening(), items);
 	}
 
 	private void checkName(String name, Long exceptId) {

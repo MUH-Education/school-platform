@@ -25,6 +25,7 @@ The three standard columns are not repeated in the tables below.
 | 5 | `V5__messaging.sql` | `message_template`, `message_outbox` |
 | 6 | `V6__enquiries.sql` | `enquiry`, `enquiry_follow_up` |
 | 7 | `V7__fees.sql` | `academic_session`, `class_fee`, `fee_plan`, `fee_due`, `fee_payment`, `receipt_counter` |
+| — | `V9__otp_whitelist.sql` | `otp_whitelist` (test/demo logins, decision B25) |
 
 How they connect, in words:
 
@@ -60,13 +61,24 @@ Example row: `+919812340001`, "Balwan", ATTENDANT, staff 14, active, version 0.
 |---|---|---|
 | `phone` | varchar(13), not null | |
 | `code_hash` | varchar(64), not null | HMAC-SHA256 of the code. Never the code itself. |
-| `channel` | varchar(10), not null | WHATSAPP, SMS, LOG |
+| `channel` | varchar(10), not null | WHATSAPP, SMS, LOG, WHITELIST |
 | `expires_at` | timestamptz, not null | created + 5 minutes |
 | `attempts` | int, default 0 | wrong tries so far |
 | `consumed_at` | timestamptz, null | set when used |
 | `request_ip` | varchar(45), null | |
 
 Index: `(phone, created_at desc)`. Only the newest unused row for a phone is valid. A nightly job deletes rows older than 7 days.
+
+### `otp_whitelist` — test and demo logins (decision B25)
+
+| Column | Type | Notes |
+|---|---|---|
+| `phone` | varchar(13), primary key | |
+| `note` | varchar(120), null | Example: "Dev test login". |
+
+A whitelisted phone always gets code `123456` (or `1234` if `app.otp.length` is 4) and `otp/request` sends no real
+WhatsApp/SMS for it. No table says "which role" — this only changes the OTP step, nothing else about the user.
+There is no screen or endpoint for this table yet; rows are added by hand or by `DevDataLoader` (dev profile only).
 
 ### `audit_log` — who changed what
 

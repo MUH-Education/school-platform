@@ -6,10 +6,12 @@ import com.muhjain.school.AbstractIntegrationTest;
 import com.muhjain.school.user.AppUser;
 import com.muhjain.school.user.Role;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -19,6 +21,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class OtpLoginTest extends AbstractIntegrationTest {
 
 	private static final String PHONE = "+919812340002";
+
+	@Autowired
+	private OtpService otpService;
 
 	@Test
 	void unknownAndKnownPhoneGetTheSameAnswer() throws Exception {
@@ -154,6 +159,16 @@ class OtpLoginTest extends AbstractIntegrationTest {
 		request(PHONE).andExpect(status().isOk());
 		assertThat(otpRows()).as("no new code for a turned-off user").isEqualTo(1);
 		verify(PHONE, code).andExpect(status().isUnauthorized()).andExpect(jsonPath("$.error").value("OTP_INVALID"));
+	}
+
+	@Test
+	void whitelistedPhoneLogsInWithTheFixedCode() throws Exception {
+		addUser(PHONE, Role.OFFICE_ADMIN);
+		otpService.addToWhitelist(PHONE, "Dev test login");
+		request(PHONE).andExpect(status().isOk());
+
+		verify(PHONE, "123456").andExpect(status().isOk()).andExpect(jsonPath("$.token").isNotEmpty());
+		verifyNoInteractions(logOtpSender);
 	}
 
 	@Test

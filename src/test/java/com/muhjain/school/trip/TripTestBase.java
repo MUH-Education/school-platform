@@ -63,6 +63,9 @@ abstract class TripTestBase extends AbstractIntegrationTest {
 		route7Stop = addStop(route7, "Fatehabad Road", 1, "07:30", "14:40");
 		balwan = addUser("+919812340011", Role.ATTENDANT);
 		hari = addUser("+919812340012", Role.ATTENDANT);
+		// addUser() always names the new staff row "Balwan" (its generic ATTENDANT default). Give this one its
+		// real name, so a route's attendant shows correctly when there are two attendants in one test.
+		jdbc.update("update staff set name = 'Hari' where id = ?", hari.getStaffId());
 		office = addUser("+919812340002", Role.OFFICE_ADMIN);
 		addAssignment(van4, balwan.getStaffId(), "ATTENDANT", "2026-04-01", null, false);
 		addAssignment(van7, hari.getStaffId(), "ATTENDANT", "2026-04-01", null, false);

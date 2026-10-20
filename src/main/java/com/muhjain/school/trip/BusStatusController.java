@@ -34,7 +34,7 @@ public class BusStatusController {
 	@Operation(summary = "Status of every bus now")
 	@GetMapping
 	@PreAuthorize("hasAuthority('BUS_STATUS_VIEW')")
-	public List<RouteStatusResponse> all(
+	public BusStatusResponse all(
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
 			@RequestParam(required = false) BusPhase phase) {
 		return busStatusService.all(date, phase);
@@ -50,11 +50,11 @@ public class BusStatusController {
 		return busStatusService.route(routeId, date, phase);
 	}
 
-	/** Buses with no taps or late (morning), and children nobody answered for in the evening. */
+	/** One item per problem: a bus with no taps, a late bus, or a child nobody answered for in the evening. */
 	@Operation(summary = "Buses that need attention")
 	@GetMapping("/attention")
 	@PreAuthorize("hasAuthority('BUS_STATUS_VIEW')")
-	public AttentionResponse attention(
+	public List<AttentionEntry> attention(
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
 		return attentionService.attention(date);
 	}

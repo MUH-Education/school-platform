@@ -49,41 +49,45 @@ class BusStatusApiTest extends TripTestBase {
 		tap(firstChild(route2), "BOARDED_MORNING", "DONE", "07:25:00");
 		tap(firstChild(route2), "REACHED_SCHOOL", "DONE", "07:46:00");
 		getAs(officeToken, "/api/v1/bus-status").andExpect(status().isOk())
-			.andExpect(jsonPath("$.length()").value(6))
-			.andExpect(jsonPath("$[?(@.name=='Route 3')].state").value("NO_TAPS"))
-			.andExpect(jsonPath("$[?(@.name=='Route 3')].lateMinutes").value(33))
-			.andExpect(jsonPath("$[?(@.name=='Route 5')].state").value("LATE"))
-			.andExpect(jsonPath("$[?(@.name=='Route 5')].lateMinutes").value(16))
-			.andExpect(jsonPath("$[?(@.name=='Route 9')].state").value("NOT_STARTED"))
-			.andExpect(jsonPath("$[?(@.name=='Route 2')].state").value("REACHED_SCHOOL"))
-			.andExpect(jsonPath("$[?(@.name=='Route 2')].reachedAt").value("07:46"))
-			.andExpect(jsonPath("$[?(@.name=='Route 4')].state").value("NOT_STARTED")); // due 07:40, only 8 minutes
+			.andExpect(jsonPath("$.routes.length()").value(6))
+			.andExpect(jsonPath("$.routes[?(@.name=='Route 3')].state").value("NO_TAPS"))
+			.andExpect(jsonPath("$.routes[?(@.name=='Route 3')].lateMinutes").value(33))
+			.andExpect(jsonPath("$.routes[?(@.name=='Route 3')].startsAt").value((Object) null))
+			.andExpect(jsonPath("$.routes[?(@.name=='Route 5')].state").value("LATE"))
+			.andExpect(jsonPath("$.routes[?(@.name=='Route 5')].lateMinutes").value(16))
+			.andExpect(jsonPath("$.routes[?(@.name=='Route 9')].state").value("NOT_STARTED"))
+			.andExpect(jsonPath("$.routes[?(@.name=='Route 9')].startsAt").value("07:50"))
+			.andExpect(jsonPath("$.routes[?(@.name=='Route 2')].state").value("REACHED_SCHOOL"))
+			.andExpect(jsonPath("$.routes[?(@.name=='Route 2')].school.reachedAt").value("07:46"))
+			.andExpect(jsonPath("$.routes[?(@.name=='Route 4')].state").value("NOT_STARTED")); // due 07:40, only 8 minutes
 	}
 
 	@Test
 	void routeEntryHasVehicleAttendantCountsAndStops() throws Exception {
 		sendMarks(balwanToken, morning(aryan, "DONE", "07:42:10"), morning(siya, "ABSENT", "07:43:00"));
 		getAs(officeToken, "/api/v1/bus-status?phase=MORNING")
-			.andExpect(jsonPath("$[?(@.name=='Route 4')].vehicle").value("Van 4"))
-			.andExpect(jsonPath("$[?(@.name=='Route 4')].attendant").value("Balwan"))
-			.andExpect(jsonPath("$[?(@.name=='Route 4')].phase").value("MORNING"))
-			.andExpect(jsonPath("$[?(@.name=='Route 4')].boarded").value(1))
-			.andExpect(jsonPath("$[?(@.name=='Route 4')].absent").value(1))
-			.andExpect(jsonPath("$[?(@.name=='Route 4')].total").value(3))
-			.andExpect(jsonPath("$[?(@.name=='Route 4')].state").value("ON_THE_WAY"))
-			.andExpect(jsonPath("$[?(@.name=='Route 4')].stops[0].name").value("Jakhal"))
-			.andExpect(jsonPath("$[?(@.name=='Route 4')].stops[0].due").value("07:40"))
-			.andExpect(jsonPath("$[?(@.name=='Route 4')].stops[0].tappedAt").value("07:42"))
-			.andExpect(jsonPath("$[?(@.name=='Route 4')].stops[0].state").value("DONE"))
-			.andExpect(jsonPath("$[?(@.name=='Route 4')].stops[1].state").value("NEXT"));
+			.andExpect(jsonPath("$.routes[?(@.name=='Route 4')].vehicle").value("Van 4"))
+			.andExpect(jsonPath("$.routes[?(@.name=='Route 4')].vehicleType").value("SMALL_VAN"))
+			.andExpect(jsonPath("$.routes[?(@.name=='Route 4')].seats").value(14))
+			.andExpect(jsonPath("$.routes[?(@.name=='Route 4')].attendant").value("Balwan"))
+			.andExpect(jsonPath("$.routes[?(@.name=='Route 4')].phase").value("MORNING"))
+			.andExpect(jsonPath("$.routes[?(@.name=='Route 4')].boarded").value(1))
+			.andExpect(jsonPath("$.routes[?(@.name=='Route 4')].absent").value(1))
+			.andExpect(jsonPath("$.routes[?(@.name=='Route 4')].total").value(3))
+			.andExpect(jsonPath("$.routes[?(@.name=='Route 4')].state").value("ON_THE_WAY"))
+			.andExpect(jsonPath("$.routes[?(@.name=='Route 4')].stops[0].name").value("Jakhal"))
+			.andExpect(jsonPath("$.routes[?(@.name=='Route 4')].stops[0].due").value("07:40"))
+			.andExpect(jsonPath("$.routes[?(@.name=='Route 4')].stops[0].tappedAt").value("07:42"))
+			.andExpect(jsonPath("$.routes[?(@.name=='Route 4')].stops[0].state").value("DONE"))
+			.andExpect(jsonPath("$.routes[?(@.name=='Route 4')].stops[1].state").value("NEXT"));
 	}
 
 	@Test
 	void withoutPhaseItIsMorningBeforeNoonAndEveningAfter() throws Exception {
-		getAs(officeToken, "/api/v1/bus-status").andExpect(jsonPath("$[0].phase").value("MORNING"));
+		getAs(officeToken, "/api/v1/bus-status").andExpect(jsonPath("$.phase").value("MORNING"));
 		clock.advance(java.time.Duration.ofHours(5)); // 12:48
-		getAs(officeToken, "/api/v1/bus-status").andExpect(jsonPath("$[0].phase").value("EVENING"));
-		getAs(officeToken, "/api/v1/bus-status?phase=MORNING").andExpect(jsonPath("$[0].phase").value("MORNING"));
+		getAs(officeToken, "/api/v1/bus-status").andExpect(jsonPath("$.phase").value("EVENING"));
+		getAs(officeToken, "/api/v1/bus-status?phase=MORNING").andExpect(jsonPath("$.phase").value("MORNING"));
 	}
 
 	@Test
@@ -107,20 +111,20 @@ class BusStatusApiTest extends TripTestBase {
 	void eveningStatusFollowsBoardingAndHomeTaps() throws Exception {
 		clock.advance(java.time.Duration.ofHours(7)); // 14:48
 		getAs(officeToken, "/api/v1/bus-status?phase=EVENING")
-			.andExpect(jsonPath("$[?(@.name=='Route 4')].state").value("NOT_STARTED"));
+			.andExpect(jsonPath("$.routes[?(@.name=='Route 4')].state").value("NOT_STARTED"));
 		tap(aryan, "BOARDED_EVENING", "DONE", "14:40:00");
 		getAs(officeToken, "/api/v1/bus-status?phase=EVENING")
-			.andExpect(jsonPath("$[?(@.name=='Route 4')].state").value("BOARDING"))
-			.andExpect(jsonPath("$[?(@.name=='Route 4')].boarded").value(1));
+			.andExpect(jsonPath("$.routes[?(@.name=='Route 4')].state").value("BOARDING"))
+			.andExpect(jsonPath("$.routes[?(@.name=='Route 4')].boarded").value(1));
 		tap(siya, "BOARDED_EVENING", "NOT_TRAVELLING", "14:41:00");
 		tap(meera, "BOARDED_EVENING", "ABSENT", "14:41:30");
 		getAs(officeToken, "/api/v1/bus-status?phase=EVENING")
-			.andExpect(jsonPath("$[?(@.name=='Route 4')].state").value("ON_THE_WAY"))
-			.andExpect(jsonPath("$[?(@.name=='Route 4')].notTravelling").value(1))
-			.andExpect(jsonPath("$[?(@.name=='Route 4')].stops[0].name").value("Kanheri"));
+			.andExpect(jsonPath("$.routes[?(@.name=='Route 4')].state").value("ON_THE_WAY"))
+			.andExpect(jsonPath("$.routes[?(@.name=='Route 4')].notTravelling").value(1))
+			.andExpect(jsonPath("$.routes[?(@.name=='Route 4')].stops[0].name").value("Kanheri"));
 		tap(aryan, "REACHED_HOME", "DONE", "15:05:00");
 		getAs(officeToken, "/api/v1/bus-status?phase=EVENING")
-			.andExpect(jsonPath("$[?(@.name=='Route 4')].state").value("DONE"));
+			.andExpect(jsonPath("$.routes[?(@.name=='Route 4')].state").value("DONE"));
 	}
 
 	@Test

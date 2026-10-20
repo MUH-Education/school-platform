@@ -9,7 +9,9 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import com.muhjain.school.auth.OtpService;
 import com.muhjain.school.enquiry.EnquiryRequest;
 import com.muhjain.school.enquiry.EnquiryResponse;
 import com.muhjain.school.enquiry.EnquiryService;
@@ -66,7 +68,9 @@ import com.muhjain.school.trip.MarkRequest;
 import com.muhjain.school.trip.MarkResult;
 import com.muhjain.school.trip.MarkService;
 import com.muhjain.school.trip.Outcome;
+import com.muhjain.school.user.CreateUserRequest;
 import com.muhjain.school.user.Permission;
+import com.muhjain.school.user.Role;
 import com.muhjain.school.user.UserResponse;
 import com.muhjain.school.user.UserService;
 import com.muhjain.school.vehicle.CreateVehicleRequest;
@@ -117,6 +121,9 @@ import org.springframework.transaction.annotation.Transactional;
  * minutes ahead of the real clock is replaced by the real time, as for a phone, so start the app after 07:45 to
  * see the exact picture. Older databases keep their old stop times.
  * <p>
+ * Also adds 4 test logins, one per role that can log in (OWNER, OFFICE_ADMIN, TRANSPORT_INCHARGE, the
+ * ATTENDANT is Balwan from the fleet above). Each phone is whitelisted, so {@code otp/request} never sends a
+ * real message for it and {@code otp/verify} always accepts the fixed code (see docs/08-decisions.md).
  * Phase 6 adds 29 enquiries for the next session: 7 NEW, 6 CONTACTED, 5 VISITED, 3 APPLIED, 4 ADMITTED (linked to
  * real students) and 4 LOST, 5 of them overdue (the CONTACTED ones with a past date). So the enquiry screens have numbers: 29 enquiries, 14% admitted.
  * Phase 7 adds the standard class fees and a fee plan for every active child (half on time, a quarter delayed, a
@@ -171,6 +178,8 @@ public class DevDataLoader implements ApplicationRunner {
 
 	private final UserService userService;
 
+	private final OtpService otpService;
+
 	private final EnquiryService enquiryService;
 
 	private final SessionService sessionService;
@@ -186,7 +195,7 @@ public class DevDataLoader implements ApplicationRunner {
 	public DevDataLoader(VehicleService vehicleService, StaffService staffService,
 			AssignmentService assignmentService, RouteService routeService, AdmissionService admissionService,
 			GuardianService guardianService, StudentService studentService, StudentQueryService studentQuery,
-			MarkService markService, UserService userService, EnquiryService enquiryService,
+			MarkService markService, UserService userService, OtpService otpService, EnquiryService enquiryService,
 			SessionService sessionService, ClassFeeService classFeeService, FeePlanService feePlanService,
 			PaymentService paymentService, Clock clock) {
 		this.sessionService = sessionService;
@@ -197,6 +206,7 @@ public class DevDataLoader implements ApplicationRunner {
 		this.studentQuery = studentQuery;
 		this.markService = markService;
 		this.userService = userService;
+		this.otpService = otpService;
 		this.admissionService = admissionService;
 		this.guardianService = guardianService;
 		this.studentService = studentService;
@@ -216,6 +226,7 @@ public class DevDataLoader implements ApplicationRunner {
 		else {
 			log.info("Dev data: there are vehicles already, fleet not loaded");
 		}
+		loadTestLogins();
 		if (studentService.list(new StudentFilter(null, null, null, null, null, null), 0, 1, null)
 			.totalItems() == 0) {
 			loadStudents();
@@ -259,10 +270,53 @@ public class DevDataLoader implements ApplicationRunner {
 			assign(vehicle.id(), Duty.DRIVER, drivers.get(n - 1), yearStart);
 			assign(vehicle.id(), Duty.ATTENDANT, attendants.get(n - 1), yearStart);
 
-			RouteResponse route = routeService.create(new CreateRouteRequest("Route " + n, vehicle.id()));
+			LocalTime schoolDueMorning = lastStopTime(n).plusMinutes(10);
+			RouteResponse route = routeService
+				.create(new CreateRouteRequest("Route " + n, vehicle.id(), schoolDueMorning, null));
 			routeService.saveStops(route.id(), stops(n));
 		}
 		log.info("Dev data loaded: 9 vehicles, 9 routes, {} staff", DRIVERS.length * 2 + 2);
+	}
+
+	// ---- test logins (one per role, fixed OTP) ----
+
+	// Made up, in no other dev data range, so they are obviously test numbers.
+	private static final String TEST_OWNER_PHONE = "9999900001";
+
+	private static final String TEST_OFFICE_ADMIN_PHONE = "9999900002";
+
+	private static final String TEST_TRANSPORT_INCHARGE_PHONE = "9999900003";
+
+	private static final String TEST_ATTENDANT_PHONE = "9999900004";
+
+	// One login per role that can log in. The attendant reuses Balwan (Route 4) from the fleet above,
+	// so docs/05-roles-permissions.md's Balwan examples work against a real test login too.
+	private void loadTestLogins() {
+		if (userService.list().stream().anyMatch(u -> u.phone().endsWith(TEST_OWNER_PHONE))) {
+			log.info("Dev data: test logins already there, not loaded");
+			return;
+		}
+		userService.create(new CreateUserRequest(TEST_OWNER_PHONE, Role.OWNER, "Test owner", null), null);
+		userService.create(new CreateUserRequest(TEST_OFFICE_ADMIN_PHONE, Role.OFFICE_ADMIN, "Test office admin",
+				null), null);
+		userService.create(new CreateUserRequest(TEST_TRANSPORT_INCHARGE_PHONE, Role.TRANSPORT_INCHARGE,
+				"Test transport in-charge", null), null);
+		Long balwanId = staffService.list(Set.of(StaffType.ATTENDANT))
+			.stream()
+			.filter(s -> "Balwan".equals(s.name()))
+			.map(StaffResponse::id)
+			.findFirst()
+			.orElse(null);
+		if (balwanId != null) {
+			userService.create(new CreateUserRequest(TEST_ATTENDANT_PHONE, Role.ATTENDANT,
+					"Test attendant (Balwan)", balwanId), null);
+		}
+		for (String phone : List.of(TEST_OWNER_PHONE, TEST_OFFICE_ADMIN_PHONE, TEST_TRANSPORT_INCHARGE_PHONE,
+				TEST_ATTENDANT_PHONE)) {
+			otpService.addToWhitelist(phone, "Dev test login");
+		}
+		log.info("Dev data loaded: 4 test logins (owner, office admin, transport in-charge, attendant); "
+				+ "fixed OTP is 123456 (1234 if app.otp.length is 4)");
 	}
 
 	// ---- students (Phase 3) ----
@@ -374,6 +428,12 @@ public class DevDataLoader implements ApplicationRunner {
 			{ "07:40", "07:48", "07:54", "07:58" },
 			{ "07:20", "07:32", "07:42", "07:50", "07:58" },
 			{ "07:50", "07:52", "07:54", "07:56", "07:58" } };
+
+	// The route's last stop ("Tohana town") is closest to school. Due at school is a few minutes after it.
+	private static LocalTime lastStopTime(int route) {
+		String[] times = STOP_TIMES[route - 1];
+		return LocalTime.parse(times[times.length - 1]);
+	}
 
 	private static List<StopRequest> stops(int route) {
 		List<StopRequest> stops = new ArrayList<>();

@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -25,6 +26,7 @@ import com.muhjain.school.staff.Crew;
 import com.muhjain.school.student.RouteChild;
 import com.muhjain.school.trip.BusStatusCalculator.StopInput;
 import com.muhjain.school.vehicle.VehicleService;
+import com.muhjain.school.vehicle.VehicleSummary;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -94,13 +96,13 @@ public class BusStatusService {
 		return states;
 	}
 
-	/** Every active route, oldest first. */
+	/** Every active route, oldest first, wrapped with the day, the phase used and the server's time right now. */
 	@Transactional(readOnly = true)
-	public List<RouteStatusResponse> all(LocalDate date, BusPhase phase) {
+	public BusStatusResponse all(LocalDate date, BusPhase phase) {
 		LocalDate day = (date != null) ? date : today();
 		BusPhase effective = (phase != null) ? phase : defaultPhase();
 		List<Computed> computed = computeAll(day, effective);
-		return respond(computed, day);
+		return new BusStatusResponse(day, OffsetDateTime.now(clock), effective, respond(computed, day));
 	}
 
 	/**
@@ -210,24 +212,32 @@ public class BusStatusService {
 
 	List<RouteStatusResponse> respond(Collection<Computed> computed, LocalDate day) {
 		List<Long> vehicleIds = computed.stream().map(c -> c.route().vehicleId()).filter(Objects::nonNull).distinct().toList();
-		Map<Long, String> vehicleNames = vehicleService.names(vehicleIds);
+		Map<Long, VehicleSummary> vehicles = vehicleService.summaries(vehicleIds);
 		Map<Long, Crew> crews = assignmentService.onDate(vehicleIds, day);
 		return computed.stream().map(c -> {
 			Long vehicleId = c.route().vehicleId();
+			VehicleSummary vehicle = (vehicleId != null) ? vehicles.get(vehicleId) : null;
 			Crew crew = (vehicleId != null) ? crews.get(vehicleId) : null;
 			String attendant = (crew != null && crew.attendant() != null) ? crew.attendant().name() : null;
-			return toResponse(c, (vehicleId != null) ? vehicleNames.get(vehicleId) : null, attendant);
+			return toResponse(c, vehicle, attendant, day);
 		}).toList();
 	}
 
-	private static RouteStatusResponse toResponse(Computed c, String vehicle, String attendant) {
+	private static RouteStatusResponse toResponse(Computed c, VehicleSummary vehicle, String attendant,
+			LocalDate day) {
 		BusStatusCalculator.Status s = c.status();
 		List<StopStatusResponse> stops = s.stops()
 			.stream()
 			.map(st -> new StopStatusResponse(st.id(), st.name(), hhmm(st.due()), hhmm(st.tappedAt()), st.state()))
 			.toList();
-		return new RouteStatusResponse(c.route().routeId(), c.route().routeName(), vehicle, attendant, s.phase(),
-				s.state(), s.lateMinutes(), hhmm(s.reachedAt()), c.counts().boarded(), c.counts().absent(),
+		String startsAt = (s.state() == RouteState.NOT_STARTED && !s.stops().isEmpty()) ? hhmm(s.stops().get(0).due())
+				: null;
+		LocalTime due = (s.phase() == BusPhase.MORNING) ? c.route().schoolDueMorning() : c.route().schoolDueEvening();
+		RouteStatusResponse.School school = new RouteStatusResponse.School(
+				(due != null) ? day.atTime(due).format(HOUR_MINUTE) : null, hhmm(s.reachedAt()));
+		return new RouteStatusResponse(c.route().routeId(), c.route().routeName(), (vehicle != null) ? vehicle.name() : null,
+				(vehicle != null) ? vehicle.vehicleType() : null, (vehicle != null) ? vehicle.seats() : null, attendant,
+				s.phase(), s.state(), s.lateMinutes(), startsAt, school, c.counts().boarded(), c.counts().absent(),
 				c.counts().notTravelling(), c.counts().total(), stops);
 	}
 
