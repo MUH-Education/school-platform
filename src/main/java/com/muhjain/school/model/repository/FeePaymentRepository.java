@@ -1,6 +1,5 @@
 package com.muhjain.school.model.repository;
 
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -24,11 +23,12 @@ public interface FeePaymentRepository extends JpaRepository<FeePayment, Long> {
 			+ "and p.month = :month group by p.feeHead")
 	List<Object[]> paidByHead(@Param("studentId") Long studentId, @Param("month") LocalDate month);
 
-	/** The lines whose receipt was paid in the given range. Every filter is optional (null = any). */
+	/** The lines whose receipt was paid (business date, {@code paidOn}) in the given range. Every filter is
+	 * optional (null = any). */
 	@Query("select p from FeePayment p where p.receiptId in (select r.id from Receipt r where "
-			+ "r.paidAt >= :from and r.paidAt < :to and (:sessionId is null or r.sessionId = :sessionId)) "
+			+ "r.paidOn >= :from and r.paidOn <= :to and (:sessionId is null or r.sessionId = :sessionId)) "
 			+ "order by p.id desc")
-	Page<FeePayment> search(@Param("from") Instant from, @Param("to") Instant to,
+	Page<FeePayment> search(@Param("from") LocalDate from, @Param("to") LocalDate to,
 			@Param("sessionId") Long sessionId, Pageable pageable);
 
 }

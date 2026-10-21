@@ -50,14 +50,14 @@ create table message_template (
 );
 
 insert into message_template (code, gender, name, channel, body, approved_body, approval) values
-    ('BOARDED_MORNING', 'M', 'Boarded morning',   'SMS', '{name} सुबह {time} बजे बस में चढ़ गया। – MUH Jain School',           '{name} सुबह {time} बजे बस में चढ़ गया। – MUH Jain School',           'WAITING'),
-    ('BOARDED_MORNING', 'F', 'Boarded morning',   'SMS', '{name} सुबह {time} बजे बस में चढ़ गई। – MUH Jain School',            '{name} सुबह {time} बजे बस में चढ़ गई। – MUH Jain School',            'WAITING'),
-    ('REACHED_SCHOOL',  'M', 'Reached school',    'SMS', '{name} {time} बजे स्कूल पहुँच गया। – MUH Jain School',              '{name} {time} बजे स्कूल पहुँच गया। – MUH Jain School',              'WAITING'),
-    ('REACHED_SCHOOL',  'F', 'Reached school',    'SMS', '{name} {time} बजे स्कूल पहुँच गई। – MUH Jain School',               '{name} {time} बजे स्कूल पहुँच गई। – MUH Jain School',               'WAITING'),
-    ('BOARDED_EVENING', 'M', 'Boarded evening',   'SMS', '{name} छुट्टी के बाद {time} बजे बस में चढ़ गया। – MUH Jain School',   '{name} छुट्टी के बाद {time} बजे बस में चढ़ गया। – MUH Jain School',   'WAITING'),
-    ('BOARDED_EVENING', 'F', 'Boarded evening',   'SMS', '{name} छुट्टी के बाद {time} बजे बस में चढ़ गई। – MUH Jain School',    '{name} छुट्टी के बाद {time} बजे बस में चढ़ गई। – MUH Jain School',    'WAITING'),
-    ('REACHED_HOME',    'M', 'Reached home stop', 'SMS', '{name} {time} बजे {stop} स्टॉप पर उतर गया। – MUH Jain School',       '{name} {time} बजे {stop} स्टॉप पर उतर गया। – MUH Jain School',       'WAITING'),
-    ('REACHED_HOME',    'F', 'Reached home stop', 'SMS', '{name} {time} बजे {stop} स्टॉप पर उतर गई। – MUH Jain School',        '{name} {time} बजे {stop} स्टॉप पर उतर गई। – MUH Jain School',        'WAITING'),
+    ('BOARDED_MORNING', 'M', 'Boarded morning',   'SMS', '{name} सुबह की बस में चढ़ गया — {time}। MUH Jain School',  '{name} सुबह की बस में चढ़ गया — {time}। MUH Jain School',  'WAITING'),
+    ('BOARDED_MORNING', 'F', 'Boarded morning',   'SMS', '{name} सुबह की बस में चढ़ गई — {time}। MUH Jain School',   '{name} सुबह की बस में चढ़ गई — {time}। MUH Jain School',   'WAITING'),
+    ('REACHED_SCHOOL',  'M', 'Reached school',    'SMS', '{name} स्कूल पहुँच गया — {time}। MUH Jain School',         '{name} स्कूल पहुँच गया — {time}। MUH Jain School',         'WAITING'),
+    ('REACHED_SCHOOL',  'F', 'Reached school',    'SMS', '{name} स्कूल पहुँच गई — {time}। MUH Jain School',          '{name} स्कूल पहुँच गई — {time}। MUH Jain School',          'WAITING'),
+    ('BOARDED_EVENING', 'M', 'Boarded evening',   'SMS', '{name} छुट्टी की बस में चढ़ गया — {time}। MUH Jain School', '{name} छुट्टी की बस में चढ़ गया — {time}। MUH Jain School', 'WAITING'),
+    ('BOARDED_EVENING', 'F', 'Boarded evening',   'SMS', '{name} छुट्टी की बस में चढ़ गई — {time}। MUH Jain School',  '{name} छुट्टी की बस में चढ़ गई — {time}। MUH Jain School',  'WAITING'),
+    ('REACHED_HOME',    'M', 'Reached home stop', 'SMS', '{name} अपने स्टॉप पर उतर गया — {time}। MUH Jain School',   '{name} अपने स्टॉप पर उतर गया — {time}। MUH Jain School',   'WAITING'),
+    ('REACHED_HOME',    'F', 'Reached home stop', 'SMS', '{name} अपने स्टॉप पर उतर गई — {time}। MUH Jain School',    '{name} अपने स्टॉप पर उतर गई — {time}। MUH Jain School',    'WAITING'),
     ('FEE_RECEIPT',     null, 'Fee receipt',      'WHATSAPP', '{names} की फ़ीस {amount} मिल गई है ({months})। रसीद नंबर {receiptNo} साथ में भेजी है। धन्यवाद — MUH Jain Global School', '{names} की फ़ीस {amount} मिल गई है ({months})। रसीद नंबर {receiptNo} साथ में भेजी है। धन्यवाद — MUH Jain Global School', 'WAITING'),
     ('FEE_RECEIPT_SMS', null, 'Fee receipt (SMS when WhatsApp fails)', 'SMS', '{names}: फ़ीस {amount} मिली। रसीद {receiptNo}। – MUH Jain School', '{names}: फ़ीस {amount} मिली। रसीद {receiptNo}। – MUH Jain School', 'WAITING'),
     ('FEE_REMINDER',    null, 'Fee reminder',     'WHATSAPP', 'नमस्ते। {names} की {months} की फ़ीस बाकी है। {currentMonth} मिलाकर कुल {amount} (लेट फ़ीस {lateFee} सहित)। कृपया {payBy} तक जमा करें। — MUH Jain Global School', 'नमस्ते। {names} की {months} की फ़ीस बाकी है। {currentMonth} मिलाकर कुल {amount} (लेट फ़ीस {lateFee} सहित)। कृपया {payBy} तक जमा करें। — MUH Jain Global School', 'WAITING'),

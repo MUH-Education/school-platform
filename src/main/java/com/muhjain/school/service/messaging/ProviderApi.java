@@ -1,5 +1,7 @@
 package com.muhjain.school.service.messaging;
 
+import java.util.Map;
+
 import com.muhjain.school.config.ProviderProperties;
 import com.muhjain.school.exception.SmsSendException;
 import com.muhjain.school.service.messaging.impl.ProviderHttp;
@@ -34,5 +36,31 @@ public interface ProviderApi {
 
 	/** The login code as an SMS with the approved OTP template. */
 	void sendSmsOtp(String phone, String code) throws SmsSendException;
+
+	/**
+	 * A Marketing/Notice WhatsApp template to one phone, for a broadcast (Phase 11, not built yet —
+	 * see docs/09-marketing.md). Added early so the shape is ready; no real class implements it yet (question C1).
+	 *
+	 * @param phone {@code +91XXXXXXXXXX}
+	 * @param providerTemplateId the approved WhatsApp template id, from {@code message_template}
+	 * @param params placeholder number to value, for example {@code {"1": "Rajesh Punia"}}; empty if the template
+	 * has no placeholders
+	 * @param mediaUrl the template's poster image, or null if it has none
+	 * @return the provider's id for the message, or null
+	 */
+	String sendWhatsAppTemplate(String phone, String providerTemplateId, Map<String, String> params, String mediaUrl)
+			throws SmsSendException;
+
+	/**
+	 * A text or media message into one existing, small WhatsApp group (Phase 11, not built yet, question C12 —
+	 * see docs/09-marketing.md). Not for parent broadcasts: group size is too small and buttons do not work inside
+	 * a group.
+	 *
+	 * @param groupId the provider's own id for the group, saved on {@code whatsapp_group.provider_group_id}
+	 * @param text the message text
+	 * @param mediaUrl an image or document to attach, or null for text only
+	 * @return the provider's id for the message, or null
+	 */
+	String sendWhatsAppGroupMessage(String groupId, String text, String mediaUrl) throws SmsSendException;
 
 }

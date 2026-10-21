@@ -19,6 +19,8 @@ class FeesViewApiTest extends FeeTestBase {
 	void addChildWithPlan() throws Exception {
 		clock.setInstant(Instant.parse("2026-04-01T04:30:00Z"));
 		aryan = addStudent("A-2026-101", "2026-04-01");
+		long[] route = addBusRoute("Route 1");
+		addBusEnrolment(aryan, route, "800", "2026-04-01");
 		put(office, "/api/v1/students/" + aryan + "/fee-plan", FeePlanApiTest.STANDARD_PLAN).andExpect(status().isOk());
 	}
 
@@ -34,17 +36,17 @@ class FeesViewApiTest extends FeeTestBase {
 
 	@Test
 	void admittedOnFirstAprilWithFirstPaymentShowsNothingPendingAndNextDueOnFirstJuly() throws Exception {
-		pay("7500", "2200");
+		pay("2500", "800");
 
 		fees(office).andExpect(status().isOk())
 			.andExpect(jsonPath("$.pendingNow").value(0.0))
-			.andExpect(jsonPath("$.remainingThisYear").value(29100.0))
-			.andExpect(jsonPath("$.nextDueOn").value("2026-07-01"))
-			.andExpect(jsonPath("$.nextDueAmount").value(9700.0))
+			.andExpect(jsonPath("$.remainingThisYear").value(35500.0))
+			.andExpect(jsonPath("$.nextDueOn").value("2026-05-01"))
+			.andExpect(jsonPath("$.nextDueAmount").value(3300.0))
 			.andExpect(jsonPath("$.status").value("ON_TIME"))
 			.andExpect(jsonPath("$.plan.payFrequency").value("QUARTERLY"))
-			.andExpect(jsonPath("$.dues", hasSize(8)))
-			.andExpect(jsonPath("$.dues[0].covered").value(7500.0))
+			.andExpect(jsonPath("$.dues", hasSize(12)))
+			.andExpect(jsonPath("$.dues[0].paid").value(3300.0))
 			.andExpect(jsonPath("$.dues[0].open").value(0.0))
 			.andExpect(jsonPath("$.payments", hasSize(2)))
 			.andExpect(jsonPath("$.heads[0].feeHead").value("SCHOOL"))
@@ -52,29 +54,33 @@ class FeesViewApiTest extends FeeTestBase {
 	}
 
 	@Test
-	void on15AugustWithoutASecondPaymentStatusIsDelayed() throws Exception {
-		pay("7500", "2200");
-		clock.setInstant(Instant.parse("2026-08-15T04:30:00Z"));
+	void on20MayWithoutASecondPaymentStatusIsDelayed() throws Exception {
+		pay("2500", "800");
+		// April is paid. May's due (1 May, grace 10 May) is the oldest unpaid one; 20 May is 19 days
+		// past it: past the grace day but inside the 60-day defaulted window.
+		clock.setInstant(Instant.parse("2026-05-20T04:30:00Z"));
+		refreshTokens();
 
 		fees(office).andExpect(status().isOk())
 			.andExpect(jsonPath("$.status").value("DELAYED"))
-			.andExpect(jsonPath("$.pendingNow").value(9700.0))
-			.andExpect(jsonPath("$.heads[0].daysLate").value(45))
-			.andExpect(jsonPath("$.heads[0].oldestUnpaidDue").value("2026-07-01"))
-			.andExpect(jsonPath("$.dues[2].overdue").value(true));
+			.andExpect(jsonPath("$.pendingNow").value(3300.0))
+			.andExpect(jsonPath("$.heads[0].daysLate").value(19))
+			.andExpect(jsonPath("$.heads[0].oldestUnpaidDue").value("2026-05-01"))
+			.andExpect(jsonPath("$.dues[1].late").value(true));
 	}
 
 	@Test
 	void statusFollowsTheSettings() throws Exception {
-		pay("7500", "2200");
-		clock.setInstant(Instant.parse("2026-08-15T04:30:00Z"));
-		// Grace 50 days: 45 days late is now on time.
-		jdbc.update("update app_setting set value = '50' where key = 'fees.grace_days'");
+		pay("2500", "800");
+		clock.setInstant(Instant.parse("2026-05-20T04:30:00Z"));
+		refreshTokens();
+		// Grace until the end of the month: 19 days late in May is still inside it.
+		jdbc.update("update session_fee_setting set grace_until = 31 where session_id = ?", currentSessionId());
 		try {
 			fees(office).andExpect(jsonPath("$.status").value("ON_TIME"));
 		}
 		finally {
-			jdbc.update("update app_setting set value = '10' where key = 'fees.grace_days'");
+			jdbc.update("update session_fee_setting set grace_until = 10 where session_id = ?", currentSessionId());
 		}
 	}
 
@@ -97,14 +103,15 @@ class FeesViewApiTest extends FeeTestBase {
 
 	@Test
 	void aCorrectionMakesTheMoneyPendingAgain() throws Exception {
-		pay("7500", "2200");
+		pay("2500", "800");
+		// A correction now cancels the whole receipt: both lines of April's payment come back as unpaid.
 		post(owner, "/api/v1/students/" + aryan + "/payment-corrections",
-				"{\"receiptNo\":\"R-2026-0001\",\"feeHead\":\"SCHOOL\",\"amount\":-500,\"note\":\"Paid 7000\"}")
+				"{\"receiptNo\":\"R-2026-0001\",\"reason\":\"WRONG_AMOUNT\",\"note\":\"Paid by mistake\"}")
 			.andExpect(status().isCreated());
 
-		fees(office).andExpect(jsonPath("$.pendingNow").value(500.0))
-			.andExpect(jsonPath("$.remainingThisYear").value(29600.0))
-			.andExpect(jsonPath("$.payments", hasSize(3)));
+		fees(office).andExpect(jsonPath("$.pendingNow").value(3300.0))
+			.andExpect(jsonPath("$.remainingThisYear").value(38800.0))
+			.andExpect(jsonPath("$.payments", hasSize(4)));
 	}
 
 }

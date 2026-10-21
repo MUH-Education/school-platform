@@ -60,7 +60,7 @@ class EndpointSecurityTest extends AbstractIntegrationTest {
 	private static final String SESSION_BODY = "{\"name\":\"2027-28\",\"startsOn\":\"2027-04-01\","
 			+ "\"endsOn\":\"2028-03-31\",\"current\":false}";
 
-	private static final String CLASS_FEES_BODY = "{\"fees\":[{\"className\":\"3\",\"schoolFee\":30000}]}";
+	private static final String CLASS_FEES_BODY = "{\"fees\":[{\"className\":\"3\",\"perMonth\":30000}]}";
 
 	private static final String FEE_PLAN_BODY = "{\"schoolFee\":30000,\"busFee\":8800,"
 			+ "\"payFrequency\":\"QUARTERLY\"}";
@@ -68,8 +68,8 @@ class EndpointSecurityTest extends AbstractIntegrationTest {
 	private static final String PAYMENT_BODY = "{\"mode\":\"UPI\",\"lines\":[{\"feeHead\":\"SCHOOL\","
 			+ "\"amount\":7500}]}";
 
-	private static final String CORRECTION_BODY = "{\"receiptNo\":\"R-2026-0001\",\"feeHead\":\"SCHOOL\","
-			+ "\"amount\":-500,\"note\":\"Typed wrong\"}";
+	private static final String CORRECTION_BODY = "{\"receiptNo\":\"R-2026-0001\",\"reason\":\"WRONG_AMOUNT\","
+			+ "\"note\":\"Typed wrong\"}";
 
 	private static final String TEMPLATE_BODY = "{\"body\":\"{name} {time}\",\"active\":true}";
 
@@ -133,7 +133,8 @@ class EndpointSecurityTest extends AbstractIntegrationTest {
 				Arguments.of("POST", "/api/v1/enquiries", ENQUIRY_BODY, Role.TRANSPORT_INCHARGE),
 				Arguments.of("GET", "/api/v1/enquiries/1", null, Role.ATTENDANT),
 				Arguments.of("PUT", "/api/v1/enquiries/1", ENQUIRY_BODY, Role.TRANSPORT_INCHARGE),
-				Arguments.of("POST", "/api/v1/enquiries/1/follow-ups", "{\"note\":\"Called\"}", Role.ATTENDANT),
+				Arguments.of("POST", "/api/v1/enquiries/1/follow-ups",
+						"{\"followType\":\"CALL\",\"note\":\"Called\"}", Role.ATTENDANT),
 				Arguments.of("POST", "/api/v1/enquiries/1/status", "{\"status\":\"CONTACTED\"}", Role.ATTENDANT),
 				Arguments.of("GET", "/api/v1/enquiries/1/prefill", null, Role.TRANSPORT_INCHARGE),
 				// Phase 7: sessions are readable by any login; class fees need FEES_VIEW (not the transport

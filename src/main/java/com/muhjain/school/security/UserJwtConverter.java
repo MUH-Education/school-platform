@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.muhjain.school.model.entity.AppUser;
+import com.muhjain.school.model.dto.response.SessionCacheResult;
 import com.muhjain.school.model.dto.response.SessionPrincipal;
 import com.muhjain.school.model.enums.Permission;
 import com.muhjain.school.service.auth.SessionService;
@@ -46,9 +47,19 @@ public class UserJwtConverter implements Converter<Jwt, AbstractAuthenticationTo
 	@Override
 	public AbstractAuthenticationToken convert(Jwt jwt) {
 		String sessionId = sessionId(jwt);
-		SessionPrincipal principal = sessionService.resolveFromCache(sessionId)
-			.or(() -> reloadFromDatabase(sessionId))
-			.orElseThrow(() -> new InvalidBearerTokenException("The token is no longer valid"));
+		SessionCacheResult cached = sessionService.resolveFromCache(sessionId);
+		SessionPrincipal principal;
+		if (cached.principal() != null) {
+			principal = cached.principal();
+		}
+		else if (cached.entryExisted()) {
+			// Idle- or hard-cap-expired: never fall back to Postgres for this (see SessionCacheResult).
+			throw new InvalidBearerTokenException("The token is no longer valid");
+		}
+		else {
+			principal = reloadFromDatabase(sessionId)
+				.orElseThrow(() -> new InvalidBearerTokenException("The token is no longer valid"));
+		}
 
 		List<GrantedAuthority> authorities = new ArrayList<>();
 		authorities.add(new SimpleGrantedAuthority("ROLE_" + principal.role().name()));

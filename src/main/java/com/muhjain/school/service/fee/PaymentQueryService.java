@@ -1,9 +1,7 @@
 package com.muhjain.school.service.fee;
 
 import java.time.Clock;
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -66,10 +64,9 @@ public class PaymentQueryService {
 		if (from != null && to != null && from.isAfter(to)) {
 			throw ApiException.validation("from", "must not be after the end date");
 		}
-		ZoneId zone = clock.getZone();
-		Instant fromAt = (from != null) ? from.atStartOfDay(zone).toInstant() : Instant.EPOCH;
-		Instant toAt = (to != null) ? to.plusDays(1).atStartOfDay(zone).toInstant() : Instant.now(clock).plusSeconds(1);
-		Page<FeePayment> found = payments.search(fromAt, toAt, sessionId, PageRequest.of(page, size));
+		LocalDate fromDay = (from != null) ? from : LocalDate.EPOCH;
+		LocalDate toDay = (to != null) ? to : LocalDate.now(clock);
+		Page<FeePayment> found = payments.search(fromDay, toDay, sessionId, PageRequest.of(page, size));
 		Set<Long> studentIds = found.getContent().stream().map(FeePayment::getStudentId).collect(Collectors.toSet());
 		Set<Long> receiptIds = found.getContent().stream().map(FeePayment::getReceiptId).collect(Collectors.toSet());
 		Map<Long, StudentBasics> byStudent = students.basics(studentIds);

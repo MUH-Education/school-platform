@@ -16,9 +16,11 @@ class PaymentListApiTest extends FeeTestBase {
 	void threePaymentsOnThreeDays() throws Exception {
 		aryan = addStudent("A-2026-101", "2026-04-01");
 		put(office, "/api/v1/students/" + aryan + "/fee-plan", FeePlanApiTest.STANDARD_PLAN).andExpect(status().isOk());
+		// 500 each, well under April's 2,500 open school balance, so none of the three ever splits
+		// across months: one row per payment.
 		for (String day : new String[] { "2026-10-01", "2026-10-05", "2026-10-07" }) {
 			post(office, "/api/v1/students/" + aryan + "/payments", "{\"mode\":\"CASH\",\"paidOn\":\"" + day
-					+ "\",\"lines\":[{\"feeHead\":\"SCHOOL\",\"amount\":1000}]}").andExpect(status().isCreated());
+					+ "\",\"lines\":[{\"feeHead\":\"SCHOOL\",\"amount\":500}]}").andExpect(status().isCreated());
 		}
 	}
 
@@ -50,12 +52,14 @@ class PaymentListApiTest extends FeeTestBase {
 
 	@Test
 	void correctionsAreInTheListWithANegativeAmount() throws Exception {
+		// A correction now cancels the whole receipt; R-2026-0003 (the 7 Oct payment) has one line, so
+		// the cancellation is one reversal row of -500, on the same receipt (same paidOn, 7 Oct).
 		post(owner, "/api/v1/students/" + aryan + "/payment-corrections",
-				"{\"receiptNo\":\"R-2026-0003\",\"feeHead\":\"SCHOOL\",\"amount\":-100,\"note\":\"Typed wrong\"}")
+				"{\"receiptNo\":\"R-2026-0003\",\"reason\":\"WRONG_AMOUNT\",\"note\":\"Typed wrong\"}")
 			.andExpect(status().isCreated());
 
 		get(office, "/api/v1/payments?from=2026-10-07").andExpect(jsonPath("$.totalItems").value(2))
-			.andExpect(jsonPath("$.items[0].amount").value(-100.0));
+			.andExpect(jsonPath("$.items[0].amount").value(-500.0));
 	}
 
 	@Test

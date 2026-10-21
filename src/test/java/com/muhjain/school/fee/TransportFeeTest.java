@@ -11,7 +11,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** Rule 8 of phase 7: a bus that starts later adds BUS dues to the plan. */
+/** Rule 8 of phase 7: a bus that starts later adds BUS amounts to the plan's fee_due rows. */
 class TransportFeeTest extends FeeTestBase {
 
 	long ishaan;
@@ -21,56 +21,65 @@ class TransportFeeTest extends FeeTestBase {
 	@BeforeEach
 	void addChildWithSchoolOnlyPlan() throws Exception {
 		clock.setInstant(Instant.parse("2026-10-30T04:30:00Z"));
+		refreshTokens();
 		ishaan = addStudent("A-2026-102", "2026-04-01");
 		route = addBusRoute("Route 9");
-		put(office, "/api/v1/students/" + ishaan + "/fee-plan", "{\"schoolFee\":30000,\"payFrequency\":\"QUARTERLY\"}")
+		put(office, "/api/v1/students/" + ishaan + "/fee-plan", "{\"schoolFee\":2500,\"payFrequency\":\"QUARTERLY\"}")
 			.andExpect(status().isOk());
 	}
 
 	private String startBus(String busFee) {
 		return "{\"usesBus\":true,\"routeId\":" + route[0] + ",\"stopId\":" + route[1]
-				+ ",\"fromDate\":\"2026-11-02\"" + ((busFee == null) ? "" : ",\"busFee\":" + busFee) + "}";
+				+ ",\"fromDate\":\"2026-11-01\"" + ((busFee == null) ? "" : ",\"busFee\":" + busFee) + "}";
 	}
 
 	@Test
 	void busStartedInNovemberAddsBusDues() throws Exception {
-		put(office, "/api/v1/students/" + ishaan + "/transport", startBus("4000")).andExpect(status().isOk());
+		put(office, "/api/v1/students/" + ishaan + "/transport", startBus("1000")).andExpect(status().isOk());
 
-		assertThat(jdbc.queryForObject("select bus_fee from fee_plan", BigDecimal.class)).isEqualByComparingTo("4000");
-		assertThat(jdbc.queryForList("select due_on::text || ' ' || amount from fee_due where fee_head = 'BUS' "
-				+ "order by due_on", String.class))
-			.containsExactly("2026-11-02 2000.00", "2027-01-01 2000.00");
-		// The four school dues are not touched.
-		assertThat(jdbc.queryForObject("select count(*) from fee_due where fee_head = 'SCHOOL'", Integer.class))
-			.isEqualTo(4);
-		get(office, "/api/v1/students/" + ishaan + "/fees").andExpect(jsonPath("$.dues", hasSize(6)))
-			.andExpect(jsonPath("$.plan.busFee").value(4000.0));
-		assertThat(jdbc.queryForList("select summary from audit_log where summary like 'Bus fee%'", String.class))
-			.containsExactly("Bus fee ₹4,000 added to the fee plan from 2 Nov 2026. Bus fee is now ₹4,000.");
+		assertThat(jdbc.queryForObject(
+				"select bus_fee_per_month from transport_enrolment where student_id = ? and to_date is null",
+				BigDecimal.class, ishaan)).isEqualByComparingTo("1000");
+		assertThat(jdbc.queryForList("select month::text || ' ' || bus_amount from fee_due "
+				+ "where student_id = ? and bus_amount > 0 order by month", String.class, ishaan))
+			.containsExactly("2026-11-01 1000.00", "2026-12-01 1000.00", "2027-01-01 1000.00",
+					"2027-02-01 1000.00", "2027-03-01 1000.00");
+		// The school amount of every month is not touched by the bus starting.
+		assertThat(jdbc.queryForObject(
+				"select count(*) from fee_due where student_id = ? and school_amount <> 2500", Integer.class, ishaan))
+			.isZero();
+		get(office, "/api/v1/students/" + ishaan + "/fees").andExpect(jsonPath("$.dues", hasSize(12)))
+			.andExpect(jsonPath("$.dues[7].total").value(3500.0));
 	}
 
 	@Test
-	void busWithoutAFeeOrWithoutAPlanChangesNothing() throws Exception {
+	void busWithoutATypedFeeUsesTheSessionDefaultAndNoPlanChangesNothing() throws Exception {
+		// A bus started with no busFee typed gets the session's standard bus fee instead (800 a month).
 		put(office, "/api/v1/students/" + ishaan + "/transport", startBus(null)).andExpect(status().isOk());
-		assertThat(jdbc.queryForObject("select bus_fee from fee_plan", BigDecimal.class)).isEqualByComparingTo("0");
-		assertThat(jdbc.queryForObject("select count(*) from fee_due where fee_head = 'BUS'", Integer.class)).isZero();
+		assertThat(jdbc.queryForObject(
+				"select bus_fee_per_month from transport_enrolment where student_id = ? and to_date is null",
+				BigDecimal.class, ishaan)).isEqualByComparingTo("800");
+		assertThat(jdbc.queryForObject(
+				"select count(*) from fee_due where student_id = ? and bus_amount > 0", Integer.class, ishaan))
+			.isGreaterThan(0);
 
 		long noPlan = addStudent("A-2026-103", "2026-04-01");
 		put(office, "/api/v1/students/" + noPlan + "/transport", startBus("4000")).andExpect(status().isOk());
 		assertThat(jdbc.queryForObject("select count(*) from fee_plan", Integer.class)).isEqualTo(1);
-		assertThat(jdbc.queryForObject("select count(*) from fee_due where fee_head = 'BUS'", Integer.class)).isZero();
+		assertThat(jdbc.queryForObject("select count(*) from fee_due where student_id = ?", Integer.class, noPlan))
+			.isZero();
 	}
 
 	@Test
 	void savingThePlanAgainKeepsTheBusDuesFromTheBusStartDay() throws Exception {
-		put(office, "/api/v1/students/" + ishaan + "/transport", startBus("4000")).andExpect(status().isOk());
+		put(office, "/api/v1/students/" + ishaan + "/transport", startBus("1000")).andExpect(status().isOk());
 
-		put(office, "/api/v1/students/" + ishaan + "/fee-plan",
-				"{\"schoolFee\":30000,\"busFee\":4000,\"payFrequency\":\"QUARTERLY\"}").andExpect(status().isOk());
+		put(office, "/api/v1/students/" + ishaan + "/fee-plan", "{\"schoolFee\":2600,\"payFrequency\":\"QUARTERLY\"}")
+			.andExpect(status().isOk());
 
-		assertThat(jdbc.queryForList("select due_on::text from fee_due where fee_head = 'BUS' order by due_on",
-				String.class))
-			.containsExactly("2026-11-02", "2027-01-01");
+		assertThat(jdbc.queryForList("select month::text from fee_due where student_id = ? and bus_amount > 0 "
+				+ "order by month", String.class, ishaan))
+			.containsExactly("2026-11-01", "2026-12-01", "2027-01-01", "2027-02-01", "2027-03-01");
 	}
 
 }

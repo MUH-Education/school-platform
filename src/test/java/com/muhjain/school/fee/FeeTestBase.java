@@ -3,6 +3,7 @@ package com.muhjain.school.fee;
 import java.time.Instant;
 
 import com.muhjain.school.AbstractIntegrationTest;
+import com.muhjain.school.model.entity.AppUser;
 import com.muhjain.school.model.enums.Role;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.http.MediaType;
@@ -15,6 +16,14 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
  * Priya (admissions desk) can also, the owner (Rishabh) is the only one who can correct a payment.
  */
 abstract class FeeTestBase extends AbstractIntegrationTest {
+
+	private AppUser officeUser;
+
+	private AppUser deskUser;
+
+	private AppUser ownerUser;
+
+	private AppUser transportUser;
 
 	String office;
 
@@ -29,10 +38,24 @@ abstract class FeeTestBase extends AbstractIntegrationTest {
 	@BeforeEach
 	void addPeople() {
 		clock.setInstant(Instant.parse("2026-10-07T04:30:00Z"));
-		office = tokenFor(addUser("+919812340002", Role.OFFICE_ADMIN));
-		desk = tokenFor(addUser("+919812340004", Role.ADMISSIONS_DESK));
-		owner = tokenFor(addUser("+919812340001", Role.OWNER));
-		transport = tokenFor(addUser("+919812340003", Role.TRANSPORT_INCHARGE));
+		officeUser = addUser("+919812340002", Role.OFFICE_ADMIN);
+		deskUser = addUser("+919812340004", Role.ADMISSIONS_DESK);
+		ownerUser = addUser("+919812340001", Role.OWNER);
+		transportUser = addUser("+919812340003", Role.TRANSPORT_INCHARGE);
+		refreshTokens();
+	}
+
+	/**
+	 * A session's idle timeout is 15 minutes and its hard cap is 12 hours (docs/08-decisions.md). A test that
+	 * jumps the clock forward with no real request in between would not survive that as a real user — call
+	 * this after such a jump to log back in, the same way a real office user would if they had been away
+	 * that long.
+	 */
+	void refreshTokens() {
+		office = tokenFor(officeUser);
+		desk = tokenFor(deskUser);
+		owner = tokenFor(ownerUser);
+		transport = tokenFor(transportUser);
 	}
 
 	// FeeTestBase fixes "now" to 7 Oct 2026, so the current session is the one whose dates include it.
@@ -51,6 +74,13 @@ abstract class FeeTestBase extends AbstractIntegrationTest {
 		jdbc.update("insert into student_guardian (student_id, guardian_id, relation, is_primary) "
 				+ "values (?, ?, 'FATHER', true)", id, guardianId);
 		return id;
+	}
+
+	/** Puts a child on a bus straight into the database, bypassing the admission/transport endpoints. */
+	void addBusEnrolment(long studentId, long[] route, String busFeePerMonth, String fromDate) {
+		jdbc.update("insert into transport_enrolment (student_id, uses_bus, route_id, stop_id, from_date, "
+				+ "bus_fee_per_month, reason, created_by) values (?, true, ?, ?, ?::date, ?, 'ADMISSION', ?)",
+				studentId, route[0], route[1], fromDate, new java.math.BigDecimal(busFeePerMonth), anyUserId());
 	}
 
 	/** Adds a van, a route and one stop straight into the database. Returns {routeId, stopId}. */

@@ -2,6 +2,7 @@ package com.muhjain.school.auth;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 import com.muhjain.school.AbstractIntegrationTest;
 import org.junit.jupiter.api.Test;
@@ -24,7 +25,7 @@ class JwtServiceTest extends AbstractIntegrationTest {
 
 	@Test
 	void tokenHoldsUserIdAndSessionId() {
-		Instant issuedAt = Instant.parse("2026-10-07T03:45:00.123456Z");
+		Instant issuedAt = Instant.now(clock);
 		Instant expiresAt = issuedAt.plus(Duration.ofHours(12));
 
 		String token = jwtService.issue(2L, "a-session-id", issuedAt, expiresAt);
@@ -32,8 +33,10 @@ class JwtServiceTest extends AbstractIntegrationTest {
 
 		assertThat(jwt.getSubject()).isEqualTo("2");
 		assertThat(jwt.getClaimAsString("sid")).isEqualTo("a-session-id");
-		assertThat(jwt.getIssuedAt()).isEqualTo(issuedAt);
-		assertThat(jwt.getExpiresAt()).isEqualTo(expiresAt);
+		// A JWT's iat/exp are whole seconds (RFC 7519 NumericDate), so sub-second precision
+		// from the wall clock does not round-trip.
+		assertThat(jwt.getIssuedAt()).isEqualTo(issuedAt.truncatedTo(ChronoUnit.SECONDS));
+		assertThat(jwt.getExpiresAt()).isEqualTo(expiresAt.truncatedTo(ChronoUnit.SECONDS));
 		assertThat(jwt.getHeaders()).containsEntry("alg", "HS256");
 	}
 

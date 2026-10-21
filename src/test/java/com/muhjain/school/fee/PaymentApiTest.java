@@ -18,7 +18,10 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** Rules 9 to 14 of phase 7. Today is 7 Oct 2026. Aryan owes school 30,000 and bus 8,800, quarterly, from 1 Apr. */
+/**
+ * Rules 9 to 14 of phase 7. Today is 7 Oct 2026. Aryan owes school 2,500 and bus 800, a month, from 1 Apr
+ * (school 2,500 x 12 = 30,000 and bus 800 x 11 bus months = 8,800 for the whole session).
+ */
 class PaymentApiTest extends FeeTestBase {
 
 	long aryan;
@@ -26,6 +29,8 @@ class PaymentApiTest extends FeeTestBase {
 	@BeforeEach
 	void addChildWithPlan() throws Exception {
 		aryan = addStudent("A-2026-101", "2026-04-01");
+		long[] route = addBusRoute("Route 4");
+		addBusEnrolment(aryan, route, "800", "2026-04-01");
 		put(office, "/api/v1/students/" + aryan + "/fee-plan", FeePlanApiTest.STANDARD_PLAN).andExpect(status().isOk());
 	}
 
@@ -50,16 +55,18 @@ class PaymentApiTest extends FeeTestBase {
 
 	@Test
 	void oneReceiptCanCoverSchoolAndBus() throws Exception {
-		post(office, payments(), upi("7500", "2200")).andExpect(status().isCreated())
+		// Amounts fit inside April's open balance (2,500 school, 800 bus), so each head is one row.
+		post(office, payments(), upi("2000", "500")).andExpect(status().isCreated())
 			.andExpect(jsonPath("$.receiptNo").value("R-2026-0001"))
-			.andExpect(jsonPath("$.total").value(9700.0))
-			.andExpect(jsonPath("$.stillToPay").value(29100.0))
+			.andExpect(jsonPath("$.total").value(2500.0))
+			.andExpect(jsonPath("$.stillToPay").value(36300.0))
 			.andExpect(jsonPath("$.payments", hasSize(2)))
 			.andExpect(jsonPath("$.payments[0].feeHead").value("SCHOOL"))
 			.andExpect(jsonPath("$.payments[1].feeHead").value("BUS"));
 
-		assertThat(jdbc.queryForList("select distinct receipt_no from fee_payment", String.class))
-			.containsExactly("R-2026-0001");
+		assertThat(jdbc.queryForList(
+				"select distinct r.receipt_no from fee_payment fp join receipt r on r.id = fp.receipt_id",
+				String.class)).containsExactly("R-2026-0001");
 		assertThat(jdbc.queryForObject("select count(*) from fee_payment", Integer.class)).isEqualTo(2);
 		post(desk, payments(), upi("100", null)).andExpect(jsonPath("$.receiptNo").value("R-2026-0002"));
 	}
@@ -74,14 +81,14 @@ class PaymentApiTest extends FeeTestBase {
 		assertThat(paidTotal()).isEqualByComparingTo("0");
 		post(office, payments(), upi("100", null)).andExpect(jsonPath("$.receiptNo").value("R-2026-0001"));
 
-		// After paying the whole school fee, one more rupee is too much.
+		// After paying the whole school fee for the year, one more rupee is too much.
 		post(office, payments(), upi("29900", null)).andExpect(status().isCreated());
 		post(office, payments(), upi("1", null)).andExpect(status().isConflict());
 	}
 
 	@Test
 	void payingNextQuarterEarlyIsAllowed() throws Exception {
-		// 7 Oct: three school dues are due (22,500). Paying 25,000 also pays most of the January due.
+		// Paying 25,000 of the 30,000 school cap for the year leaves 5,000 school + 8,800 bus = 13,800.
 		post(office, payments(), upi("25000", null)).andExpect(status().isCreated())
 			.andExpect(jsonPath("$.stillToPay").value(13800.0));
 	}
@@ -114,25 +121,27 @@ class PaymentApiTest extends FeeTestBase {
 
 	@Test
 	void paymentKeepsDateModeNoteAndWhoTypedIt() throws Exception {
-		post(desk, payments(), "{\"mode\":\"CHEQUE\",\"paidOn\":\"2026-10-05\",\"note\":\"Cheque 000123\","
-				+ "\"lines\":[{\"feeHead\":\"BUS\",\"amount\":2200}]}").andExpect(status().isCreated());
+		// 500 fits inside one month's open bus balance, so there is exactly one receipt to read back.
+		post(desk, payments(), "{\"mode\":\"CHEQUE\",\"paidOn\":\"2026-10-05\",\"reference\":\"Cheque 000123\","
+				+ "\"lines\":[{\"feeHead\":\"BUS\",\"amount\":500}]}").andExpect(status().isCreated());
 
-		var row = jdbc.queryForMap("select paid_on::text as paid_on, mode, note, recorded_by from fee_payment");
+		var row = jdbc.queryForMap("select paid_on::text as paid_on, mode, reference, taken_by from receipt");
 		assertThat(row.get("paid_on")).isEqualTo("2026-10-05");
 		assertThat(row.get("mode")).isEqualTo("CHEQUE");
-		assertThat(row.get("note")).isEqualTo("Cheque 000123");
-		assertThat(row.get("recorded_by")).isEqualTo(
+		assertThat(row.get("reference")).isEqualTo("Cheque 000123");
+		assertThat(row.get("taken_by")).isEqualTo(
 				jdbc.queryForObject("select id from app_user where phone = '+919812340004'", Long.class));
 	}
 
 	@Test
 	void everyPaymentIsInTheChangeHistory() throws Exception {
-		post(office, payments(), upi("7500", "2200")).andExpect(status().isCreated());
+		// Amounts fit inside April's open balance, so each head writes exactly one audit row.
+		post(office, payments(), upi("2000", "500")).andExpect(status().isCreated());
 
 		assertThat(jdbc.queryForList("select summary from audit_log where entity_type = 'STUDENT' and entity_id = ? "
 				+ "and summary like 'Payment%' order by id", String.class, aryan))
-			.containsExactly("Payment R-2026-0001: SCHOOL ₹7,500 by UPI on 7 Oct 2026.",
-					"Payment R-2026-0001: BUS ₹2,200 by UPI on 7 Oct 2026.");
+			.containsExactly("Payment R-2026-0001: SCHOOL ₹2,000 for 2026-04-01 by UPI.",
+					"Payment R-2026-0001: BUS ₹500 for 2026-04-01 by UPI.");
 	}
 
 	@Test
@@ -150,6 +159,8 @@ class PaymentApiTest extends FeeTestBase {
 
 	@Test
 	void twentyPaymentsAtOnceGetTwentyReceiptNumbers() throws Exception {
+		// Each payment of 100 fits inside April's 2,500 open school balance (20 x 100 = 2,000), so none
+		// of them ever splits across months: one row per payment, one receipt per row.
 		int count = 20;
 		ExecutorService pool = Executors.newFixedThreadPool(count);
 		CountDownLatch go = new CountDownLatch(1);
@@ -166,7 +177,8 @@ class PaymentApiTest extends FeeTestBase {
 		}
 		pool.shutdown();
 
-		List<String> receipts = jdbc.queryForList("select receipt_no from fee_payment", String.class);
+		List<String> receipts = jdbc.queryForList(
+				"select r.receipt_no from fee_payment fp join receipt r on r.id = fp.receipt_id", String.class);
 		assertThat(receipts).hasSize(count).doesNotHaveDuplicates();
 		assertThat(receipts).contains("R-2026-0001", "R-2026-0020");
 		assertThat(paidTotal()).isEqualByComparingTo("2000");
@@ -198,73 +210,74 @@ class PaymentApiTest extends FeeTestBase {
 		assertThat(paidTotal()).isEqualByComparingTo("30000");
 	}
 
-	// ---- corrections (rule 13, decision B21) ----
+	// ---- corrections: cancel a whole receipt, by the owner only (rule 13) ----
 
 	private String corrections() {
 		return "/api/v1/students/" + aryan + "/payment-corrections";
 	}
 
-	private static String correction(String receipt, String head, String amount, String note) {
-		return "{\"receiptNo\":\"" + receipt + "\",\"feeHead\":\"" + head + "\",\"amount\":" + amount + ",\"note\":\""
-				+ note + "\"}";
+	private static String correction(String receipt, String reason, String note) {
+		return "{\"receiptNo\":\"" + receipt + "\",\"reason\":\"" + reason + "\",\"note\":\"" + note + "\"}";
 	}
 
 	@Test
 	void officeAdminCannotAddCorrection() throws Exception {
-		post(office, payments(), upi("7500", null)).andExpect(status().isCreated());
-		post(office, corrections(), correction("R-2026-0001", "SCHOOL", "-500", "Typed wrong"))
+		post(office, payments(), upi("2000", null)).andExpect(status().isCreated());
+		post(office, corrections(), correction("R-2026-0001", "WRONG_AMOUNT", "Typed wrong"))
 			.andExpect(status().isForbidden());
-		post(desk, corrections(), correction("R-2026-0001", "SCHOOL", "-500", "Typed wrong"))
+		post(desk, corrections(), correction("R-2026-0001", "WRONG_AMOUNT", "Typed wrong"))
 			.andExpect(status().isForbidden());
-		assertThat(paidTotal()).isEqualByComparingTo("7500");
+		assertThat(paidTotal()).isEqualByComparingTo("2000");
 	}
 
 	@Test
-	void ownerCorrectionIsANewNegativeRowAndThePaymentStays() throws Exception {
-		post(office, payments(), upi("7500", "2200")).andExpect(status().isCreated());
-		post(owner, corrections(), correction("R-2026-0001", "SCHOOL", "-500", "Typed 7500, paid 7000"))
+	void ownerCancelsAWholeReceiptAndTheOriginalPaymentStays() throws Exception {
+		// Amounts fit inside April's open balance, so the receipt has exactly 2 lines (one per head).
+		post(office, payments(), upi("2000", "500")).andExpect(status().isCreated());
+		post(owner, corrections(), correction("R-2026-0001", "WRONG_AMOUNT", "Typed wrong, cancel and redo"))
 			.andExpect(status().isCreated())
 			.andExpect(jsonPath("$.receiptNo").value("R-2026-0001"))
-			.andExpect(jsonPath("$.total").value(-500.0))
-			.andExpect(jsonPath("$.stillToPay").value(29600.0))
-			.andExpect(jsonPath("$.payments[0].mode").value("UPI"));
+			.andExpect(jsonPath("$.total").value(-2500.0))
+			.andExpect(jsonPath("$.stillToPay").value(38800.0))
+			.andExpect(jsonPath("$.payments", hasSize(2)));
 
-		assertThat(jdbc.queryForObject("select count(*) from fee_payment", Integer.class)).isEqualTo(3);
+		assertThat(jdbc.queryForObject("select count(*) from fee_payment", Integer.class)).isEqualTo(4);
 		assertThat(jdbc.queryForObject("select amount from fee_payment where fee_head = 'SCHOOL' and amount > 0",
-				BigDecimal.class)).isEqualByComparingTo("7500");
-		assertThat(jdbc.queryForObject("select note from fee_payment where amount < 0", String.class))
-			.isEqualTo("Typed 7500, paid 7000");
-		assertThat(jdbc.queryForList("select summary from audit_log where summary like 'Correction%'", String.class))
-			.containsExactly("Correction on R-2026-0001: SCHOOL -₹500. Typed 7500, paid 7000");
+				BigDecimal.class)).isEqualByComparingTo("2000");
+		assertThat(jdbc.queryForObject("select status from receipt where receipt_no = 'R-2026-0001'", String.class))
+			.isEqualTo("CANCELLED");
+		assertThat(jdbc.queryForList("select summary from audit_log where summary like 'Receipt%'", String.class))
+			.containsExactly("Receipt R-2026-0001 cancelled (WRONG_AMOUNT): Typed wrong, cancel and redo");
 	}
 
 	@Test
 	void badCorrectionsAreRejected() throws Exception {
-		post(office, payments(), upi("7500", null)).andExpect(status().isCreated());
-		// Positive amount, no note, unknown receipt, wrong head, more than the receipt holds.
-		post(owner, corrections(), correction("R-2026-0001", "SCHOOL", "500", "x")).andExpect(status().isBadRequest());
-		post(owner, corrections(), correction("R-2026-0001", "SCHOOL", "-500", " ")).andExpect(status().isBadRequest());
-		post(owner, corrections(), correction("R-2026-0099", "SCHOOL", "-500", "x")).andExpect(status().isBadRequest())
+		post(office, payments(), upi("2000", null)).andExpect(status().isCreated());
+		// Blank note, unknown receipt, missing reason.
+		post(owner, corrections(), correction("R-2026-0001", "WRONG_AMOUNT", " ")).andExpect(status().isBadRequest());
+		post(owner, corrections(), correction("R-2026-0099", "WRONG_AMOUNT", "x")).andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.fields.receiptNo").exists());
-		post(owner, corrections(), correction("R-2026-0001", "BUS", "-500", "x")).andExpect(status().isBadRequest());
-		post(owner, corrections(), correction("R-2026-0001", "SCHOOL", "-7501", "x")).andExpect(status().isBadRequest())
-			.andExpect(jsonPath("$.fields.amount").exists());
-		// A second correction counts the first: 7,500 - 7,000 leaves 500, so -501 is too much.
-		post(owner, corrections(), correction("R-2026-0001", "SCHOOL", "-7000", "Wrong child")).andExpect(
+		post(owner, corrections(), "{\"receiptNo\":\"R-2026-0001\",\"note\":\"x\"}").andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.fields.reason").exists());
+
+		post(owner, corrections(), correction("R-2026-0001", "WRONG_AMOUNT", "Cancel it")).andExpect(
 				status().isCreated());
-		post(owner, corrections(), correction("R-2026-0001", "SCHOOL", "-501", "x")).andExpect(status().isBadRequest());
-		assertThat(paidTotal()).isEqualByComparingTo("500");
+		// A receipt that is already cancelled cannot be cancelled again.
+		post(owner, corrections(), correction("R-2026-0001", "WRONG_AMOUNT", "Again")).andExpect(
+				status().isConflict())
+			.andExpect(jsonPath("$.error").value("ALREADY_CANCELLED"));
+		assertThat(paidTotal()).isEqualByComparingTo("0");
 	}
 
 	@Test
 	void aReceiptOfAnotherChildCannotBeCorrected() throws Exception {
-		post(office, payments(), upi("7500", null)).andExpect(status().isCreated());
+		post(office, payments(), upi("2000", null)).andExpect(status().isCreated());
 		long ishaan = addStudent("A-2026-102", "2026-04-01");
 		put(office, "/api/v1/students/" + ishaan + "/fee-plan", FeePlanApiTest.STANDARD_PLAN).andExpect(status().isOk());
 
 		post(owner, "/api/v1/students/" + ishaan + "/payment-corrections",
-				correction("R-2026-0001", "SCHOOL", "-500", "x")).andExpect(status().isBadRequest());
-		assertThat(paidTotal()).isEqualByComparingTo("7500");
+				correction("R-2026-0001", "WRONG_AMOUNT", "x")).andExpect(status().isNotFound());
+		assertThat(paidTotal()).isEqualByComparingTo("2000");
 	}
 
 }

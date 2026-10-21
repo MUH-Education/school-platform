@@ -40,6 +40,7 @@ import com.muhjain.school.model.repository.FeePaymentRepository;
 import com.muhjain.school.model.repository.FeePlanRepository;
 import com.muhjain.school.model.repository.ReceiptRepository;
 import com.muhjain.school.util.MoneyText;
+import jakarta.persistence.EntityManager;
 
 /**
  * Payments and receipt cancellations (rules 9 to 13 of phase 7).
@@ -78,10 +79,12 @@ public class PaymentService {
 
 	private final Clock clock;
 
+	private final EntityManager entityManager;
+
 	public PaymentService(FeePlanRepository plans, FeeMonthViewRepository months, FeeDueGenerator dueGenerator,
 			FeePaymentRepository payments, ReceiptRepository receipts, AcademicSessionService sessions,
 			ReceiptNumberService receiptNumbers, StudentQueryService students, GuardianService guardianService,
-			AuditService audit, Clock clock) {
+			AuditService audit, Clock clock, EntityManager entityManager) {
 		this.plans = plans;
 		this.months = months;
 		this.dueGenerator = dueGenerator;
@@ -93,6 +96,7 @@ public class PaymentService {
 		this.guardianService = guardianService;
 		this.audit = audit;
 		this.clock = clock;
+		this.entityManager = entityManager;
 	}
 
 	private record MonthAllocation(LocalDate month, BigDecimal amount) {
@@ -145,6 +149,9 @@ public class PaymentService {
 			.save(new FeePayment(receipt.getId(), studentId, session.getId(), part.month(), head, part.amount(),
 					null)))));
 		payments.flush();
+		// The v_fee_month rows read above (line 127) are still cached by id in this session. Clear them out so
+		// the balance computed below picks up the payment just flushed, instead of the pre-payment numbers.
+		entityManager.clear();
 		for (FeePayment row : saved) {
 			auditPayment(row, "Payment " + receiptNo + ": " + row.getFeeHead() + " " + MoneyText.of(row.getAmount())
 					+ " for " + row.getMonth() + " by " + request.mode() + ".", AuditAction.CREATED);
@@ -182,6 +189,7 @@ public class PaymentService {
 					line.getMonth(), line.getFeeHead(), line.getAmount().negate(), line.getId())));
 		}
 		payments.flush();
+		entityManager.clear();
 		// The cancelled months are unpaid again: rebuild the schedule of every child this receipt touched.
 		AcademicSession session = sessions.get(receipt.getSessionId());
 		Set<Long> affected = lines.stream().map(FeePayment::getStudentId).collect(Collectors.toSet());

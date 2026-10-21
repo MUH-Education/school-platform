@@ -9,7 +9,9 @@ import com.muhjain.school.model.enums.Gender;
 
 public interface MessageTemplateRepository extends JpaRepository<MessageTemplate, Long> {
 
-	List<MessageTemplate> findAllByOrderByCodeAscGenderAsc();
+	/** The 8 boarding SMS texts (one per event, per gender) shown on the Messages settings screen. Fee
+	 * templates (FEE_RECEIPT, FEE_REMINDER, ...) share this table but have no gender, so they are excluded. */
+	List<MessageTemplate> findAllByGenderIsNotNullOrderByCodeAscGenderAsc();
 
 	/** A bus text: one code has a boy row and a girl row. */
 	Optional<MessageTemplate> findByCodeAndGender(String code, Gender gender);

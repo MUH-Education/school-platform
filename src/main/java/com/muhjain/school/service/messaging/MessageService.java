@@ -117,7 +117,7 @@ public class MessageService {
 
 	@Transactional(readOnly = true)
 	public List<TemplateResponse> templates() {
-		return templates.findAllByOrderByCodeAscGenderAsc().stream().map(TemplateResponse::of).toList();
+		return templates.findAllByGenderIsNotNullOrderByCodeAscGenderAsc().stream().map(TemplateResponse::of).toList();
 	}
 
 	/**

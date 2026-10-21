@@ -2,6 +2,7 @@ package com.muhjain.school.messaging;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.muhjain.school.service.auth.OtpDeliveryService;
 import com.muhjain.school.config.OtpProperties;
@@ -48,6 +49,19 @@ class ProviderWiringTest {
 		@Override
 		public void sendSmsOtp(String phone, String code) {
 			calls.add("otpsms:" + phone);
+		}
+
+		@Override
+		public String sendWhatsAppTemplate(String phone, String providerTemplateId, Map<String, String> params,
+				String mediaUrl) {
+			calls.add("wa-template:" + phone + ":" + providerTemplateId);
+			return "ref-2";
+		}
+
+		@Override
+		public String sendWhatsAppGroupMessage(String groupId, String text, String mediaUrl) {
+			calls.add("wa-group:" + groupId);
+			return "ref-3";
 		}
 
 	}
