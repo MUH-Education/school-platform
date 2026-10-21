@@ -47,3 +47,5 @@ erDiagram
     student ||--o{ enquiry : admitted_student_id
     enquiry ||--o{ enquiry_stage : enquiry_id
     enquiry ||--o{ enquiry_follow_up : enquiry_id
+    enquiry ||--o{ inbound_message : enquiry_id
+    enquiry ||--o{ message_outbox : enquiry_id

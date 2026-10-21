@@ -1,6 +1,6 @@
 # 3. Data model
 
-**38 tables and 1 view** in PostgreSQL for the first release, plus 5 tables for marks later.
+**45 tables and 1 view** in PostgreSQL for the first release, plus 5 tables for marks later.
 Think of each table as one register in the school office. One row is one line in that register.
 
 This page is made by `tools/make_data_model.py` from the real database, so the columns below are always the same as the Flyway files.
@@ -46,12 +46,16 @@ The exclusion constraints need the `btree_gist` extension. V1 creates it (`creat
 
 | Flyway file | Phase | Tables |
 |---|---|---|
-| `V1__auth_users.sql` | 1 | `app_user`, `otp_code`, `audit_log`, `app_setting`, `academic_session` |
+| `V1__auth_users.sql` | 1 | `app_user`, `audit_log`, `app_setting`, `academic_session` |
+| `V11__user_session.sql` | cross-cutting | `user_session` |
+| `V10__otp_whitelist.sql` | 1 | `otp_whitelist` |
+| `V9__staff_employee.sql` | 10 | `teacher_profile`, `staff_salary` |
 | `V2__vehicles_staff_routes.sql` | 2 | `vehicle`, `vehicle_document`, `staff`, `vehicle_assignment`, `route`, `route_stop` |
 | `V3__students.sql` | 3 | `student`, `guardian`, `student_guardian`, `transport_enrolment`, `number_counter` |
 | `V3__students.sql` | 3 | `upload`, `student_document`, `student_document_note`, `admission_draft`, `transfer_certificate` |
 | `V4__trips.sql` | 4 | `boarding_event`, `holiday` |
 | `V5__messaging.sql` | 5 | `bus_sms_rule`, `message_template`, `message_outbox` |
+| `V14__notifications.sql` | 11 | `notification`, `message_template_button`, `message_stop`, `inbound_message` |
 | `V6__enquiries.sql` | 6 | `enquiry`, `enquiry_stage`, `enquiry_follow_up` |
 | `V7__fees.sql` | 7 | `session_fee_setting`, `class_fee`, `fee_plan`, `fee_due`, `receipt`, `fee_payment`, `family_credit_entry` |
 | `V8__new_school_year.sql` | 7 | `promotion_run`, `promotion_choice` |
@@ -77,10 +81,19 @@ The "who did it" links to `app_user` and the links to `academic_session` are lef
 flowchart LR
     subgraph logins["Logins, history and school settings"]
         app_user[app_user]
-        otp_code[otp_code]
         audit_log[audit_log]
         app_setting[app_setting]
         academic_session[academic_session]
+    end
+    subgraph sessions["Login sessions"]
+        user_session[user_session]
+    end
+    subgraph whitelist["Test logins with a fixed code"]
+        otp_whitelist[otp_whitelist]
+    end
+    subgraph employees["Employees and teachers"]
+        teacher_profile[teacher_profile]
+        staff_salary[staff_salary]
     end
     subgraph transport["Vehicles, staff and routes"]
         vehicle[vehicle]
@@ -113,6 +126,12 @@ flowchart LR
         message_template[message_template]
         message_outbox[message_outbox]
     end
+    subgraph notifications["Notifications to parents and staff"]
+        notification[notification]
+        message_template_button[message_template_button]
+        message_stop[message_stop]
+        inbound_message[inbound_message]
+    end
     subgraph enquiries["Enquiries"]
         enquiry[enquiry]
         enquiry_stage[enquiry_stage]
@@ -142,28 +161,43 @@ flowchart LR
     student --> transport_enrolment
     route --> transport_enrolment
     route_stop --> transport_enrolment
+    app_user --> user_session
     student --> student_document
     student --> student_document_note
+    student --> transfer_certificate
     student --> boarding_event
     route --> boarding_event
-    student --> transfer_certificate
+    guardian --> receipt
     guardian --> message_outbox
     student --> message_outbox
-    receipt --> message_outbox
     guardian --> enquiry
     student --> enquiry
     enquiry --> enquiry_stage
     enquiry --> enquiry_follow_up
-    student --> fee_plan
-    student --> fee_due
-    guardian --> receipt
-    receipt --> fee_payment
-    student --> fee_payment
     guardian --> family_credit_entry
     student --> family_credit_entry
     receipt --> family_credit_entry
+    student --> fee_plan
+    student --> fee_due
+    receipt --> message_outbox
+    staff --> inbound_message
+    enquiry --> inbound_message
+    receipt --> fee_payment
+    student --> fee_payment
     promotion_run --> promotion_choice
     student --> promotion_choice
+    staff --> staff_salary
+    staff --> teacher_profile
+    message_outbox --> inbound_message
+    app_user --> inbound_message
+    message_template --> message_template_button
+    message_template --> notification
+    notification --> message_outbox
+    staff --> message_outbox
+    enquiry --> message_outbox
+    guardian --> inbound_message
+    guardian --> message_stop
+    notification --> message_stop
 ```
 
 Also as a picture: `docs/diagrams/overview.svg`.
@@ -184,20 +218,9 @@ erDiagram
         varchar role
         bigint staff_id FK
         boolean active
-        int token_version
         timestamptz last_login_at
         varchar last_login_client
         bigint created_by FK
-    }
-    otp_code {
-        bigint id PK
-        varchar phone
-        varchar code_hash
-        varchar channel
-        timestamptz expires_at
-        int attempts
-        timestamptz consumed_at
-        varchar request_ip
     }
     audit_log {
         bigint id PK
@@ -222,17 +245,19 @@ erDiagram
     }
     staff ||--o{ app_user : staff_id
     academic_session ||--o{ student : admission_session_id
+    app_user ||--o{ user_session : user_id
     academic_session ||--o{ admission_draft : session_id
+    academic_session ||--o{ receipt : session_id
+    academic_session ||--o{ enquiry : session_id
+    academic_session ||--o{ session_fee_setting : session_id
     academic_session ||--o{ class_fee : session_id
     academic_session ||--o{ fee_plan : session_id
-    academic_session ||--o{ enquiry : session_id
-    academic_session ||--o{ exam : session_id
-    academic_session ||--o{ session_fee_setting : session_id
     academic_session ||--o{ fee_due : session_id
-    academic_session ||--o{ receipt : session_id
     academic_session ||--o{ fee_payment : session_id
     academic_session ||--o{ promotion_run : from_session_id
     academic_session ||--o{ promotion_run : to_session_id
+    app_user ||--o{ inbound_message : handled_by
+    academic_session ||--o{ exam : session_id
 ```
 
 ### `app_user`
@@ -247,7 +272,6 @@ A person who can log in. The login id is the phone number; there is no password.
 | `role` | varchar(30) |  | `OWNER`, `OFFICE_ADMIN`, `TRANSPORT_INCHARGE`, `ADMISSIONS_DESK`, `ATTENDANT` |  |
 | `staff_id` | bigint | yes |  | → `staff`. foreign key added in V2 |
 | `active` | boolean |  | default `true` |  |
-| `token_version` | int |  | default `0` | +1 on logout, phone change, role change, turn off |
 | `last_login_at` | timestamptz | yes |  |  |
 | `last_login_client` | varchar(20) | yes | `WEB`, `ATTENDANT_APP` |  |
 | `created_by` | bigint | yes |  | → `app_user` |
@@ -257,7 +281,7 @@ Plus `created_at` and `updated_at`.
 **Rules**
 
 - An attendant login must point at a `staff` row, and one staff person has at most one login.
-- `token_version` goes up by 1 on logout, phone change, role change or turn off. Every old token stops working, on every phone.
+- Logout, phone change, role change and turning a user off end their sessions (`user_session`), not a version number on this row.
 - A user is never deleted. `active = false` turns the login off; their name stays on old taps and receipts.
 
 <details><summary>Constraints and indexes in the database</summary>
@@ -271,43 +295,10 @@ Plus `created_at` and `updated_at`.
 
 **Example rows** (from the sample data)
 
-- `id` 1 · `phone` +919800000501 · `name` Sourabh · `role` OWNER · `active` true · `token_version` 0 · `last_login_at` 2026-10-07 03:25 · `last_login_client` WEB
-- `id` 14 · `phone` +919700000204 · `name` Balwan · `role` ATTENDANT · `staff_id` 24 · `active` true · `token_version` 0 · `last_login_at` 2026-10-07 01:28 · `last_login_client` ATTENDANT_APP · `created_by` 1
+- `id` 1 · `phone` +919800000501 · `name` Sourabh · `role` OWNER · `active` true · `last_login_at` 2026-10-07 03:25 · `last_login_client` WEB
+- `id` 14 · `phone` +919700000204 · `name` Balwan · `role` ATTENDANT · `staff_id` 24 · `active` true · `last_login_at` 2026-10-07 01:28 · `last_login_client` ATTENDANT_APP · `created_by` 1
 
 **Used by:** `/auth/*`, `/users/*`, `every table's created_by`
-
-### `otp_code`
-
-One 6-digit login code that was sent. Only its HMAC is kept, never the code.
-
-| Column | Type | Can be empty | Values or limits | Note |
-|---|---|---|---|---|
-| `id` | bigint |  |  | identity |
-| `phone` | varchar(13) |  |  |  |
-| `code_hash` | varchar(64) |  |  | HMAC-SHA256, hex. Never the code. |
-| `channel` | varchar(10) |  | `WHATSAPP`, `SMS`, `LOG` |  |
-| `expires_at` | timestamptz |  |  | created + 5 minutes |
-| `attempts` | int |  | default `0` |  |
-| `consumed_at` | timestamptz | yes |  |  |
-| `request_ip` | varchar(45) | yes |  |  |
-
-Plus `created_at` and `updated_at`.
-
-**Rules**
-
-- Only the newest unused row of a phone is valid. 5 wrong tries lock it.
-- The limits (5 codes an hour per phone, 20 per IP) are counted from these rows. No Redis.
-- A nightly job deletes rows older than 7 days.
-
-<details><summary>Constraints and indexes in the database</summary>
-
-- `otp_code_attempts_check`: `CHECK (((attempts >= 0) AND (attempts <= 5)))`
-- `otp_code_phone_idx`: `CREATE INDEX otp_code_phone_idx ON otp_code (phone, created_at DESC)`
-- `otp_code_ip_idx`: `CREATE INDEX otp_code_ip_idx ON otp_code (request_ip, created_at DESC)`
-
-</details>
-
-**Used by:** `POST /auth/otp/request`, `POST /auth/otp/verify`
 
 ### `audit_log`
 
@@ -397,6 +388,168 @@ Plus `created_at` and `updated_at`.
 
 ---
 
+## Login sessions
+
+Flyway file: `V11__user_session.sql` · Phase cross-cutting
+
+```mermaid
+erDiagram
+    user_session {
+        bigint id PK
+        bigint user_id FK
+        varchar session_hash
+        timestamptz revoked_at
+        varchar ip_address
+    }
+    app_user ||--o{ user_session : user_id
+```
+
+### `user_session`
+
+One login session, made when an OTP is checked and right. Only its HMAC is kept, never the raw session id.
+
+| Column | Type | Can be empty | Values or limits | Note |
+|---|---|---|---|---|
+| `id` | bigint |  |  | identity |
+| `user_id` | bigint |  |  | → `app_user` |
+| `session_hash` | varchar(64) |  |  | HMAC-SHA256 of the raw session id. Never store it plain. |
+| `revoked_at` | timestamptz | yes |  |  |
+| `ip_address` | varchar(45) | yes |  |  |
+
+Plus `created_at` and `updated_at`.
+
+**Rules**
+
+- The hot path is Redis (`session:<id>`), not this table. This row is the fallback for when Redis has forgotten a session, and the only place "log out everywhere" can find every session of one user.
+- There is no expires_at column. The 15-minute idle timeout lives only in Redis, where it slides forward on every request. This table only knows "revoked?" and "older than the 12-hour hard cap?" (worked out from created_at).
+- Logout revokes only this one row. Turn off, role change and phone change revoke every row of that user_id at once.
+
+<details><summary>Constraints and indexes in the database</summary>
+
+- `user_session_hash_idx`: `CREATE UNIQUE INDEX user_session_hash_idx ON user_session (session_hash)`
+- `user_session_user_idx`: `CREATE INDEX user_session_user_idx ON user_session (user_id, revoked_at)`
+
+</details>
+
+**Used by:** `POST /auth/otp/verify`, `every other request's Authorization header`, `POST /auth/logout`
+
+
+---
+
+## Test logins with a fixed code
+
+Flyway file: `V10__otp_whitelist.sql` · Phase 1
+
+```mermaid
+erDiagram
+    otp_whitelist {
+        varchar phone
+        varchar note
+    }
+```
+
+### `otp_whitelist`
+
+Test and demo phones that log in with a fixed code (123456, or 1234 with 4-digit codes), with no real WhatsApp or SMS sent (decision B25).
+
+| Column | Type | Can be empty | Values or limits | Note |
+|---|---|---|---|---|
+| `phone` | varchar(13) |  |  |  |
+| `note` | varchar(120) | yes |  |  |
+
+Plus `created_at` and `updated_at`.
+
+**Rules**
+
+- Rows are added by hand or by the local dev data; there is no API for them.
+- The phone has the usual +91 shape.
+
+<details><summary>Constraints and indexes in the database</summary>
+
+- `otp_whitelist_phone_ck`: `CHECK (((phone)::text ~ '^\+91[6-9][0-9]{9}$'::text))`
+
+</details>
+
+**Used by:** `POST /auth/otp/request`, `POST /auth/otp/verify`
+
+
+---
+
+## Employees and teachers
+
+Flyway file: `V9__staff_employee.sql` · Phase 10
+
+```mermaid
+erDiagram
+    teacher_profile {
+        bigint staff_id FK
+        varchar qualification
+        varchar subjects
+        varchar class_teacher_of
+    }
+    staff_salary {
+        bigint staff_id FK
+        numeric monthly_salary
+        bigint updated_by FK
+    }
+    staff ||--o{ staff_salary : staff_id
+    staff ||--o{ teacher_profile : staff_id
+```
+
+### `teacher_profile`
+
+The teaching extras of a staff row whose type is TEACHER (decision B23); other employees have none.
+
+| Column | Type | Can be empty | Values or limits | Note |
+|---|---|---|---|---|
+| `staff_id` | bigint |  |  | → `staff` |
+| `qualification` | varchar(120) | yes |  |  |
+| `subjects` | varchar(200) | yes |  |  |
+| `class_teacher_of` | varchar(20) | yes |  |  |
+
+Plus `created_at` and `updated_at`.
+
+**Rules**
+
+- The staff id is the primary key, so one teacher has at most one profile.
+- One class has at most one class teacher (partial unique index on class_teacher_of).
+
+<details><summary>Constraints and indexes in the database</summary>
+
+- `teacher_profile_class_uk`: `CREATE UNIQUE INDEX teacher_profile_class_uk ON teacher_profile (class_teacher_of) WHERE (class_teacher_of IS NOT NULL)`
+
+</details>
+
+**Used by:** `GET /staff/{id}`, `PUT /staff/{id}`
+
+### `staff_salary`
+
+The monthly salary of an employee, in its own table with its own permission STAFF_SALARY_VIEW (decision B24), so the staff list never shows it.
+
+| Column | Type | Can be empty | Values or limits | Note |
+|---|---|---|---|---|
+| `staff_id` | bigint |  |  | → `staff` |
+| `monthly_salary` | numeric(12,2) |  | `>= 0` |  |
+| `updated_by` | bigint | yes |  | → `app_user` |
+
+Plus `created_at` and `updated_at`.
+
+**Rules**
+
+- One row per employee (staff id is the primary key). Never below 0.
+- Only the owner sees or changes it.
+
+<details><summary>Constraints and indexes in the database</summary>
+
+- `staff_salary_updated_by_ix`: `CREATE INDEX staff_salary_updated_by_ix ON staff_salary (updated_by)`
+
+</details>
+
+**Used by:** `GET /staff/{id}/salary`, `PUT /staff/{id}/salary`
+
+
+---
+
 ## Vehicles, staff and routes
 
 Flyway file: `V2__vehicles_staff_routes.sql` · Phase 2
@@ -427,6 +580,13 @@ erDiagram
         varchar licence_no
         date licence_valid_till
         boolean active
+        date joined_on
+        date date_of_birth
+        varchar gender
+        varchar address
+        varchar emergency_phone
+        varchar id_proof_type
+        varchar id_proof_last4
     }
     vehicle_assignment {
         bigint id PK
@@ -466,6 +626,10 @@ erDiagram
     route ||--o{ transport_enrolment : route_id
     route_stop ||--o{ transport_enrolment : stop_id
     route ||--o{ boarding_event : route_id
+    staff ||--o{ inbound_message : staff_id
+    staff ||--o{ staff_salary : staff_id
+    staff ||--o{ teacher_profile : staff_id
+    staff ||--o{ message_outbox : staff_id
 ```
 
 ### `vehicle`
@@ -544,10 +708,17 @@ A driver, attendant or helper.
 | `id` | bigint |  |  | identity |
 | `name` | varchar(120) |  |  |  |
 | `phone` | varchar(13) |  |  |  |
-| `staff_type` | varchar(20) |  | `DRIVER`, `ATTENDANT`, `HELPER` |  |
+| `staff_type` | varchar(20) |  | `DRIVER`, `ATTENDANT`, `HELPER`, `TEACHER` |  |
 | `licence_no` | varchar(30) | yes |  |  |
 | `licence_valid_till` | date | yes |  |  |
 | `active` | boolean |  | default `true` |  |
+| `joined_on` | date | yes |  |  |
+| `date_of_birth` | date | yes |  |  |
+| `gender` | varchar(10) | yes |  |  |
+| `address` | varchar(300) | yes |  |  |
+| `emergency_phone` | varchar(13) | yes |  |  |
+| `id_proof_type` | varchar(20) | yes |  |  |
+| `id_proof_last4` | varchar(4) | yes |  |  |
 
 Plus `created_at` and `updated_at`.
 
@@ -559,6 +730,11 @@ Plus `created_at` and `updated_at`.
 
 - `staff_phone_check`: `CHECK (((phone)::text ~ '^\+91[6-9][0-9]{9}$'::text))`
 - `staff_driver_has_licence`: `CHECK ((((staff_type)::text <> 'DRIVER'::text) OR ((licence_no IS NOT NULL) AND (licence_valid_till IS NOT NULL))))`
+- `staff_gender_ck`: `CHECK (((gender IS NULL) OR ((gender)::text = ANY ((ARRAY['MALE'::character varying, 'FEMALE'::character varying, 'OTHER'::character varying])::text[]))))`
+- `staff_emergency_phone_ck`: `CHECK (((emergency_phone IS NULL) OR ((emergency_phone)::text ~ '^\+91[6-9][0-9]{9}$'::text)))`
+- `staff_id_proof_type_ck`: `CHECK (((id_proof_type IS NULL) OR ((id_proof_type)::text = ANY ((ARRAY['AADHAAR'::character varying, 'VOTER_ID'::character varying, 'PAN'::character varying, 'DRIVING_LICENCE'::character varying])::text[]))))`
+- `staff_id_proof_last4_ck`: `CHECK (((id_proof_last4 IS NULL) OR ((id_proof_last4)::text ~ '^[0-9]{4}$'::text)))`
+- `staff_id_proof_ck`: `CHECK (((id_proof_type IS NULL) = (id_proof_last4 IS NULL)))`
 
 </details>
 
@@ -757,19 +933,21 @@ erDiagram
     route_stop ||--o{ transport_enrolment : stop_id
     student ||--o{ student_document : student_id
     student ||--o{ student_document_note : student_id
-    student ||--o{ boarding_event : student_id
     student ||--o{ transfer_certificate : student_id
+    student ||--o{ boarding_event : student_id
+    guardian ||--o{ receipt : family_guardian_id
     guardian ||--o{ message_outbox : guardian_id
     student ||--o{ message_outbox : student_id
     guardian ||--o{ enquiry : referred_by_guardian_id
     student ||--o{ enquiry : admitted_student_id
-    student ||--o{ fee_plan : student_id
-    student ||--o{ fee_due : student_id
-    guardian ||--o{ receipt : family_guardian_id
-    student ||--o{ fee_payment : student_id
     guardian ||--o{ family_credit_entry : guardian_id
     student ||--o{ family_credit_entry : student_id
+    student ||--o{ fee_plan : student_id
+    student ||--o{ fee_due : student_id
+    student ||--o{ fee_payment : student_id
     student ||--o{ promotion_choice : student_id
+    guardian ||--o{ inbound_message : guardian_id
+    guardian ||--o{ message_stop : guardian_id
     student ||--o{ student_mark : student_id
     student ||--o{ teacher_note : student_id
 ```
@@ -848,8 +1026,8 @@ Plus `created_at` and `updated_at`.
 
 <details><summary>Constraints and indexes in the database</summary>
 
-- `guardian_phone_check`: `CHECK (((phone)::text ~ '^\+91[6-9][0-9]{9}$'::text))`
 - `guardian_name_or_phone`: `CHECK (((name IS NOT NULL) OR (phone IS NOT NULL)))`
+- `guardian_phone_check`: `CHECK (((phone)::text ~ '^\+91[6-9][0-9]{9}$'::text))`
 - `guardian_phone_key`: `UNIQUE (phone)`
 
 </details>
@@ -1278,8 +1456,8 @@ Plus `created_at` and `updated_at`.
 
 **Example rows** (from the sample data)
 
-- `id` 6 · `student_id` 57 · `route_id` 4 · `service_date` 2026-10-07 · `event_type` BOARDED_MORNING · `outcome` DONE · `occurred_at` 2026-10-07 02:12 · `recorded_by` 14 · `recorded_at` 2026-10-17 12:08
-- `id` 12 · `student_id` 67 · `route_id` 4 · `service_date` 2026-10-07 · `event_type` BOARDED_MORNING · `outcome` ABSENT · `occurred_at` 2026-10-07 02:13 · `recorded_by` 14 · `recorded_at` 2026-10-17 12:08
+- `id` 6 · `student_id` 57 · `route_id` 4 · `service_date` 2026-10-07 · `event_type` BOARDED_MORNING · `outcome` DONE · `occurred_at` 2026-10-07 02:12 · `recorded_by` 14 · `recorded_at` 2026-10-21 14:55
+- `id` 12 · `student_id` 67 · `route_id` 4 · `service_date` 2026-10-07 · `event_type` BOARDED_MORNING · `outcome` ABSENT · `occurred_at` 2026-10-07 02:13 · `recorded_by` 14 · `recorded_at` 2026-10-21 14:55
 
 **Used by:** `POST /trips/marks`, `GET /trips/manifest`, `GET /bus-status`
 
@@ -1344,6 +1522,16 @@ erDiagram
         varchar approval
         boolean active
         bigint updated_by FK
+        varchar kind
+        varchar header_type
+        varchar media_key
+        varchar sms_body
+        jsonb example_values
+        varchar provider_template_name
+        varchar provider_language
+        varchar rejection_reason
+        bigint replaces_id FK
+        bigint created_by FK
     }
     message_outbox {
         bigint id PK
@@ -1367,10 +1555,24 @@ erDiagram
         timestamptz delivered_at
         bigint fallback_of_id FK
         bigint created_by FK
+        bigint notification_id FK
+        bigint staff_id FK
+        bigint enquiry_id FK
+        timestamptz read_at
+        varchar button_action
+        varchar media_key
+        jsonb template_values
+        varchar skip_reason
     }
     guardian ||--o{ message_outbox : guardian_id
     student ||--o{ message_outbox : student_id
     receipt ||--o{ message_outbox : receipt_id
+    message_outbox ||--o{ inbound_message : in_reply_to_outbox_id
+    message_template ||--o{ message_template_button : template_id
+    message_template ||--o{ notification : template_id
+    notification ||--o{ message_outbox : notification_id
+    staff ||--o{ message_outbox : staff_id
+    enquiry ||--o{ message_outbox : enquiry_id
 ```
 
 ### `bus_sms_rule`
@@ -1417,7 +1619,7 @@ A message text. Bus texts have a boy row (M) and a girl row (F).
 | Column | Type | Can be empty | Values or limits | Note |
 |---|---|---|---|---|
 | `id` | bigint |  |  | identity |
-| `code` | varchar(40) |  |  | 'BOARDED_MORNING' |
+| `code` | varchar(40) | yes |  | 'BOARDED_MORNING' |
 | `gender` | varchar(1) | yes | `M`, `F` |  |
 | `name` | varchar(60) |  |  | 'Boarded morning' |
 | `channel` | varchar(10) |  | `SMS`, `WHATSAPP` |  |
@@ -1428,24 +1630,40 @@ A message text. Bus texts have a boy row (M) and a girl row (F).
 | `approval` | varchar(10) |  | `APPROVED`, `WAITING`, `REJECTED` · default `WAITING` |  |
 | `active` | boolean |  | default `true` |  |
 | `updated_by` | bigint | yes |  | → `app_user` |
+| `kind` | varchar(20) |  | `SYSTEM`, `NOTICE`, `URGENT`, `MARKETING`, `GREETING`, `FEE_REMINDER`, `ONE_FAMILY`, `STAFF` |  |
+| `header_type` | varchar(10) |  | `NONE`, `IMAGE`, `VIDEO`, `DOCUMENT` · default `NONE` |  |
+| `media_key` | varchar(120) | yes |  |  |
+| `sms_body` | varchar(320) | yes |  |  |
+| `example_values` | jsonb |  | default `{}` |  |
+| `provider_template_name` | varchar(60) | yes |  |  |
+| `provider_language` | varchar(10) |  | default `hi` |  |
+| `rejection_reason` | varchar(300) | yes |  |  |
+| `replaces_id` | bigint | yes |  | → `message_template` |
+| `created_by` | bigint | yes |  | → `app_user` |
 
 Plus `created_at` and `updated_at`.
 
 **Rules**
 
 - `body` is the text as changed on School settings. `approved_body` is the text the phone company approved (DLT). The server always sends `approved_body`.
-- One row per (code, gender); fee texts have gender empty (`unique nulls not distinct`).
+- One row per (code, gender) among SYSTEM texts; fee texts have gender empty (`nulls not distinct`). Notification templates (V14, kind NOTICE, MARKETING, ...) have no code.
+- Editing an APPROVED notification template makes a new row (`replaces_id`).
 
 <details><summary>Constraints and indexes in the database</summary>
 
-- `message_template_once`: `UNIQUE NULLS NOT DISTINCT (code, gender)`
+- `message_template_system_has_code`: `CHECK ((((kind)::text <> 'SYSTEM'::text) OR (code IS NOT NULL)))`
+- `message_template_header_media`: `CHECK ((((header_type)::text = 'NONE'::text) OR (media_key IS NOT NULL)))`
+- `message_template_rejection`: `CHECK (((rejection_reason IS NULL) OR ((approval)::text = 'REJECTED'::text)))`
+- `message_template_system_code`: `CREATE UNIQUE INDEX message_template_system_code ON message_template (code, gender) NULLS NOT DISTINCT WHERE ((kind)::text = 'SYSTEM'::text)`
+- `message_template_kind_idx`: `CREATE INDEX message_template_kind_idx ON message_template (kind) WHERE active`
+- `message_template_replaces_idx`: `CREATE INDEX message_template_replaces_idx ON message_template (replaces_id)`
 
 </details>
 
 **Example rows** (from the sample data)
 
-- `id` 1 · `code` BOARDED_MORNING · `gender` M · `name` Boarded morning · `channel` SMS · `language` hi · `body` {name} सुबह {time} बजे बस में चढ़ गया। – MUH Jain School · `approved_body` {name} सुबह {time} बजे बस में चढ़ गया। – MUH Jain School · `provider_template_id` 110716123450001 · `approval` APPROVED · `active` true
-- `id` 2 · `code` BOARDED_MORNING · `gender` F · `name` Boarded morning · `channel` SMS · `language` hi · `body` {name} सुबह {time} बजे बस में चढ़ गई। – MUH Jain School · `approved_body` {name} सुबह {time} बजे बस में चढ़ गई। – MUH Jain School · `provider_template_id` 110716123450002 · `approval` APPROVED · `active` true
+- `id` 1 · `code` BOARDED_MORNING · `gender` M · `name` Boarded morning · `channel` SMS · `language` hi · `body` {name} सुबह की बस में चढ़ गया — {time}। MUH Jain School · `approved_body` {name} सुबह की बस में चढ़ गया — {time}। MUH Jain School · `provider_template_id` 110716123450001 · `approval` APPROVED · `active` true · `kind` SYSTEM · `header_type` NONE · `example_values` {} · `provider_language` hi
+- `id` 2 · `code` BOARDED_MORNING · `gender` F · `name` Boarded morning · `channel` SMS · `language` hi · `body` {name} सुबह की बस में चढ़ गई — {time}। MUH Jain School · `approved_body` {name} सुबह की बस में चढ़ गई — {time}। MUH Jain School · `provider_template_id` 110716123450002 · `approval` APPROVED · `active` true · `kind` SYSTEM · `header_type` NONE · `example_values` {} · `provider_language` hi
 
 **Used by:** `/message-templates/*`, `the sending job`
 
@@ -1456,7 +1674,7 @@ Every message to a parent, as a queue. The sending job reads QUEUED rows every 5
 | Column | Type | Can be empty | Values or limits | Note |
 |---|---|---|---|---|
 | `id` | bigint |  |  | identity |
-| `purpose` | varchar(20) |  | `BOARDING`, `FEE_RECEIPT`, `FEE_REMINDER`, `RECEIPT_CANCELLED`, `ENQUIRY`, `TEST`, `OTHER` |  |
+| `purpose` | varchar(20) |  | `BOARDING`, `FEE_RECEIPT`, `FEE_REMINDER`, `RECEIPT_CANCELLED`, `ENQUIRY`, `TEST`, `OTHER`, `NOTICE`, `MARKETING`, `URGENT`, `STAFF`, `ONE_FAMILY` |  |
 | `channel` | varchar(10) |  | `SMS`, `WHATSAPP` |  |
 | `phone` | varchar(13) |  |  |  |
 | `guardian_id` | bigint | yes |  | → `guardian` |
@@ -1465,8 +1683,8 @@ Every message to a parent, as a queue. The sending job reads QUEUED rows every 5
 | `service_date` | date | yes |  | bus messages |
 | `event_type` | varchar(20) | yes | `BOARDED_MORNING`, `REACHED_SCHOOL`, `BOARDED_EVENING`, `REACHED_HOME` |  |
 | `template_code` | varchar(40) | yes |  |  |
-| `body` | varchar(1000) |  |  | the final text |
-| `status` | varchar(12) |  | `QUEUED`, `SENT`, `DELIVERED`, `FAILED`, `CANCELLED`, `TEST_ONLY` · default `QUEUED` |  |
+| `body` | varchar(1024) |  |  | the final text |
+| `status` | varchar(12) |  | `QUEUED`, `SENT`, `DELIVERED`, `FAILED`, `CANCELLED`, `TEST_ONLY`, `SKIPPED` · default `QUEUED` |  |
 | `attempts` | int |  | default `0` |  |
 | `next_try_at` | timestamptz |  | default `now()` |  |
 | `provider_ref` | varchar(120) | yes |  | id from the SMS / WhatsApp company |
@@ -1476,6 +1694,14 @@ Every message to a parent, as a queue. The sending job reads QUEUED rows every 5
 | `delivered_at` | timestamptz | yes |  |  |
 | `fallback_of_id` | bigint | yes |  | → `message_outbox`. this SMS went because that WhatsApp failed |
 | `created_by` | bigint | yes |  | → `app_user`. empty = made by the system (a tap) |
+| `notification_id` | bigint | yes |  | → `notification` |
+| `staff_id` | bigint | yes |  | → `staff` |
+| `enquiry_id` | bigint | yes |  | → `enquiry` |
+| `read_at` | timestamptz | yes |  |  |
+| `button_action` | varchar(30) | yes | `STOP_MESSAGES`, `BOOK_VISIT`, `GOT_IT`, `CALL_ME` |  |
+| `media_key` | varchar(120) | yes |  |  |
+| `template_values` | jsonb |  | default `{}` |  |
+| `skip_reason` | varchar(30) | yes |  |  |
 
 Plus `created_at` and `updated_at`.
 
@@ -1484,12 +1710,14 @@ Plus `created_at` and `updated_at`.
 - One bus event gives one SMS per phone, whatever happens (partial unique index).
 - Login codes are never stored here.
 - After 3 failed tries a row is FAILED. If WhatsApp fails, a new SMS row is made with `fallback_of_id`.
+- A notification gives one row per phone per channel (URGENT has WhatsApp and SMS). A guard that says no makes a SKIPPED row with `skip_reason`.
 
 <details><summary>Constraints and indexes in the database</summary>
 
 - `message_outbox_phone_check`: `CHECK (((phone)::text ~ '^\+91[6-9][0-9]{9}$'::text))`
 - `message_outbox_attempts_check`: `CHECK (((attempts >= 0) AND (attempts <= 10)))`
 - `message_outbox_bus_fields`: `CHECK ((((purpose)::text <> 'BOARDING'::text) OR ((student_id IS NOT NULL) AND (service_date IS NOT NULL) AND (event_type IS NOT NULL))))`
+- `message_outbox_skip_reason`: `CHECK ((((status)::text = 'SKIPPED'::text) = (skip_reason IS NOT NULL)))`
 - `message_outbox_one_bus_sms`: `CREATE UNIQUE INDEX message_outbox_one_bus_sms ON message_outbox (guardian_id, student_id, service_date, event_type) WHERE (((purpose)::text = 'BOARDING'::text) AND (fallback_of_id IS NULL))`
 - `message_outbox_queue_idx`: `CREATE INDEX message_outbox_queue_idx ON message_outbox (next_try_at) WHERE ((status)::text = 'QUEUED'::text)`
 - `message_outbox_day_idx`: `CREATE INDEX message_outbox_day_idx ON message_outbox (created_at DESC)`
@@ -1498,17 +1726,246 @@ Plus `created_at` and `updated_at`.
 - `message_outbox_guardian_idx`: `CREATE INDEX message_outbox_guardian_idx ON message_outbox (guardian_id, purpose, created_at DESC)`
 - `message_outbox_receipt_idx`: `CREATE INDEX message_outbox_receipt_idx ON message_outbox (receipt_id)`
 - `message_outbox_fallback_idx`: `CREATE INDEX message_outbox_fallback_idx ON message_outbox (fallback_of_id)`
+- `message_outbox_one_per_phone`: `CREATE UNIQUE INDEX message_outbox_one_per_phone ON message_outbox (notification_id, phone, channel) WHERE ((notification_id IS NOT NULL) AND (fallback_of_id IS NULL) AND ((purpose)::text <> 'TEST'::text))`
+- `message_outbox_notification_idx`: `CREATE INDEX message_outbox_notification_idx ON message_outbox (notification_id, status)`
+- `message_outbox_staff_idx`: `CREATE INDEX message_outbox_staff_idx ON message_outbox (staff_id)`
+- `message_outbox_enquiry_idx`: `CREATE INDEX message_outbox_enquiry_idx ON message_outbox (enquiry_id)`
 
 </details>
 
 **Example rows** (from the sample data)
 
-- `id` 3 · `purpose` BOARDING · `channel` SMS · `phone` +919400000871 · `guardian_id` 210 · `student_id` 57 · `service_date` 2026-10-07 · `event_type` BOARDED_MORNING · `template_code` BOARDED_MORNING · `body` आर्यन सुबह 7:42 बजे बस में चढ़ गया। – MUH Jain School · `status` DELIVERED · `attempts` 1 · `next_try_at` 2026-10-17 12:08 · `provider_ref` msg-8f2c-7741 · `sent_at` 2026-10-07 02:12 · `delivered_at` 2026-10-07 02:12
-- `id` 4 · `purpose` BOARDING · `channel` SMS · `phone` +919800000512 · `guardian_id` 211 · `student_id` 57 · `service_date` 2026-10-07 · `event_type` BOARDED_MORNING · `template_code` BOARDED_MORNING · `body` आर्यन सुबह 7:42 बजे बस में चढ़ गया। – MUH Jain School · `status` DELIVERED · `attempts` 1 · `next_try_at` 2026-10-17 12:08 · `provider_ref` msg-8f2c-7742 · `sent_at` 2026-10-07 02:12 · `delivered_at` 2026-10-07 02:12
-- `id` 7 · `purpose` FEE_RECEIPT · `channel` WHATSAPP · `phone` +919700000209 · `guardian_id` 240 · `receipt_id` 30 · `template_code` FEE_RECEIPT · `body` फ़ीस ₹3300 मिल गई है। रसीद नंबर R-2026-1187 साथ में भेजी है। धन्यवा... · `status` DELIVERED · `attempts` 1 · `next_try_at` 2026-10-17 12:08 · `sent_at` 2026-10-07 05:13 · `delivered_at` 2026-10-07 05:13 · `created_by` 2
-- `id` 8 · `purpose` FEE_RECEIPT · `channel` WHATSAPP · `phone` +919800000665 · `guardian_id` 241 · `receipt_id` 29 · `template_code` FEE_RECEIPT · `body` फ़ीस ₹8000 मिल गई है। रसीद नंबर R-2026-1186 साथ में भेजी है। धन्यवा... · `status` DELIVERED · `attempts` 1 · `next_try_at` 2026-10-17 12:08 · `sent_at` 2026-10-07 04:46 · `delivered_at` 2026-10-07 04:46 · `created_by` 2
+- `id` 3 · `purpose` BOARDING · `channel` SMS · `phone` +919400000871 · `guardian_id` 210 · `student_id` 57 · `service_date` 2026-10-07 · `event_type` BOARDED_MORNING · `template_code` BOARDED_MORNING · `body` आर्यन सुबह 7:42 बजे बस में चढ़ गया। – MUH Jain School · `status` DELIVERED · `attempts` 1 · `next_try_at` 2026-10-21 14:55 · `provider_ref` msg-8f2c-7741 · `sent_at` 2026-10-07 02:12 · `delivered_at` 2026-10-07 02:12 · `template_values` {}
+- `id` 4 · `purpose` BOARDING · `channel` SMS · `phone` +919800000512 · `guardian_id` 211 · `student_id` 57 · `service_date` 2026-10-07 · `event_type` BOARDED_MORNING · `template_code` BOARDED_MORNING · `body` आर्यन सुबह 7:42 बजे बस में चढ़ गया। – MUH Jain School · `status` DELIVERED · `attempts` 1 · `next_try_at` 2026-10-21 14:55 · `provider_ref` msg-8f2c-7742 · `sent_at` 2026-10-07 02:12 · `delivered_at` 2026-10-07 02:12 · `template_values` {}
+- `id` 7 · `purpose` FEE_RECEIPT · `channel` WHATSAPP · `phone` +919700000209 · `guardian_id` 240 · `receipt_id` 30 · `template_code` FEE_RECEIPT · `body` फ़ीस ₹3300 मिल गई है। रसीद नंबर R-2026-1187 साथ में भेजी है। धन्यवा... · `status` DELIVERED · `attempts` 1 · `next_try_at` 2026-10-21 14:55 · `sent_at` 2026-10-07 05:13 · `delivered_at` 2026-10-07 05:13 · `created_by` 2 · `template_values` {}
+- `id` 8 · `purpose` FEE_RECEIPT · `channel` WHATSAPP · `phone` +919800000665 · `guardian_id` 241 · `receipt_id` 29 · `template_code` FEE_RECEIPT · `body` फ़ीस ₹8000 मिल गई है। रसीद नंबर R-2026-1186 साथ में भेजी है। धन्यवा... · `status` DELIVERED · `attempts` 1 · `next_try_at` 2026-10-21 14:55 · `sent_at` 2026-10-07 04:46 · `delivered_at` 2026-10-07 04:46 · `created_by` 2 · `template_values` {}
 
 **Used by:** `GET /messages`, `POST /messages/*/retry`, `webhooks`, `receipts on WhatsApp`, `reminders`
+
+
+---
+
+## Notifications to parents and staff
+
+Flyway file: `V14__notifications.sql` · Phase 11
+
+```mermaid
+erDiagram
+    notification {
+        bigint id PK
+        varchar kind
+        varchar name
+        bigint template_id FK
+        varchar body
+        varchar sms_body
+        jsonb fixed_values
+        varchar media_key
+        varchar media_type
+        varchar provider_media_id
+        timestamptz provider_media_at
+        jsonb audience
+        varchar status
+        timestamptz scheduled_at
+        timestamptz expanded_at
+        timestamptz finished_at
+        int recipient_count
+        varchar note
+        varchar source
+        bigint rule_id
+        bigint created_by FK
+    }
+    message_template_button {
+        bigint id PK
+        bigint template_id FK
+        int seq_no
+        varchar type
+        varchar text
+        varchar action
+    }
+    message_stop {
+        bigint id PK
+        bigint guardian_id FK
+        varchar reason
+        bigint notification_id FK
+    }
+    inbound_message {
+        bigint id PK
+        varchar phone
+        bigint guardian_id FK
+        bigint staff_id FK
+        bigint enquiry_id FK
+        varchar text
+        varchar button_action
+        bigint in_reply_to_outbox_id FK
+        varchar provider_ref
+        timestamptz received_at
+        boolean handled
+        bigint handled_by FK
+        varchar note
+        date promised_until
+    }
+    staff ||--o{ inbound_message : staff_id
+    enquiry ||--o{ inbound_message : enquiry_id
+    message_outbox ||--o{ inbound_message : in_reply_to_outbox_id
+    app_user ||--o{ inbound_message : handled_by
+    message_template ||--o{ message_template_button : template_id
+    message_template ||--o{ notification : template_id
+    notification ||--o{ message_outbox : notification_id
+    guardian ||--o{ inbound_message : guardian_id
+    guardian ||--o{ message_stop : guardian_id
+    notification ||--o{ message_stop : notification_id
+```
+
+### `notification`
+
+One send by the office (notice, urgent, marketing, greeting, fee reminder, one family, staff). The people are rows in message_outbox with this notification_id.
+
+| Column | Type | Can be empty | Values or limits | Note |
+|---|---|---|---|---|
+| `id` | bigint |  |  | identity |
+| `kind` | varchar(20) |  | `NOTICE`, `URGENT`, `MARKETING`, `GREETING`, `FEE_REMINDER`, `ONE_FAMILY`, `STAFF` |  |
+| `name` | varchar(80) |  |  | office-only name: "Open day, Sunday 25 October" |
+| `template_id` | bigint |  |  | → `message_template` |
+| `body` | varchar(1024) |  |  | the text with {boxes}, as the office saw it |
+| `sms_body` | varchar(320) | yes |  | SMS version, null = no SMS fallback |
+| `fixed_values` | jsonb |  | default `{}` | {Date}: "10 अक्टूबर" — same for everyone |
+| `media_key` | varchar(120) | yes |  | our storage key (poster, video, pdf) |
+| `media_type` | varchar(10) | yes | `IMAGE`, `VIDEO`, `DOCUMENT`, `AUDIO` |  |
+| `provider_media_id` | varchar(120) | yes |  | filled by MediaPublisher at send time |
+| `provider_media_at` | timestamptz | yes |  | when it was uploaded; re-upload after 25 days |
+| `audience` | jsonb |  |  | groups + filter |
+| `status` | varchar(12) |  | `DRAFT`, `SCHEDULED`, `SENDING`, `SENT`, `CANCELLED`, `FAILED` · default `DRAFT` |  |
+| `scheduled_at` | timestamptz | yes |  |  |
+| `expanded_at` | timestamptz | yes |  | when the outbox rows were written |
+| `finished_at` | timestamptz | yes |  | when the last row left QUEUED |
+| `recipient_count` | int | yes | `>= 0` | counted at expand time |
+| `note` | varchar(300) | yes |  | "Cancelled while sending: 112 sent, 134 not sent" |
+| `source` | varchar(10) |  | `MANUAL`, `RULE` · default `MANUAL` |  |
+| `rule_id` | bigint | yes |  | Phase 12: notification_rule (foreign key added there) |
+| `created_by` | bigint |  |  | → `app_user` |
+
+Plus `created_at` and `updated_at`.
+
+**Rules**
+
+- Rows are written by NotificationDispatcher (every 60 s), never by the request. "Send now" only sets SENDING.
+- `audience` is the question ("families with dues, 2+ months"), never the answer. The list is made at expand time and checked again before each send.
+- SCHEDULED needs `scheduled_at`. A file needs its `media_type`. `rule_id` only for `source = RULE` (Phase 12).
+- No cost, price or budget column.
+
+<details><summary>Constraints and indexes in the database</summary>
+
+- `notification_schedule`: `CHECK ((((status)::text <> 'SCHEDULED'::text) OR (scheduled_at IS NOT NULL)))`
+- `notification_media`: `CHECK (((media_key IS NULL) = (media_type IS NULL)))`
+- `notification_rule_source`: `CHECK ((((source)::text = 'RULE'::text) OR (rule_id IS NULL)))`
+- `notification_due_idx`: `CREATE INDEX notification_due_idx ON notification (scheduled_at) WHERE ((status)::text = 'SCHEDULED'::text)`
+- `notification_open_idx`: `CREATE INDEX notification_open_idx ON notification (status) WHERE ((status)::text = 'SENDING'::text)`
+- `notification_list_idx`: `CREATE INDEX notification_list_idx ON notification (created_at DESC)`
+- `notification_template_idx`: `CREATE INDEX notification_template_idx ON notification (template_id)`
+
+</details>
+
+**Used by:** `POST /notifications`, `POST /notifications/{id}/send`, `GET /notifications/{id}/report`
+
+### `message_template_button`
+
+Up to 3 WhatsApp buttons under a notification template.
+
+| Column | Type | Can be empty | Values or limits | Note |
+|---|---|---|---|---|
+| `id` | bigint |  |  | identity |
+| `template_id` | bigint |  |  | → `message_template` |
+| `seq_no` | int |  |  |  |
+| `type` | varchar(10) |  | `CALL`, `URL`, `REPLY` |  |
+| `text` | varchar(25) |  |  | WhatsApp's limit for a button |
+| `action` | varchar(300) |  |  |  |
+
+Plus `created_at` and `updated_at`.
+
+**Rules**
+
+- REPLY → action STOP_MESSAGES, BOOK_VISIT, GOT_IT or CALL_ME. CALL → a +91 phone. URL → an https link.
+- A MARKETING or GREETING template always ends with REPLY STOP_MESSAGES (added by the server).
+
+<details><summary>Constraints and indexes in the database</summary>
+
+- `message_template_button_seq_no_check`: `CHECK (((seq_no >= 1) AND (seq_no <= 3)))`
+- `message_template_button_action`: `CHECK (((((type)::text = 'REPLY'::text) AND ((action)::text = ANY ((ARRAY['STOP_MESSAGES'::character varying, 'BOOK_VISIT'::character varying, 'GOT_IT'::character varying, 'CALL_ME'::character varying])::text[]))) OR (((type)::text = 'CALL'::text) AND ((action)::text ~ '^\+91[6-9][0-9]{9}$'::text)) OR (((type)::text = 'URL'::text) AND ((action)::text ~ '^https://'::text))))`
+- `message_template_button_once`: `UNIQUE (template_id, seq_no)`
+
+</details>
+
+**Used by:** `POST /notification-templates`
+
+### `message_stop`
+
+Families who said stop to MARKETING and GREETING. They still get notices, urgent messages, fee reminders, bus SMS and receipts.
+
+| Column | Type | Can be empty | Values or limits | Note |
+|---|---|---|---|---|
+| `id` | bigint |  |  | identity |
+| `guardian_id` | bigint |  |  | → `guardian` |
+| `reason` | varchar(20) |  | `TAPPED_BUTTON`, `WROTE_STOP` |  |
+| `notification_id` | bigint | yes |  | → `notification`. the message they answered, if known |
+
+Plus `created_at` and `updated_at`.
+
+**Rules**
+
+- One row per guardian (unique). Taking a family off the list deletes the row.
+
+<details><summary>Constraints and indexes in the database</summary>
+
+- `message_stop_guardian_id_key`: `UNIQUE (guardian_id)`
+- `message_stop_notification_idx`: `CREATE INDEX message_stop_notification_idx ON message_stop (notification_id)`
+
+</details>
+
+**Used by:** `GET /message-stops`, `webhooks/inbound`
+
+### `inbound_message`
+
+Every WhatsApp message that comes in to the school number. Used for STOP, button taps, the 24-hour window and "promised to pay by".
+
+| Column | Type | Can be empty | Values or limits | Note |
+|---|---|---|---|---|
+| `id` | bigint |  |  | identity |
+| `phone` | varchar(16) |  |  |  |
+| `guardian_id` | bigint | yes |  | → `guardian` |
+| `staff_id` | bigint | yes |  | → `staff` |
+| `enquiry_id` | bigint | yes |  | → `enquiry` |
+| `text` | varchar(4096) | yes |  | null for a button tap |
+| `button_action` | varchar(30) | yes | `STOP_MESSAGES`, `BOOK_VISIT`, `GOT_IT`, `CALL_ME` |  |
+| `in_reply_to_outbox_id` | bigint | yes |  | → `message_outbox` |
+| `provider_ref` | varchar(120) |  |  | the same webhook twice saves one row |
+| `received_at` | timestamptz |  |  |  |
+| `handled` | boolean |  | default `false` |  |
+| `handled_by` | bigint | yes |  | → `app_user`. empty + handled = done by the server (STOP) |
+| `note` | varchar(300) | yes |  |  |
+| `promised_until` | date | yes |  | "will pay by Friday": no fee reminder until then |
+
+Plus `created_at` and `updated_at`.
+
+**Rules**
+
+- `provider_ref` is unique: the same webhook twice saves one row.
+- A text or a button tap, at least one. Any country's phone is saved.
+- `promised_until` set → no fee reminder to this family until that day.
+
+<details><summary>Constraints and indexes in the database</summary>
+
+- `inbound_message_phone_check`: `CHECK (((phone)::text ~ '^\+[1-9][0-9]{6,14}$'::text))`
+- `inbound_message_has_content`: `CHECK (((text IS NOT NULL) OR (button_action IS NOT NULL)))`
+- `inbound_message_provider_ref_key`: `UNIQUE (provider_ref)`
+- `inbound_message_phone_idx`: `CREATE INDEX inbound_message_phone_idx ON inbound_message (phone, received_at DESC)`
+- `inbound_message_open_idx`: `CREATE INDEX inbound_message_open_idx ON inbound_message (received_at DESC) WHERE (NOT handled)`
+- `inbound_message_guardian_idx`: `CREATE INDEX inbound_message_guardian_idx ON inbound_message (guardian_id)`
+- `inbound_message_promised_idx`: `CREATE INDEX inbound_message_promised_idx ON inbound_message (guardian_id, promised_until) WHERE (promised_until IS NOT NULL)`
+- `inbound_message_reply_to_idx`: `CREATE INDEX inbound_message_reply_to_idx ON inbound_message (in_reply_to_outbox_id)`
+
+</details>
+
+**Used by:** `GET /inbound-messages`, `webhooks/inbound`
 
 
 ---
@@ -1567,6 +2024,8 @@ erDiagram
     student ||--o{ enquiry : admitted_student_id
     enquiry ||--o{ enquiry_stage : enquiry_id
     enquiry ||--o{ enquiry_follow_up : enquiry_id
+    enquiry ||--o{ inbound_message : enquiry_id
+    enquiry ||--o{ message_outbox : enquiry_id
 ```
 
 ### `enquiry`
@@ -1786,21 +2245,21 @@ erDiagram
         varchar note
         bigint created_by FK
     }
-    academic_session ||--o{ class_fee : session_id
-    academic_session ||--o{ fee_plan : session_id
-    receipt ||--o{ message_outbox : receipt_id
-    academic_session ||--o{ session_fee_setting : session_id
-    student ||--o{ fee_plan : student_id
-    student ||--o{ fee_due : student_id
-    academic_session ||--o{ fee_due : session_id
     academic_session ||--o{ receipt : session_id
     guardian ||--o{ receipt : family_guardian_id
+    guardian ||--o{ family_credit_entry : guardian_id
+    student ||--o{ family_credit_entry : student_id
+    academic_session ||--o{ session_fee_setting : session_id
+    academic_session ||--o{ class_fee : session_id
+    receipt ||--o{ family_credit_entry : receipt_id
+    student ||--o{ fee_plan : student_id
+    academic_session ||--o{ fee_plan : session_id
+    student ||--o{ fee_due : student_id
+    academic_session ||--o{ fee_due : session_id
+    receipt ||--o{ message_outbox : receipt_id
     receipt ||--o{ fee_payment : receipt_id
     student ||--o{ fee_payment : student_id
     academic_session ||--o{ fee_payment : session_id
-    guardian ||--o{ family_credit_entry : guardian_id
-    student ||--o{ family_credit_entry : student_id
-    receipt ||--o{ family_credit_entry : receipt_id
 ```
 
 ### `session_fee_setting`
@@ -1998,12 +2457,12 @@ Plus `created_at` and `updated_at`.
 
 <details><summary>Constraints and indexes in the database</summary>
 
+- `receipt_client_request_id_key`: `UNIQUE (client_request_id)`
 - `receipt_receipt_no_check`: `CHECK (((receipt_no)::text ~ '^(R\|RF)-[0-9]{4}-[0-9]{4,}$'::text))`
 - `receipt_number_matches_kind`: `CHECK ((((kind)::text = 'PAYMENT'::text) = ((receipt_no)::text ~~ 'R-%'::text)))`
 - `receipt_late_fee_change_has_reason`: `CHECK (((late_fee_final = late_fee_normal) OR (late_fee_reason IS NOT NULL)))`
 - `receipt_cancel_fields`: `CHECK (((((status)::text = 'ACTIVE'::text) AND (cancelled_at IS NULL) AND (cancel_reason IS NULL)) OR (((status)::text = 'CANCELLED'::text) AND (cancelled_at IS NOT NULL) AND (cancelled_by IS NOT NULL) AND (cancel_reason IS NOT NULL) AND (cancel_note IS NOT NULL))))`
 - `receipt_receipt_no_key`: `UNIQUE (receipt_no)`
-- `receipt_client_request_id_key`: `UNIQUE (client_request_id)`
 - `receipt_paid_on_idx`: `CREATE INDEX receipt_paid_on_idx ON receipt (paid_on DESC, paid_at DESC)`
 - `receipt_family_idx`: `CREATE INDEX receipt_family_idx ON receipt (family_guardian_id, paid_on DESC)`
 - `receipt_session_idx`: `CREATE INDEX receipt_session_idx ON receipt (session_id)`

@@ -6,20 +6,9 @@ erDiagram
         varchar role
         bigint staff_id FK
         boolean active
-        int token_version
         timestamptz last_login_at
         varchar last_login_client
         bigint created_by FK
-    }
-    otp_code {
-        bigint id PK
-        varchar phone
-        varchar code_hash
-        varchar channel
-        timestamptz expires_at
-        int attempts
-        timestamptz consumed_at
-        varchar request_ip
     }
     audit_log {
         bigint id PK
@@ -44,14 +33,16 @@ erDiagram
     }
     staff ||--o{ app_user : staff_id
     academic_session ||--o{ student : admission_session_id
+    app_user ||--o{ user_session : user_id
     academic_session ||--o{ admission_draft : session_id
+    academic_session ||--o{ receipt : session_id
+    academic_session ||--o{ enquiry : session_id
+    academic_session ||--o{ session_fee_setting : session_id
     academic_session ||--o{ class_fee : session_id
     academic_session ||--o{ fee_plan : session_id
-    academic_session ||--o{ enquiry : session_id
-    academic_session ||--o{ exam : session_id
-    academic_session ||--o{ session_fee_setting : session_id
     academic_session ||--o{ fee_due : session_id
-    academic_session ||--o{ receipt : session_id
     academic_session ||--o{ fee_payment : session_id
     academic_session ||--o{ promotion_run : from_session_id
     academic_session ||--o{ promotion_run : to_session_id
+    app_user ||--o{ inbound_message : handled_by
+    academic_session ||--o{ exam : session_id

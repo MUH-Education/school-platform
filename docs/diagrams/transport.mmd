@@ -23,6 +23,13 @@ erDiagram
         varchar licence_no
         date licence_valid_till
         boolean active
+        date joined_on
+        date date_of_birth
+        varchar gender
+        varchar address
+        varchar emergency_phone
+        varchar id_proof_type
+        varchar id_proof_last4
     }
     vehicle_assignment {
         bigint id PK
@@ -62,3 +69,7 @@ erDiagram
     route ||--o{ transport_enrolment : route_id
     route_stop ||--o{ transport_enrolment : stop_id
     route ||--o{ boarding_event : route_id
+    staff ||--o{ inbound_message : staff_id
+    staff ||--o{ staff_salary : staff_id
+    staff ||--o{ teacher_profile : staff_id
+    staff ||--o{ message_outbox : staff_id

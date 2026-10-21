@@ -61,18 +61,20 @@ erDiagram
     route_stop ||--o{ transport_enrolment : stop_id
     student ||--o{ student_document : student_id
     student ||--o{ student_document_note : student_id
-    student ||--o{ boarding_event : student_id
     student ||--o{ transfer_certificate : student_id
+    student ||--o{ boarding_event : student_id
+    guardian ||--o{ receipt : family_guardian_id
     guardian ||--o{ message_outbox : guardian_id
     student ||--o{ message_outbox : student_id
     guardian ||--o{ enquiry : referred_by_guardian_id
     student ||--o{ enquiry : admitted_student_id
-    student ||--o{ fee_plan : student_id
-    student ||--o{ fee_due : student_id
-    guardian ||--o{ receipt : family_guardian_id
-    student ||--o{ fee_payment : student_id
     guardian ||--o{ family_credit_entry : guardian_id
     student ||--o{ family_credit_entry : student_id
+    student ||--o{ fee_plan : student_id
+    student ||--o{ fee_due : student_id
+    student ||--o{ fee_payment : student_id
     student ||--o{ promotion_choice : student_id
+    guardian ||--o{ inbound_message : guardian_id
+    guardian ||--o{ message_stop : guardian_id
     student ||--o{ student_mark : student_id
     student ||--o{ teacher_note : student_id

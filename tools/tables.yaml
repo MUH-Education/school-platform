@@ -13,6 +13,16 @@ areas:
     file: V11__user_session.sql
     phase: cross-cutting
     tables: [user_session]
+  - key: whitelist
+    title: Test logins with a fixed code
+    file: V10__otp_whitelist.sql
+    phase: 1
+    tables: [otp_whitelist]
+  - key: employees
+    title: Employees and teachers
+    file: V9__staff_employee.sql
+    phase: 10
+    tables: [teacher_profile, staff_salary]
   - key: transport
     title: Vehicles, staff and routes
     file: V2__vehicles_staff_routes.sql
@@ -96,6 +106,30 @@ tables:
       - There is no expires_at column. The 15-minute idle timeout lives only in Redis, where it slides forward on every request. This table only knows "revoked?" and "older than the 12-hour hard cap?" (worked out from created_at).
       - Logout revokes only this one row. Turn off, role change and phone change revoke every row of that user_id at once.
     used_by: ['POST /auth/otp/verify', 'every other request''s Authorization header', 'POST /auth/logout']
+
+  otp_whitelist:
+    purpose: Test and demo phones that log in with a fixed code (123456, or 1234 with 4-digit codes), with no real WhatsApp or SMS sent (decision B25).
+    rules:
+      - Rows are added by hand or by the local dev data; there is no API for them.
+      - The phone has the usual +91 shape.
+    example: phone = '+919812340001'
+    used_by: ['POST /auth/otp/request', 'POST /auth/otp/verify']
+
+  teacher_profile:
+    purpose: The teaching extras of a staff row whose type is TEACHER (decision B23); other employees have none.
+    rules:
+      - The staff id is the primary key, so one teacher has at most one profile.
+      - One class has at most one class teacher (partial unique index on class_teacher_of).
+    example: class_teacher_of = '3'
+    used_by: ['GET /staff/{id}', 'PUT /staff/{id}']
+
+  staff_salary:
+    purpose: The monthly salary of an employee, in its own table with its own permission STAFF_SALARY_VIEW (decision B24), so the staff list never shows it.
+    rules:
+      - One row per employee (staff id is the primary key). Never below 0.
+      - Only the owner sees or changes it.
+    example: monthly_salary = 18500.00
+    used_by: ['GET /staff/{id}/salary', 'PUT /staff/{id}/salary']
 
   vehicle:
     purpose: A van or bus.

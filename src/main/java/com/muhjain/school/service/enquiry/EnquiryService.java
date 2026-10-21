@@ -274,6 +274,14 @@ public class EnquiryService {
 			.toList();
 	}
 
+	/** The parent names of these enquiries, by id. An unknown id is not in the map. */
+	@Transactional(readOnly = true)
+	public Map<Long, String> parentNames(java.util.Collection<Long> ids) {
+		Map<Long, String> names = new java.util.HashMap<>();
+		enquiries.findAllById(ids).forEach(e -> names.put(e.getId(), e.getParentName()));
+		return names;
+	}
+
 	/** The newest enquiry with this phone, if any. A WhatsApp reply from that phone is linked with it. */
 	@Transactional(readOnly = true)
 	public java.util.Optional<Long> latestIdByPhone(String phone) {

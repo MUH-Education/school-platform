@@ -24,6 +24,16 @@ erDiagram
         varchar approval
         boolean active
         bigint updated_by FK
+        varchar kind
+        varchar header_type
+        varchar media_key
+        varchar sms_body
+        jsonb example_values
+        varchar provider_template_name
+        varchar provider_language
+        varchar rejection_reason
+        bigint replaces_id FK
+        bigint created_by FK
     }
     message_outbox {
         bigint id PK
@@ -47,7 +57,21 @@ erDiagram
         timestamptz delivered_at
         bigint fallback_of_id FK
         bigint created_by FK
+        bigint notification_id FK
+        bigint staff_id FK
+        bigint enquiry_id FK
+        timestamptz read_at
+        varchar button_action
+        varchar media_key
+        jsonb template_values
+        varchar skip_reason
     }
     guardian ||--o{ message_outbox : guardian_id
     student ||--o{ message_outbox : student_id
     receipt ||--o{ message_outbox : receipt_id
+    message_outbox ||--o{ inbound_message : in_reply_to_outbox_id
+    message_template ||--o{ message_template_button : template_id
+    message_template ||--o{ notification : template_id
+    notification ||--o{ message_outbox : notification_id
+    staff ||--o{ message_outbox : staff_id
+    enquiry ||--o{ message_outbox : enquiry_id

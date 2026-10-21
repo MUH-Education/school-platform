@@ -93,6 +93,14 @@ public class StaffService {
 		return staff.findByPhoneAndActiveTrueOrderByIdAsc(phone).stream().findFirst().map(Staff::getId);
 	}
 
+	/** The names of these employees, by id. An unknown id is not in the map. */
+	@Transactional(readOnly = true)
+	public java.util.Map<Long, String> names(java.util.Collection<Long> ids) {
+		java.util.Map<Long, String> names = new java.util.HashMap<>();
+		staff.findAllById(ids).forEach(s -> names.put(s.getId(), s.getName()));
+		return names;
+	}
+
 	/** Is this employee turned on? An unknown id is "no". */
 	@Transactional(readOnly = true)
 	public boolean isActive(Long staffId) {

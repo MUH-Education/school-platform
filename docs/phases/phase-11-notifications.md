@@ -129,8 +129,8 @@ rename only the Java interface.
       the outbox row.
 - [x] 11.14 Report: `NotificationReportService` (by status, by button, by problem, read-by-hour),
       `resend-failed`.
-- [ ] 11.15 Stop list endpoints, inbound list + handle.
-- [ ] 11.16 Audit rows, `docs/06-api.md` Notifications section, `docs/03-data-model.md` regenerated.
+- [x] 11.15 Stop list endpoints, inbound list + handle.
+- [x] 11.16 Audit rows, `docs/06-api.md` Notifications section, `docs/03-data-model.md` regenerated.
 - [ ] 11.17 Dev data (`DevDataLoader`): 3 NOTICE templates, 1 MARKETING approved with a poster, 1 WAITING,
       1 REJECTED with a reason, 1 GREETING with a video key, 1 FEE_REMINDER per tone, 1 STAFF; one SENT
       notification with 20 outbox rows in mixed statuses; 3 stop rows; 4 inbound rows.

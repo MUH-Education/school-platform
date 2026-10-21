@@ -88,18 +88,18 @@ erDiagram
         varchar note
         bigint created_by FK
     }
-    academic_session ||--o{ class_fee : session_id
-    academic_session ||--o{ fee_plan : session_id
-    receipt ||--o{ message_outbox : receipt_id
-    academic_session ||--o{ session_fee_setting : session_id
-    student ||--o{ fee_plan : student_id
-    student ||--o{ fee_due : student_id
-    academic_session ||--o{ fee_due : session_id
     academic_session ||--o{ receipt : session_id
     guardian ||--o{ receipt : family_guardian_id
+    guardian ||--o{ family_credit_entry : guardian_id
+    student ||--o{ family_credit_entry : student_id
+    academic_session ||--o{ session_fee_setting : session_id
+    academic_session ||--o{ class_fee : session_id
+    receipt ||--o{ family_credit_entry : receipt_id
+    student ||--o{ fee_plan : student_id
+    academic_session ||--o{ fee_plan : session_id
+    student ||--o{ fee_due : student_id
+    academic_session ||--o{ fee_due : session_id
+    receipt ||--o{ message_outbox : receipt_id
     receipt ||--o{ fee_payment : receipt_id
     student ||--o{ fee_payment : student_id
     academic_session ||--o{ fee_payment : session_id
-    guardian ||--o{ family_credit_entry : guardian_id
-    student ||--o{ family_credit_entry : student_id
-    receipt ||--o{ family_credit_entry : receipt_id

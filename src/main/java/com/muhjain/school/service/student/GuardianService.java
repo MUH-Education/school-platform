@@ -236,6 +236,17 @@ public class GuardianService {
 		return guardians.findByPhone(phone).map(Guardian::getId);
 	}
 
+	/** Many guardians as family contacts, by id. Example: [210, 211] → {210 → (210, "Rajesh Punia", +9198...)}. */
+	@Transactional(readOnly = true)
+	public Map<Long, FamilyContact> contacts(java.util.Collection<Long> guardianIds) {
+		if (guardianIds.isEmpty()) {
+			return Map.of();
+		}
+		return guardians.findByIdIn(guardianIds)
+			.stream()
+			.collect(Collectors.toMap(Guardian::getId, g -> new FamilyContact(g.getId(), g.getName(), g.getPhone())));
+	}
+
 	/** One guardian as a family contact, or empty if the id is unknown. */
 	@Transactional(readOnly = true)
 	public java.util.Optional<FamilyContact> contact(Long guardianId) {

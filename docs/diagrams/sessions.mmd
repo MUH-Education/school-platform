@@ -1,0 +1,9 @@
+erDiagram
+    user_session {
+        bigint id PK
+        bigint user_id FK
+        varchar session_hash
+        timestamptz revoked_at
+        varchar ip_address
+    }
+    app_user ||--o{ user_session : user_id

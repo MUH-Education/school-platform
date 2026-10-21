@@ -1,10 +1,19 @@
 flowchart LR
     subgraph logins["Logins, history and school settings"]
         app_user[app_user]
-        otp_code[otp_code]
         audit_log[audit_log]
         app_setting[app_setting]
         academic_session[academic_session]
+    end
+    subgraph sessions["Login sessions"]
+        user_session[user_session]
+    end
+    subgraph whitelist["Test logins with a fixed code"]
+        otp_whitelist[otp_whitelist]
+    end
+    subgraph employees["Employees and teachers"]
+        teacher_profile[teacher_profile]
+        staff_salary[staff_salary]
     end
     subgraph transport["Vehicles, staff and routes"]
         vehicle[vehicle]
@@ -37,6 +46,12 @@ flowchart LR
         message_template[message_template]
         message_outbox[message_outbox]
     end
+    subgraph notifications["Notifications to parents and staff"]
+        notification[notification]
+        message_template_button[message_template_button]
+        message_stop[message_stop]
+        inbound_message[inbound_message]
+    end
     subgraph enquiries["Enquiries"]
         enquiry[enquiry]
         enquiry_stage[enquiry_stage]
@@ -66,25 +81,40 @@ flowchart LR
     student --> transport_enrolment
     route --> transport_enrolment
     route_stop --> transport_enrolment
+    app_user --> user_session
     student --> student_document
     student --> student_document_note
+    student --> transfer_certificate
     student --> boarding_event
     route --> boarding_event
-    student --> transfer_certificate
+    guardian --> receipt
     guardian --> message_outbox
     student --> message_outbox
-    receipt --> message_outbox
     guardian --> enquiry
     student --> enquiry
     enquiry --> enquiry_stage
     enquiry --> enquiry_follow_up
-    student --> fee_plan
-    student --> fee_due
-    guardian --> receipt
-    receipt --> fee_payment
-    student --> fee_payment
     guardian --> family_credit_entry
     student --> family_credit_entry
     receipt --> family_credit_entry
+    student --> fee_plan
+    student --> fee_due
+    receipt --> message_outbox
+    staff --> inbound_message
+    enquiry --> inbound_message
+    receipt --> fee_payment
+    student --> fee_payment
     promotion_run --> promotion_choice
     student --> promotion_choice
+    staff --> staff_salary
+    staff --> teacher_profile
+    message_outbox --> inbound_message
+    app_user --> inbound_message
+    message_template --> message_template_button
+    message_template --> notification
+    notification --> message_outbox
+    staff --> message_outbox
+    enquiry --> message_outbox
+    guardian --> inbound_message
+    guardian --> message_stop
+    notification --> message_stop

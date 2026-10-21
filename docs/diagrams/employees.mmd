@@ -1,0 +1,14 @@
+erDiagram
+    teacher_profile {
+        bigint staff_id FK
+        varchar qualification
+        varchar subjects
+        varchar class_teacher_of
+    }
+    staff_salary {
+        bigint staff_id FK
+        numeric monthly_salary
+        bigint updated_by FK
+    }
+    staff ||--o{ staff_salary : staff_id
+    staff ||--o{ teacher_profile : staff_id

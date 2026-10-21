@@ -274,11 +274,13 @@ in that one policy class (and a new permission row in `docs/05-roles-permissions
 | `POST /notifications/{id}/send` | SEND | `{ sendNow: true }` or `{ scheduledAt }` |
 | `DELETE /notifications/{id}` | SEND | cancel DRAFT/SCHEDULED; a SENDING one cancels only the QUEUED rows |
 | `GET /notifications?kind=&status=&from=&to=` | VIEW | list (Home and Reports screens) |
+| `GET /notifications/{id}` | VIEW | one notification; a draft or scheduled one with the counts of now |
 | `GET /notifications/{id}/report` | VIEW | counts by status, by button, by failure reason, read-by-hour |
 | `POST /notifications/{id}/resend-failed` | SEND | the FAILED rows worth a second try go back to QUEUED (same rows, not WRONG_NUMBER / NOT_ON_WHATSAPP / DND) |
-| `GET /message-stops`, `DELETE /message-stops/{guardianId}` | VIEW / SEND | stop list |
-| `GET /inbound-messages?handled=false` | VIEW | replies (STOP handled by the server, the rest for a person) |
-| `POST /inbound-messages/{id}/handle` | SEND | mark done, note, or `makeEnquiry: true` |
+| `GET /message-stops?page=&size=` | VIEW | stop list, newest first: `{guardianId, name, phone (masked), reason, notificationId, createdAt}` |
+| `DELETE /message-stops/{guardianId}` | SEND | take a family off (they asked again) → 204; not on the list → 404 |
+| `GET /inbound-messages?handled=false&page=&size=` | VIEW | replies, newest first (STOP handled by the server, the rest for a person): `{id, phone (full, to call back), fromType, fromId, fromName, text, buttonAction, inReplyToOutboxId, receivedAt, handled, handledByName, note, promisedUntil, enquiryId}` |
+| `POST /inbound-messages/{id}/handle` | SEND | `{note, promisedUntil, makeEnquiry, enquiry: {parentName, childName, classSought, village}}`: done; `promisedUntil` (today to 90 days) stops fee reminders until that day; `makeEnquiry` also needs ENQUIRIES_EDIT and an Indian phone |
 | `POST /webhooks/{provider}/status`, `/inbound`, `/template-status` | none (signature check) | provider callbacks |
 
 Errors (409 unless said): `TEMPLATE_NOT_APPROVED`, `KIND_NOT_ALLOWED_FOR_ROLE` (403), `AUDIENCE_NOT_ALLOWED`,
