@@ -22,7 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * {@code app.bootstrap.owner-phone} is set so this context's automatic startup run of the loader has a real
  * OWNER to use as {@code created_by} — see {@link DevDataLoaderTest}.
  */
-@ActiveProfiles({ "test", "dev" })
+@ActiveProfiles({ "test", "local" })
 @TestPropertySource(properties = "app.bootstrap.owner-phone=9999900000")
 class DevDataTripsTest extends AbstractIntegrationTest {
 

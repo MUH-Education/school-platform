@@ -15,7 +15,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /** Task 7.13: the dev data has class fees and a fee plan for every active child, with all three statuses. */
-@ActiveProfiles({ "test", "dev" })
+@ActiveProfiles({ "test", "local" })
 class DevDataFeesTest extends AbstractIntegrationTest {
 
 	@Autowired

@@ -52,7 +52,7 @@ The sender tries the channels in the order of `app.otp.channels`.
 |---|---|---|
 | 1 | WhatsApp | First try. Cheap, and staff read WhatsApp. |
 | 2 | SMS | If WhatsApp fails (provider error), send by SMS. |
-| dev | `log` | On your laptop: prints `OTP for +91XXXXXX0002 is 482913` in the console. No real message. |
+| local | `log` | On your laptop: prints `OTP for +91XXXXXX0002 is 482913` in the console. No real message. |
 
 One interface, three classes:
 

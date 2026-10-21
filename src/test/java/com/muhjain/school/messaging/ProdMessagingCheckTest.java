@@ -45,8 +45,8 @@ class ProdMessagingCheckTest {
 	}
 
 	@Test
-	void devAndTestMayUseTheLogSender() {
-		assertThat(new ProdMessagingCheck(profile("dev"), "log", provider(false))).isNotNull();
+	void localAndTestMayUseTheLogSender() {
+		assertThat(new ProdMessagingCheck(profile("local"), "log", provider(false))).isNotNull();
 		assertThat(new ProdMessagingCheck(profile("test"), "log", provider(false))).isNotNull();
 	}
 

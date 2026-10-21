@@ -27,7 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * context's own, automatic startup run of the loader — the same order a real laptop boot has, needed
  * now that {@code vehicle_assignment.created_by} is not null.
  */
-@ActiveProfiles({ "test", "dev" })
+@ActiveProfiles({ "test", "local" })
 @TestPropertySource(properties = "app.bootstrap.owner-phone=9999900000")
 class DevDataLoaderTest extends AbstractIntegrationTest {
 
@@ -139,11 +139,11 @@ class DevDataLoaderTest extends AbstractIntegrationTest {
 	}
 
 	@Test
-	void loaderIsOnlyForTheDevProfile() {
+	void loaderIsOnlyForTheLocalProfile() {
 		Profile profile = DevDataLoader.class.getAnnotation(Profile.class);
 
 		assertThat(profile).isNotNull();
-		assertThat(profile.value()).containsExactly("dev");
+		assertThat(profile.value()).containsExactly("local");
 	}
 
 }

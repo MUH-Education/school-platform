@@ -106,11 +106,12 @@ Small lists (vehicles, routes, staff, users) return the full array.
 
 ## Configuration
 
-`application.yml` holds safe defaults. Profiles:
+`application.yml` holds safe defaults shared by every profile, plus the `test` profile block.
+`local` and `prod` each have their own `application-<profile>.properties` file next to it.
 
 | Profile | Used for | Database | Messages |
 |---|---|---|---|
-| `dev` (default) | Your laptop | PostgreSQL from `compose.yaml` | `log` sender: prints to console |
+| `local` (default) | Your laptop | PostgreSQL from `compose.yaml` | `log` sender: prints to console |
 | `test` | `./gradlew test` | Testcontainers PostgreSQL | mock or `log` sender |
 | `prod` | The server | Managed PostgreSQL, from env vars | real provider |
 
@@ -128,7 +129,7 @@ app:
     max-attempts: 5
     resend-after: 60s
     max-per-hour: 5
-    channels: whatsapp,sms         # try in this order; "log" in dev
+    channels: whatsapp,sms         # try in this order; "log" in local
     hash-secret: ${APP_OTP_SECRET}
   bootstrap:
     owner-phone: ${APP_OWNER_PHONE:}   # first OWNER, created only if no user exists
@@ -149,7 +150,7 @@ Bind these with one `@ConfigurationProperties` record per group (`JwtProperties`
 
 One interface `PhotoStorage` with `save(bytes) → key` and `open(key) → stream`.
 
-- `dev`: `LocalFolderPhotoStorage` writes under `./data/photos`.
+- `local`: `LocalFolderPhotoStorage` writes under `./data/photos`.
 - `prod`: `S3PhotoStorage` (an S3-compatible bucket in India).
 
 The database stores only the key. The photo is served by `GET /api/v1/students/{id}/photo`, which checks permission.

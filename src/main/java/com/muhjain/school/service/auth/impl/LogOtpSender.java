@@ -8,7 +8,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 /**
- * Sends nothing. In the {@code dev} profile it prints the code in the console:
+ * Sends nothing. In the {@code local} profile it prints the code in the console:
  * {@code OTP for +91XXXXXX0002 is 482913}. In every other profile the code is hidden.
  * This is the only place in the app that may log a code (security rule 5).
  */
@@ -17,10 +17,10 @@ public class LogOtpSender implements OtpSender {
 
 	private static final Logger log = LoggerFactory.getLogger(LogOtpSender.class);
 
-	private final boolean dev;
+	private final boolean local;
 
 	public LogOtpSender(Environment environment) {
-		this.dev = environment.matchesProfiles("dev");
+		this.local = environment.matchesProfiles("local");
 	}
 
 	@Override
@@ -30,11 +30,11 @@ public class LogOtpSender implements OtpSender {
 
 	@Override
 	public void send(String phone, String code) {
-		if (dev) {
+		if (local) {
 			log.info("OTP for {} is {}", PhoneNumbers.mask(phone), code);
 		}
 		else {
-			log.info("OTP for {} made (code hidden outside dev)", PhoneNumbers.mask(phone));
+			log.info("OTP for {} made (code hidden outside local)", PhoneNumbers.mask(phone));
 		}
 	}
 

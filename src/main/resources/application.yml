@@ -1,10 +1,12 @@
-# Safe defaults for every profile. Profiles below change only what differs.
+# Safe defaults for every profile. The "local" and "prod" profiles each have their own
+# application-<profile>.properties file alongside this one; Spring Boot picks the right
+# one by itself from the active profile name. Only "test" (Testcontainers) stays here.
 # Secrets never live in this file. They come from environment variables.
 spring:
   application:
     name: school-admin
   profiles:
-    default: dev
+    default: local
   jpa:
     open-in-view: false
     hibernate:
@@ -16,7 +18,7 @@ spring:
       max-file-size: 5MB
       max-request-size: 6MB
 
-# API docs (springdoc). OFF by default, so any profile except dev and test has no docs and no Swagger page.
+# API docs (springdoc). OFF by default, so any profile except local and test has no docs and no Swagger page.
 # SecurityConfig opens /v3/api-docs and /swagger-ui only when these are true.
 springdoc:
   api-docs:
@@ -39,7 +41,7 @@ app:
     resend-after: 60s
     max-per-hour: 5
     max-per-ip-per-hour: 20
-    channels: whatsapp,sms         # try in this order; "log" in dev
+    channels: whatsapp,sms         # try in this order; "log" in local
     hash-secret: ${APP_OTP_SECRET}
   bootstrap:
     owner-phone: ${APP_OWNER_PHONE:}   # first OWNER, created only if no user exists
@@ -57,33 +59,6 @@ app:
   photos:
     storage: local                 # local = a folder on this machine. prod: S3PhotoStorage comes in Phase 9.
     folder: ./data/photos          # the folder is in .gitignore
-
----
-# dev: your laptop. PostgreSQL starts from compose.yaml by itself.
-spring:
-  config:
-    activate:
-      on-profile: dev
-
-springdoc:
-  api-docs:
-    enabled: true
-  swagger-ui:
-    enabled: true
-    # Keep the token after a page reload, so you log in once per day, not once per click.
-    persist-authorization: true
-
-app:
-  jwt:
-    # DEV ONLY. Not secret. prod has no default and needs APP_JWT_SECRET.
-    secret: ${APP_JWT_SECRET:dev-only-jwt-secret-not-for-production-0001}
-  session:
-    # DEV ONLY. Not secret. prod has no default and needs APP_SESSION_SECRET.
-    hash-secret: ${APP_SESSION_SECRET:dev-only-session-secret-not-for-production-01}
-  otp:
-    channels: log
-    # DEV ONLY. Not secret. prod has no default and needs APP_OTP_SECRET.
-    hash-secret: ${APP_OTP_SECRET:dev-only-otp-secret-not-for-production-0001}
 
 ---
 # test: ./gradlew test. PostgreSQL comes from Testcontainers.
@@ -111,20 +86,3 @@ app:
     hash-secret: ${APP_OTP_SECRET:dev-only-otp-secret-not-for-production-0001}
   messaging:
     worker-enabled: false          # tests call OutboxWorker.runOnce() by hand
-
----
-# prod: the server.
-# Database: set SPRING_DATASOURCE_URL, SPRING_DATASOURCE_USERNAME and
-# SPRING_DATASOURCE_PASSWORD. Spring Boot reads them by itself.
-# Messages: Phase 5 sets the real SMS and WhatsApp provider (question C1).
-spring:
-  config:
-    activate:
-      on-profile: prod
-
-# No API docs and no Swagger page on the server. Nobody can turn them on by accident: this is also the default above.
-springdoc:
-  api-docs:
-    enabled: false
-  swagger-ui:
-    enabled: false

@@ -6,7 +6,7 @@ Every URL needs a token, except the two OTP URLs. The "Permission" column is wha
 
 This file is the agreement between the backend and the React app. If you change a URL or a field, change this file in the same commit.
 
-**Swagger (try it live, dev/test only):** with the app running, open `http://localhost:8080/swagger-ui/index.html`. Raw docs: `http://localhost:8080/v3/api-docs`. Off in `prod`. See `README.md` for how to get a token and click Authorize.
+**Swagger (try it live, local/test only):** with the app running, open `http://localhost:8080/swagger-ui/index.html`. Raw docs: `http://localhost:8080/v3/api-docs`. Off in `prod`. See `README.md` for how to get a token and click Authorize.
 
 **Postman collection (every URL below, ready to import):** `docs/school-platform.postman_collection.json`.
 

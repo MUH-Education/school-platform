@@ -6,7 +6,7 @@ These rules hold for every feature and every phase. `CLAUDE.md` has the short li
 
 - Every controller method has `@PreAuthorize("hasAuthority('<PERMISSION>')")`, or is "any login" (needs only a valid token), or is in the short list of open URLs.
 - Open URLs: `POST /api/v1/auth/otp/request`, `POST /api/v1/auth/otp/verify`, `GET /actuator/health` (and its `liveness` / `readiness` parts). Nothing else.
-- **One exception, for the API docs:** `/v3/api-docs/**` and `/swagger-ui/**` are open **only while the docs are switched on** (`springdoc.api-docs.enabled` and `springdoc.swagger-ui.enabled` are true: `dev` and `test`). They are false by default and in `prod`, and then these two paths are not open (no token → 401, with a token → 404). The docs are only a page: every API call made from Swagger still needs a real token and still gets 401 or 403 as normal. Never add another open URL.
+- **One exception, for the API docs:** `/v3/api-docs/**` and `/swagger-ui/**` are open **only while the docs are switched on** (`springdoc.api-docs.enabled` and `springdoc.swagger-ui.enabled` are true: `local` and `test`). They are false by default and in `prod`, and then these two paths are not open (no token → 401, with a token → 404). The docs are only a page: every API call made from Swagger still needs a real token and still gets 401 or 403 as normal. Never add another open URL.
 - Check **permissions**, never roles. Example: `hasAuthority('VEHICLES_VIEW')`, not `hasRole('OWNER')`.
 - Hiding a button in React is not security. The React app gets the permission list only to hide menu items.
 
@@ -38,13 +38,13 @@ These rules hold for every feature and every phase. `CLAUDE.md` has the short li
 
 - Never log an OTP, a JWT, or a secret.
 - Log phones masked: `+91XXXXXX4321`.
-- The one exception: `LogOtpSender` prints the code, and it is only for `dev` and `test`. In `prod` the app refuses to start if `log` is the only OTP channel.
+- The one exception: `LogOtpSender` prints the code, and it is only for `local`. In `prod` the app refuses to start if `log` is the only OTP channel.
 
 ## 6. Secrets come from environment variables
 
 - `APP_JWT_SECRET` (at least 32 bytes), `APP_OTP_SECRET`, `APP_SESSION_SECRET`, provider keys, database password, Redis password (if the server needs one).
 - `prod` has no default for any secret. If one is missing, the app does not start.
-- `dev` and `test` may have a fixed, clearly marked "dev only" value in `application.yml`. It must never be used in `prod`.
+- `local` and `test` may have a fixed, clearly marked "not for production" value (in `application-local.properties` and the `test` block of `application.yml`). It must never be used in `prod`.
 
 ## 7. Errors do not leak
 

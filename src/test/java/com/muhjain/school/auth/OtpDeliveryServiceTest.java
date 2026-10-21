@@ -24,7 +24,7 @@ class OtpDeliveryServiceTest {
 		FakeSender sms = new FakeSender("SMS", false);
 
 		OtpDeliveryService delivery = new OtpDeliveryService(List.of(sms, whatsapp), properties("whatsapp", "sms"),
-				env("dev"));
+				env("local"));
 
 		assertThat(delivery.send(PHONE, "482913")).isEqualTo("SMS");
 		assertThat(whatsapp.calls).containsExactly(PHONE);
@@ -34,7 +34,7 @@ class OtpDeliveryServiceTest {
 	@Test
 	void everyChannelFailingThrows() {
 		OtpDeliveryService delivery = new OtpDeliveryService(List.of(new FakeSender("SMS", true)), properties("sms"),
-				env("dev"));
+				env("local"));
 
 		assertThatThrownBy(() -> delivery.send(PHONE, "482913")).isInstanceOf(OtpSendException.class);
 	}
@@ -42,7 +42,7 @@ class OtpDeliveryServiceTest {
 	@Test
 	void channelWithoutSenderStopsTheApp() {
 		assertThatThrownBy(() -> new OtpDeliveryService(List.of(new FakeSender("LOG", false)),
-				properties("whatsapp", "log"), env("dev")))
+				properties("whatsapp", "log"), env("local")))
 			.isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining("WHATSAPP");
 	}
@@ -56,9 +56,9 @@ class OtpDeliveryServiceTest {
 	}
 
 	@Test
-	void devWithOnlyLogChannelStarts() throws Exception {
+	void localWithOnlyLogChannelStarts() throws Exception {
 		OtpDeliveryService delivery = new OtpDeliveryService(List.of(new FakeSender("LOG", false)), properties("log"),
-				env("dev"));
+				env("local"));
 
 		assertThat(delivery.send(PHONE, "482913")).isEqualTo("LOG");
 	}

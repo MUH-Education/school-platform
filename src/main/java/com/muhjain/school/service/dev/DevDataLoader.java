@@ -78,11 +78,11 @@ import java.util.*;
  * Phase 7 adds the standard class fees and a fee plan for every active child (half on time, a quarter delayed, a
  * quarter defaulted), with the payments that make those states, when today is inside the current session.
  * The fleet, the students, the fees, the taps and the enquiries are loaded separately. Each part does nothing if its data is already there.
- * <b>Only the {@code dev} profile.</b> It never runs in {@code test} or {@code prod}.
+ * <b>Only the {@code local} profile.</b> It never runs in {@code test} or {@code prod}.
  * Phone numbers are made up. It uses services only.
  */
 @Component
-@Profile("dev")
+@Profile("local")
 public class DevDataLoader implements ApplicationRunner {
 
 	private static final Logger log = LoggerFactory.getLogger(DevDataLoader.class);

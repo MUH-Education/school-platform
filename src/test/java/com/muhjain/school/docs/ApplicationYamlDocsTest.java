@@ -7,11 +7,12 @@ import org.springframework.core.io.ClassPathResource;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Reads the real application.yml, part by part. The API docs must be OFF by default and in prod, and ON only in dev
+ * Reads the real config files. The API docs must be OFF by default and in prod, and ON only in local
  * and test. A new profile (for example "staging") therefore has no docs unless someone switches them on.
  */
 class ApplicationYamlDocsTest {
@@ -20,9 +21,9 @@ class ApplicationYamlDocsTest {
 
 	private static final String SWAGGER_UI = "springdoc.swagger-ui.enabled";
 
-	private final List<PropertySource<?>> parts = load();
+	private final List<PropertySource<?>> yamlParts = loadYaml();
 
-	private static List<PropertySource<?>> load() {
+	private static List<PropertySource<?>> loadYaml() {
 		try {
 			return new YamlPropertySourceLoader().load("application", new ClassPathResource("application.yml"));
 		}
@@ -31,32 +32,51 @@ class ApplicationYamlDocsTest {
 		}
 	}
 
-	private PropertySource<?> part(String profile) {
-		return parts.stream()
+	private PropertySource<?> yamlPart(String profile) {
+		return yamlParts.stream()
 			.filter(p -> (profile == null) ? !p.containsProperty("spring.config.activate.on-profile")
 					: profile.equals(p.getProperty("spring.config.activate.on-profile")))
 			.findFirst()
 			.orElseThrow(() -> new AssertionError("no part for profile " + profile));
 	}
 
+	private static Properties loadProperties(String profile) {
+		try {
+			Properties properties = new Properties();
+			properties.load(new ClassPathResource("application-" + profile + ".properties").getInputStream());
+			return properties;
+		}
+		catch (IOException ex) {
+			throw new IllegalStateException(ex);
+		}
+	}
+
 	@Test
 	void docsAreOffByDefault() {
-		assertThat(part(null).getProperty(API_DOCS)).isEqualTo(false);
-		assertThat(part(null).getProperty(SWAGGER_UI)).isEqualTo(false);
+		assertThat(yamlPart(null).getProperty(API_DOCS)).isEqualTo(false);
+		assertThat(yamlPart(null).getProperty(SWAGGER_UI)).isEqualTo(false);
 	}
 
 	@Test
 	void docsAreOffInProd() {
-		assertThat(part("prod").getProperty(API_DOCS)).isEqualTo(false);
-		assertThat(part("prod").getProperty(SWAGGER_UI)).isEqualTo(false);
+		Properties prod = loadProperties("prod");
+
+		assertThat(prod.getProperty(API_DOCS)).isEqualTo("false");
+		assertThat(prod.getProperty(SWAGGER_UI)).isEqualTo("false");
 	}
 
 	@Test
-	void docsAreOnInDevAndTest() {
-		for (String profile : List.of("dev", "test")) {
-			assertThat(part(profile).getProperty(API_DOCS)).as(profile).isEqualTo(true);
-			assertThat(part(profile).getProperty(SWAGGER_UI)).as(profile).isEqualTo(true);
-		}
+	void docsAreOnInTest() {
+		assertThat(yamlPart("test").getProperty(API_DOCS)).isEqualTo(true);
+		assertThat(yamlPart("test").getProperty(SWAGGER_UI)).isEqualTo(true);
+	}
+
+	@Test
+	void docsAreOnInLocal() {
+		Properties local = loadProperties("local");
+
+		assertThat(local.getProperty(API_DOCS)).isEqualTo("true");
+		assertThat(local.getProperty(SWAGGER_UI)).isEqualTo("true");
 	}
 
 }
