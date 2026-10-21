@@ -27,6 +27,10 @@ public interface MessageTemplateRepository extends JpaRepository<MessageTemplate
 	/** The notification templates of one kind that are still in use (an edited APPROVED row is turned off). */
 	List<MessageTemplate> findByKindAndActiveTrueOrderByNameAsc(TemplateKind kind);
 
+	/** The template in use that the provider knows by this name (the provider's approval callback). */
+	Optional<MessageTemplate> findFirstByProviderTemplateNameAndActiveTrueAndKindNot(String providerTemplateName,
+			TemplateKind kind);
+
 	/** Every notification template still in use, for the Templates screen. SYSTEM texts are not in it. */
 	List<MessageTemplate> findByKindNotAndActiveTrueOrderByNameAsc(TemplateKind kind);
 

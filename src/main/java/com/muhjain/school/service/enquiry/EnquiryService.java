@@ -274,6 +274,12 @@ public class EnquiryService {
 			.toList();
 	}
 
+	/** The newest enquiry with this phone, if any. A WhatsApp reply from that phone is linked with it. */
+	@Transactional(readOnly = true)
+	public java.util.Optional<Long> latestIdByPhone(String phone) {
+		return enquiries.findFirstByPhoneOrderByIdDesc(phone).map(Enquiry::getId);
+	}
+
 	/** The stage of one enquiry now, or empty if the id is unknown. Example: 77 → ADMITTED. */
 	@Transactional(readOnly = true)
 	public java.util.Optional<EnquiryStatus> statusOf(Long id) {

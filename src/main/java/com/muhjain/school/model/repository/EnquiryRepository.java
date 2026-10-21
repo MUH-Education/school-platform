@@ -16,6 +16,9 @@ import java.util.Optional;
 
 public interface EnquiryRepository extends JpaRepository<Enquiry, Long> {
 
+	/** The newest enquiry with this phone, if any. A reply from that phone belongs to it. */
+	Optional<Enquiry> findFirstByPhoneOrderByIdDesc(String phone);
+
 	/** Every enquiry in these stages, oldest first. Example: [LOST] → the families who went elsewhere. */
 	List<Enquiry> findByStatusInOrderByIdAsc(Collection<EnquiryStatus> statuses);
 

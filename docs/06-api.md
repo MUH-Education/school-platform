@@ -275,7 +275,7 @@ in that one policy class (and a new permission row in `docs/05-roles-permissions
 | `DELETE /notifications/{id}` | SEND | cancel DRAFT/SCHEDULED; a SENDING one cancels only the QUEUED rows |
 | `GET /notifications?kind=&status=&from=&to=` | VIEW | list (Home and Reports screens) |
 | `GET /notifications/{id}/report` | VIEW | counts by status, by button, by failure reason, read-by-hour |
-| `POST /notifications/{id}/resend-failed` | SEND | new QUEUED rows for FAILED ones |
+| `POST /notifications/{id}/resend-failed` | SEND | the FAILED rows worth a second try go back to QUEUED (same rows, not WRONG_NUMBER / NOT_ON_WHATSAPP / DND) |
 | `GET /message-stops`, `DELETE /message-stops/{guardianId}` | VIEW / SEND | stop list |
 | `GET /inbound-messages?handled=false` | VIEW | replies (STOP handled by the server, the rest for a person) |
 | `POST /inbound-messages/{id}/handle` | SEND | mark done, note, or `makeEnquiry: true` |
@@ -283,7 +283,20 @@ in that one policy class (and a new permission row in `docs/05-roles-permissions
 
 Errors (409 unless said): `TEMPLATE_NOT_APPROVED`, `KIND_NOT_ALLOWED_FOR_ROLE` (403), `AUDIENCE_NOT_ALLOWED`,
 `NOTIFICATION_NOT_EDITABLE`, `NO_RECIPIENTS`, `MEDIA_TOO_BIG`, `MEDIA_WRONG_TYPE`, `SCHEDULE_IN_PAST`,
-`SCHEDULE_IN_QUIET_HOURS` (unless URGENT), `REFINE_NOT_CONFIGURED`, `REFINE_LOST_PLACEHOLDER`.
+`SCHEDULE_IN_QUIET_HOURS` (unless URGENT), `REFINE_NOT_CONFIGURED`, `REFINE_LOST_PLACEHOLDER`, `REFINE_REFUSED` (the AI declined), `REFINE_FAILED` (no usable text), `REFINE_UNAVAILABLE` (503: the AI did not answer).
+
+### Provider callbacks (webhooks) — task 11.13
+
+No token: the SMS/WhatsApp company calls these. Every call carries `X-Signature: <hex HMAC-SHA256 of the raw body
+with APP_PROVIDER_WEBHOOK_SECRET>` ("sha256=" in front is fine); missing or wrong → 401 `BAD_SIGNATURE`, nothing
+saved. The answer is always `{"received": true, "changed": true|false}` (`false` = a repeat, or about a message we do
+not know). The provider is not chosen yet (C1): these are **our own** bodies; the provider's class maps to them.
+
+| URL | Body | What happens |
+|---|---|---|
+| `POST /webhooks/{provider}/status` | `{"providerRef":"wamid.1","status":"DELIVERED\|READ\|FAILED","at":"2026-10-07T10:02:11+05:30","problem":"NOT_ON_WHATSAPP"}` | the outbox row with that `provider_ref` gets `delivered_at` / `read_at` / FAILED + problem; never backwards; NOT_ON_WHATSAPP on a WhatsApp notification row → its SMS copy, once |
+| `POST /webhooks/{provider}/inbound` | `{"providerRef":"wamid.IN1","phone":"919811100003","text":"STOP","buttonAction":"STOP_MESSAGES","inReplyTo":"wamid.1","receivedAt":"..."}` | one `inbound_message` row (same `providerRef` twice = one row), linked to parent / staff / enquiry by phone; STOP ("stop", "बंद", or the button) → stop list; a button tap is saved on the answered message |
+| `POST /webhooks/{provider}/template-status` | `{"templateName":"open_day_oct","status":"APPROVED\|REJECTED","reason":"..."}` | the template in use with that provider name gets the approval (same as the manual approval) |
 
 ## Enquiries — Phase 6
 

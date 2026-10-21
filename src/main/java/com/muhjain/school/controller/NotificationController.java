@@ -1,14 +1,20 @@
 package com.muhjain.school.controller;
 
 import com.muhjain.school.model.dto.request.NotificationRequest;
+import com.muhjain.school.model.dto.request.RefineTextRequest;
 import com.muhjain.school.model.dto.request.SendNotificationRequest;
 import com.muhjain.school.model.dto.response.NotificationRecipientResponse;
+import com.muhjain.school.model.dto.response.NotificationReportResponse;
 import com.muhjain.school.model.dto.response.NotificationResponse;
 import com.muhjain.school.model.dto.response.PageResponse;
+import com.muhjain.school.model.dto.response.RefineResult;
+import com.muhjain.school.model.dto.response.ResendFailedResponse;
 import com.muhjain.school.model.dto.response.TestSendResponse;
 import com.muhjain.school.model.enums.NotificationKind;
 import com.muhjain.school.model.enums.NotificationStatus;
 import com.muhjain.school.security.CurrentUser;
+import com.muhjain.school.service.notification.NotificationRefineService;
+import com.muhjain.school.service.notification.NotificationReportService;
 import com.muhjain.school.service.notification.NotificationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,11 +37,29 @@ public class NotificationController {
 
 	private final NotificationService notificationService;
 
+	private final NotificationRefineService refineService;
+
+	private final NotificationReportService reportService;
+
 	private final CurrentUser currentUser;
 
-	public NotificationController(NotificationService notificationService, CurrentUser currentUser) {
+	public NotificationController(NotificationService notificationService, NotificationRefineService refineService,
+			NotificationReportService reportService, CurrentUser currentUser) {
 		this.notificationService = notificationService;
+		this.refineService = refineService;
+		this.reportService = reportService;
 		this.currentUser = currentUser;
+	}
+
+	/**
+	 * The AI "Refine" helper: a suggestion only, nothing is saved. Every {box} must survive (409 otherwise).
+	 * 409 REFINE_NOT_CONFIGURED when the server has no AI key.
+	 */
+	@Operation(summary = "Suggest a better text (AI)")
+	@PostMapping("/refine")
+	@PreAuthorize("hasAuthority('MARKETING_SEND')")
+	public RefineResult refine(@Valid @RequestBody RefineTextRequest request) {
+		return refineService.refine(request);
 	}
 
 	/** Home and Reports list, newest first. Every filter is optional. */
@@ -97,6 +121,22 @@ public class NotificationController {
 	@PreAuthorize("hasAuthority('MARKETING_SEND')")
 	public NotificationResponse send(@PathVariable Long id, @RequestBody SendNotificationRequest request) {
 		return notificationService.send(id, request, currentUser.role().permissions(), currentUser.id());
+	}
+
+	/** Counts by status, channel, skip reason, failure reason and button, and reads per hour. Never stored. */
+	@Operation(summary = "Report of a notification")
+	@GetMapping("/{id}/report")
+	@PreAuthorize("hasAuthority('MARKETING_VIEW')")
+	public NotificationReportResponse report(@PathVariable Long id) {
+		return reportService.report(id);
+	}
+
+	/** The failed messages worth a second try go back to the queue (the same rows). */
+	@Operation(summary = "Send the failed messages again")
+	@PostMapping("/{id}/resend-failed")
+	@PreAuthorize("hasAuthority('MARKETING_SEND')")
+	public ResendFailedResponse resendFailed(@PathVariable Long id) {
+		return reportService.resendFailed(id, currentUser.role().permissions(), currentUser.id());
 	}
 
 	/** Cancel a draft or scheduled one; a sending one stops what is not sent yet. */

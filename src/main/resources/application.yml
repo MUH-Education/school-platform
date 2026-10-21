@@ -56,8 +56,17 @@ app:
       whatsapp-otp-template: ${APP_PROVIDER_WHATSAPP_OTP_TEMPLATE:}
       timeout: 5s
     worker-enabled: true           # the OutboxWorker runs every 5 seconds. Tests turn it off and call runOnce().
+    webhook:                       # provider callbacks: delivered / read / replies / template approval
+      secret: ${APP_PROVIDER_WEBHOOK_SECRET:}   # secret, environment variable only. prod refuses to start without it.
+      signature-header: X-Signature             # HMAC-SHA256 of the raw body, hex ("sha256=" in front is fine)
+  ai:                              # AI "Refine" for notification texts (docs/10-notifications.md section 7)
+    api-key: ${APP_AI_API_KEY:}    # secret, environment variable only. Empty = the helper is off (409).
+    model: claude-opus-5-5
+    effort: low                    # rewording a short message is a simple task
+    timeout: 20s
   notifications:
     manual-approval: false         # true only in local and test: the owner approves templates by hand (no provider yet)
+    dispatcher-enabled: true       # NotificationDispatcher runs every 60 seconds. Tests turn it off and call runOnce().
   storage:                         # student photos and notification files (FileStorage)
     type: local                    # local = a folder on this machine. prod: S3FileStorage comes in Phase 9.
     folder: ./data/photos          # the folder is in .gitignore. Same folder as before the rename.
@@ -88,5 +97,11 @@ app:
     hash-secret: ${APP_OTP_SECRET:dev-only-otp-secret-not-for-production-0001}
   messaging:
     worker-enabled: false          # tests call OutboxWorker.runOnce() by hand
+    webhook:
+      # TEST ONLY. Not secret. prod has no default and needs APP_PROVIDER_WEBHOOK_SECRET.
+      secret: test-only-webhook-secret-not-for-production-01
+  ai:
+    api-key: ""                    # never a real AI call from a test, even if APP_AI_API_KEY is set
   notifications:
     manual-approval: true          # tests approve templates by hand
+    dispatcher-enabled: false      # tests call NotificationDispatcher.runOnce() by hand

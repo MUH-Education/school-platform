@@ -282,4 +282,20 @@ class NotificationApiTest extends NotificationTestBase {
 		call(get(URL + "?size=500"), null).andExpect(status().isBadRequest());
 	}
 
+	// ---------------------------------------------------------------- AI refine (11.12)
+
+	@Test
+	void refineInTestAnswersTheTextUnchanged() throws Exception {
+		call(post(URL + "/refine"), "{\"text\":\"{Child name} की PTM शनिवार को है।\",\"action\":\"SHORTER\"}")
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.text").value("{Child name} की PTM शनिवार को है।"))
+			.andExpect(jsonPath("$.note").value("AI is not set up"));
+		call(post(URL + "/refine"), "{\"text\":\"PTM\",\"action\":\"CUSTOM\"}").andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.fields.instruction").value("is needed for CUSTOM"));
+		call(post(URL + "/refine"), "{\"text\":\"PTM\",\"action\":\"SHORTER\",\"language\":\"fr\"}")
+			.andExpect(status().isBadRequest());
+		// Nothing was saved.
+		assertThat(jdbc.queryForObject("select count(*) from notification", Integer.class)).isZero();
+	}
+
 }

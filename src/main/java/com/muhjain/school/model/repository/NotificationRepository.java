@@ -25,6 +25,12 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 	@Query("select n from Notification n where n.id = :id")
 	Optional<Notification> findLockedById(@Param("id") Long id);
 
+	/** FAILED with a note, by plain SQL: works even when the row cannot be loaded as an entity. */
+	@org.springframework.data.jpa.repository.Modifying
+	@Query(value = "update notification set status = 'FAILED', note = :note, finished_at = :now, updated_at = :now "
+			+ "where id = :id", nativeQuery = true)
+	int markFailed(@Param("id") Long id, @Param("note") String note, @Param("now") Instant now);
+
 	/** The Home and Reports list, newest first. {@code kind} and {@code status} null = any. */
 	@Query("select n from Notification n where (:kind is null or n.kind = :kind) "
 			+ "and (:status is null or n.status = :status) and n.createdAt >= :from and n.createdAt < :to "
@@ -48,5 +54,14 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 	@Query(value = "select * from notification where status = 'SENDING' and expanded_at is null "
 			+ "order by id limit :limit for update skip locked", nativeQuery = true)
 	List<Notification> findSendingWithoutExpansion(@Param("limit") int limit);
+
+	/**
+	 * SENDING notifications whose rows are written and that have no QUEUED row left: ready to close. Locked like
+	 * {@link #claimDue}, so a cancel and a close never meet.
+	 */
+	@Query(value = "select * from notification n where n.status = 'SENDING' and n.expanded_at is not null "
+			+ "and not exists (select 1 from message_outbox m where m.notification_id = n.id and m.status = 'QUEUED' "
+			+ "and m.purpose <> 'TEST') order by n.id limit :limit for update skip locked", nativeQuery = true)
+	List<Notification> claimFinished(@Param("limit") int limit);
 
 }

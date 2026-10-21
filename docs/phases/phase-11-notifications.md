@@ -115,19 +115,19 @@ rename only the Java interface.
 - [x] 11.7 `NotificationTemplateService` (create, edit-as-new-row, approval in dev/test, auto STOP button).
 - [x] 11.8 `NotificationService`: create (DRAFT + counts), update, test, send (now/later), cancel, list, get,
       recipients page.
-- [ ] 11.9 `NotificationDispatcher` (`runOnce()`; expand + close) and `NotificationDispatchScheduler`
+- [x] 11.9 `NotificationDispatcher` (`runOnce()`; expand + close) and `NotificationDispatchScheduler`
       (every 60 s, `app.notifications.dispatcher-enabled`, off in test).
-- [ ] 11.10 `ChannelSender` + `SmsChannelSender` (wraps `SmsSender`) + `WhatsAppChannelSender`
+- [x] 11.10 `ChannelSender` + `SmsChannelSender` (wraps `SmsSender`) + `WhatsAppChannelSender`
       (+ `LogWhatsAppChannelSender`); `OutboxWorker` routes by channel; `values` jsonb on the row; SMS fallback
       for `NOT_ON_WHATSAPP`.
-- [ ] 11.11 `MediaPublisher` + `ProviderMediaPublisher` + `LogMediaPublisher`; `ProviderApi.uploadMedia(...)`
+- [x] 11.11 `MediaPublisher` + `ProviderMediaPublisher` + `LogMediaPublisher`; `ProviderApi.uploadMedia(...)`
       added to the interface (javadoc only, no real impl — C1).
-- [ ] 11.12 `TextRefiner` + `ClaudeTextRefiner` + `LogTextRefiner`; `prompts/refine.txt`; placeholder check;
+- [x] 11.12 `TextRefiner` + `ClaudeTextRefiner` + `LogTextRefiner`; `prompts/refine.txt`; placeholder check;
       `AiProperties` (`app.ai.api-key`, `model`, `timeout`); `POST /notifications/refine`.
-- [ ] 11.13 Webhooks: `WebhookController` (`/webhooks/{provider}/status|inbound|template-status`), signature
+- [x] 11.13 Webhooks: `WebhookController` (`/webhooks/{provider}/status|inbound|template-status`), signature
       check, `InboundMessageService` (STOP, button actions, `BOOK_VISIT` → `EnquiryService`), status updates on
       the outbox row.
-- [ ] 11.14 Report: `NotificationReportService` (by status, by button, by problem, read-by-hour),
+- [x] 11.14 Report: `NotificationReportService` (by status, by button, by problem, read-by-hour),
       `resend-failed`.
 - [ ] 11.15 Stop list endpoints, inbound list + handle.
 - [ ] 11.16 Audit rows, `docs/06-api.md` Notifications section, `docs/03-data-model.md` regenerated.
@@ -176,7 +176,8 @@ rename only the Java interface.
   `REFINE_NOT_CONFIGURED` (without).
 - A fake inbound webhook with text "STOP" adds the family to `message_stop`; the next marketing send skips them;
   a notice still reaches them.
-- `/report` numbers equal `select status, count(*) from message_outbox where notification_id = ?`.
+- `/report` numbers equal `select status, count(*) from message_outbox where notification_id = ? and purpose <> 'TEST'`
+  (the test copy to the sender is shown on its own as `testCopies`).
 - `./gradlew build` green; no money word (`cost`, `price`, `paise`, `budget`) in `service.notification`.
 
 ## Out of scope (do not build)

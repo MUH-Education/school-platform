@@ -1,6 +1,9 @@
 package com.muhjain.school.service.notification;
 
 import com.muhjain.school.exception.ApiException;
+import com.muhjain.school.exception.MediaPublishException;
+import com.muhjain.school.exception.SmsSendException;
+import com.muhjain.school.model.entity.Notification;
 import com.muhjain.school.model.dto.response.NotificationMediaResponse;
 import com.muhjain.school.model.enums.MediaFileType;
 import com.muhjain.school.service.storage.FileStorage;
@@ -11,6 +14,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
 /**
@@ -24,10 +31,47 @@ public class NotificationMediaService {
 
 	public static final String FOLDER = "notifications";
 
+	/** A provider media id older than this is uploaded again (the provider keeps a file about 30 days). */
+	public static final Duration REUPLOAD_AFTER = Duration.ofDays(25);
+
 	private final FileStorage storage;
 
-	public NotificationMediaService(FileStorage storage) {
+	private final MediaPublisher publisher;
+
+	private final Clock clock;
+
+	public NotificationMediaService(FileStorage storage, MediaPublisher publisher, Clock clock) {
 		this.storage = storage;
+		this.publisher = publisher;
+		this.clock = clock;
+	}
+
+	/**
+	 * Makes sure the provider has the notification's file: uploads it once, and again when the id is older than
+	 * 25 days; the id and the time are kept on the notification. A notification with no file: nothing happens.
+	 * Example: "Diwali greetings" with a video → one upload, then 247 messages point at the same id.
+	 *
+	 * @throws MediaPublishException when the provider did not take it (nothing is sent; tried again next minute)
+	 */
+	public void ensurePublished(Notification n) {
+		if (n.getMediaKey() == null) {
+			return;
+		}
+		Instant now = Instant.now(clock).truncatedTo(ChronoUnit.MICROS);
+		boolean fresh = n.getProviderMediaId() != null && n.getProviderMediaAt() != null
+				&& n.getProviderMediaAt().plus(REUPLOAD_AFTER).isAfter(now);
+		if (fresh) {
+			return;
+		}
+		MediaRules.Format format = MediaRules.Format.ofKey(n.getMediaKey())
+			.orElseThrow(() -> new MediaPublishException("Unknown file type: " + n.getMediaKey(), null));
+		try {
+			n.setProviderMediaId(publisher.publish(n.getMediaKey(), format));
+			n.setProviderMediaAt(now);
+		}
+		catch (SmsSendException ex) {
+			throw new MediaPublishException("The provider did not take the file of notification " + n.getId(), ex);
+		}
 	}
 
 	/**

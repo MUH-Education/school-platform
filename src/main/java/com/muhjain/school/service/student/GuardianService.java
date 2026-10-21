@@ -230,6 +230,12 @@ public class GuardianService {
 		return contacts;
 	}
 
+	/** The guardian with this phone, if any. Example: +919811100001 → 210. A reply on WhatsApp is linked with it. */
+	@Transactional(readOnly = true)
+	public java.util.Optional<Long> idByPhone(String phone) {
+		return guardians.findByPhone(phone).map(Guardian::getId);
+	}
+
 	/** One guardian as a family contact, or empty if the id is unknown. */
 	@Transactional(readOnly = true)
 	public java.util.Optional<FamilyContact> contact(Long guardianId) {

@@ -294,7 +294,7 @@ in that one policy class (and a new permission row in `docs/05-roles-permissions
 | `DELETE /notifications/{id}` | SEND | cancel DRAFT/SCHEDULED; a SENDING one cancels only the QUEUED rows |
 | `GET /notifications?kind=&status=&from=&to=` | VIEW | list (Home and Reports screens) |
 | `GET /notifications/{id}/report` | VIEW | counts by status, by button, by failure reason, read-by-hour |
-| `POST /notifications/{id}/resend-failed` | SEND | new QUEUED rows for FAILED ones |
+| `POST /notifications/{id}/resend-failed` | SEND | the FAILED rows worth a second try go back to QUEUED (same rows, not WRONG_NUMBER / NOT_ON_WHATSAPP / DND) |
 | `GET /message-stops`, `DELETE /message-stops/{guardianId}` | VIEW / SEND | stop list |
 | `GET /inbound-messages?handled=false` | VIEW | replies (STOP handled by the server, the rest for a person) |
 | `POST /inbound-messages/{id}/handle` | SEND | mark done, note, or `makeEnquiry: true` |
@@ -302,7 +302,7 @@ in that one policy class (and a new permission row in `docs/05-roles-permissions
 
 Errors (409 unless said): `TEMPLATE_NOT_APPROVED`, `KIND_NOT_ALLOWED_FOR_ROLE` (403), `AUDIENCE_NOT_ALLOWED`,
 `NOTIFICATION_NOT_EDITABLE`, `NO_RECIPIENTS`, `MEDIA_TOO_BIG`, `MEDIA_WRONG_TYPE`, `SCHEDULE_IN_PAST`,
-`SCHEDULE_IN_QUIET_HOURS` (unless URGENT), `REFINE_NOT_CONFIGURED`, `REFINE_LOST_PLACEHOLDER`.
+`SCHEDULE_IN_QUIET_HOURS` (unless URGENT), `REFINE_NOT_CONFIGURED`, `REFINE_LOST_PLACEHOLDER`, `REFINE_REFUSED` (the AI declined), `REFINE_FAILED` (no usable text), `REFINE_UNAVAILABLE` (503: the AI did not answer).
 
 ## 10. Checks before a message goes out (the guard chain)
 

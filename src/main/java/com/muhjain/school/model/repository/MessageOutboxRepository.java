@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public interface MessageOutboxRepository extends JpaRepository<MessageOutbox, Long> {
 
@@ -56,6 +57,58 @@ public interface MessageOutboxRepository extends JpaRepository<MessageOutbox, Lo
 	@Query("select m from MessageOutbox m where m.notificationId = :notificationId "
 			+ "and m.purpose <> com.muhjain.school.model.enums.MessagePurpose.TEST order by m.id")
 	Page<MessageOutbox> pageOfNotification(@Param("notificationId") Long notificationId, Pageable pageable);
+
+	// ---------------------------------------------------------------- the report of a notification (task 11.14)
+	// Every query reads only the rows of one notification, without the test copy. Each answers [value, count] pairs.
+
+	@Query("select m.status, count(m) from MessageOutbox m where m.notificationId = :id "
+			+ "and m.purpose <> com.muhjain.school.model.enums.MessagePurpose.TEST group by m.status")
+	List<Object[]> countByStatus(@Param("id") Long notificationId);
+
+	@Query("select m.channel, count(m) from MessageOutbox m where m.notificationId = :id "
+			+ "and m.purpose <> com.muhjain.school.model.enums.MessagePurpose.TEST group by m.channel")
+	List<Object[]> countByChannel(@Param("id") Long notificationId);
+
+	@Query("select m.skipReason, count(m) from MessageOutbox m where m.notificationId = :id "
+			+ "and m.skipReason is not null group by m.skipReason")
+	List<Object[]> countBySkipReason(@Param("id") Long notificationId);
+
+	@Query("select m.problem, count(m) from MessageOutbox m where m.notificationId = :id "
+			+ "and m.purpose <> com.muhjain.school.model.enums.MessagePurpose.TEST "
+			+ "and m.status = com.muhjain.school.model.enums.MessageStatus.FAILED group by m.problem")
+	List<Object[]> countFailedByProblem(@Param("id") Long notificationId);
+
+	@Query("select m.buttonAction, count(m) from MessageOutbox m where m.notificationId = :id "
+			+ "and m.buttonAction is not null group by m.buttonAction")
+	List<Object[]> countByButton(@Param("id") Long notificationId);
+
+	/** [delivered, read, SMS copies, test copies] of one notification. */
+	@Query(value = "select count(*) filter (where delivered_at is not null and purpose <> 'TEST'), "
+			+ "count(*) filter (where read_at is not null and purpose <> 'TEST'), "
+			+ "count(*) filter (where fallback_of_id is not null), count(*) filter (where purpose = 'TEST') "
+			+ "from message_outbox where notification_id = :id", nativeQuery = true)
+	List<Object[]> countDeliveredReadCopies(@Param("id") Long notificationId);
+
+	/** Reads per hour of the school day: [hour (school time, no zone), count], oldest first. */
+	@Query(value = "select date_trunc('hour', read_at at time zone :zone) as hour, count(*) from message_outbox "
+			+ "where notification_id = :id and read_at is not null and purpose <> 'TEST' group by hour order by hour",
+			nativeQuery = true)
+	List<Object[]> readsByHour(@Param("id") Long notificationId, @Param("zone") String zone);
+
+	/** FAILED rows of a notification that are worth a second try (not a wrong number, not "no WhatsApp", not DND). */
+	@Query("select m from MessageOutbox m where m.notificationId = :id "
+			+ "and m.purpose <> com.muhjain.school.model.enums.MessagePurpose.TEST "
+			+ "and m.status = com.muhjain.school.model.enums.MessageStatus.FAILED and (m.problem is null "
+			+ "or m.problem not in (com.muhjain.school.model.enums.MessageProblem.WRONG_NUMBER, "
+			+ "com.muhjain.school.model.enums.MessageProblem.NOT_ON_WHATSAPP, "
+			+ "com.muhjain.school.model.enums.MessageProblem.DND)) order by m.id")
+	List<MessageOutbox> failedWorthRetrying(@Param("id") Long notificationId);
+
+	/** The row the provider calls this id. Example: "wamid.HBgM..." → row 4512. */
+	Optional<MessageOutbox> findFirstByProviderRef(String providerRef);
+
+	/** Is there an SMS copy of this WhatsApp row already? (A callback can arrive twice.) */
+	boolean existsByFallbackOfId(Long fallbackOfId);
 
 	/** The phones that already have a row of this notification (the test copy not counted). */
 	@Query("select m.phone from MessageOutbox m where m.notificationId = :notificationId "

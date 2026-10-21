@@ -189,6 +189,35 @@ public class NotificationTemplateService {
 		return toResponse(template, buttons.findByTemplateIdOrderBySeqNoAsc(id));
 	}
 
+	/**
+	 * The provider's answer about a template, from its callback (prod). Same effect as the manual approval: APPROVED
+	 * fixes the approved text, REJECTED keeps the reason. An unknown name is ignored (the template was changed and
+	 * replaced meanwhile, or it is not ours). The same answer twice changes nothing.
+	 *
+	 * @return true when a template changed
+	 */
+	@Transactional
+	public boolean applyProviderDecision(String providerTemplateName, TemplateApproval approval, String reason) {
+		if (approval == TemplateApproval.WAITING) {
+			return false;
+		}
+		return templates.findFirstByProviderTemplateNameAndActiveTrueAndKindNot(providerTemplateName,
+				TemplateKind.SYSTEM)
+			.filter(t -> t.getApproval() != approval)
+			.map(t -> {
+				String why = (approval == TemplateApproval.REJECTED)
+						? ((reason == null || reason.isBlank()) ? "Rejected by WhatsApp" : reason.strip()) : null;
+				t.setApproval(approval, why, null);
+				t.setApprovedBody((approval == TemplateApproval.APPROVED) ? t.getBody() : null);
+				templates.save(t);
+				auditService.record(ENTITY, t.getId(), AuditAction.UPDATED, "Template \"" + t.getName() + "\" "
+						+ approval + " by WhatsApp" + ((why == null) ? "." : ": " + why), Map.of("approval",
+								approval.name()));
+				return true;
+			})
+			.orElse(false);
+	}
+
 	// ---------------------------------------------------------------- checks
 
 	/** The request after the checks: the final buttons and the examples that are really used. */

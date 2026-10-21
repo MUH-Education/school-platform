@@ -27,7 +27,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /** Task 8.10. The test profile has the docs switched on, like dev. */
 class OpenApiTest extends AbstractIntegrationTest {
 
-	private static final Set<String> OPEN = Set.of("POST /api/v1/auth/otp/request", "POST /api/v1/auth/otp/verify");
+	private static final Set<String> OPEN = Set.of("POST /api/v1/auth/otp/request", "POST /api/v1/auth/otp/verify",
+			// Phase 11: the provider's callbacks, signed instead of a token (.claude/rules/security.md).
+			"POST /api/v1/webhooks/{provider}/status", "POST /api/v1/webhooks/{provider}/inbound",
+			"POST /api/v1/webhooks/{provider}/template-status");
 
 	private static final Set<String> TAGS = Set.of("Auth", "Users", "Vehicles", "Staff", "Routes", "Students",
 			"Admissions", "Trips", "Bus status", "Messages", "Notifications", "Enquiries", "Fees", "Analytics",

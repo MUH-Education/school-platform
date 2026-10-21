@@ -29,4 +29,7 @@ public interface StaffRepository extends JpaRepository<Staff, Long> {
 	@Query("select s from Staff s where s.id = :id")
 	Optional<Staff> findByIdForUpdate(@Param("id") Long id);
 
+	/** The employees with this phone, turned on, oldest first (a phone is not unique among staff). */
+	List<Staff> findByPhoneAndActiveTrueOrderByIdAsc(String phone);
+
 }

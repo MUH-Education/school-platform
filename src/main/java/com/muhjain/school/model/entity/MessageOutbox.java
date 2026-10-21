@@ -327,6 +327,67 @@ public class MessageOutbox extends BaseEntity {
 		}
 	}
 
+	/**
+	 * The provider says the phone got it. Never moves backwards: a row that failed or was read stays as it is.
+	 * The same callback twice changes nothing the second time.
+	 *
+	 * @return true when something changed
+	 */
+	public boolean markDelivered(Instant at) {
+		if (deliveredAt != null || !(status == MessageStatus.SENT || status == MessageStatus.TEST_ONLY
+				|| status == MessageStatus.DELIVERED)) {
+			return false;
+		}
+		this.status = MessageStatus.DELIVERED;
+		this.deliveredAt = at;
+		return true;
+	}
+
+	/** The provider says the person read it (a read message was delivered too). @return true when something changed */
+	public boolean markRead(Instant at) {
+		if (readAt != null || !(status == MessageStatus.SENT || status == MessageStatus.TEST_ONLY
+				|| status == MessageStatus.DELIVERED)) {
+			return false;
+		}
+		this.status = MessageStatus.DELIVERED;
+		if (deliveredAt == null) {
+			this.deliveredAt = at;
+		}
+		this.readAt = at;
+		return true;
+	}
+
+	/**
+	 * The provider took it but could not deliver it (later, by callback). A row that was delivered or read stays
+	 * as it is. @return true when something changed
+	 */
+	public boolean markProviderFailed(MessageProblem problem, String error) {
+		if (status != MessageStatus.SENT && status != MessageStatus.TEST_ONLY) {
+			return false;
+		}
+		this.status = MessageStatus.FAILED;
+		this.problem = problem;
+		this.error = truncate(error);
+		return true;
+	}
+
+	/** "Resend failed": the same row goes back to the queue with fresh tries. No new row, so the report stays exact. */
+	public void requeue(Instant nextTryAt) {
+		this.status = MessageStatus.QUEUED;
+		this.attempts = 0;
+		this.error = null;
+		this.problem = null;
+		this.nextTryAt = nextTryAt;
+	}
+
+	/** This phone has no WhatsApp: FAILED at once, no more tries (an SMS copy is made instead). */
+	public void markNotOnWhatsApp(String error) {
+		this.attempts++;
+		this.status = MessageStatus.FAILED;
+		this.problem = MessageProblem.NOT_ON_WHATSAPP;
+		this.error = truncate(error);
+	}
+
 	/** Not sent at all, for example "too old". */
 	public void markFailed(String error) {
 		this.status = MessageStatus.FAILED;

@@ -87,6 +87,12 @@ public class StaffService {
 			.toList();
 	}
 
+	/** The employee (turned on) with this phone, the oldest one if two share it. A WhatsApp reply is linked with it. */
+	@Transactional(readOnly = true)
+	public Optional<Long> activeIdByPhone(String phone) {
+		return staff.findByPhoneAndActiveTrueOrderByIdAsc(phone).stream().findFirst().map(Staff::getId);
+	}
+
 	/** Is this employee turned on? An unknown id is "no". */
 	@Transactional(readOnly = true)
 	public boolean isActive(Long staffId) {

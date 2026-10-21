@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -41,6 +42,9 @@ public class SecurityConfig {
 			.authorizeHttpRequests(auth -> {
 				auth.requestMatchers("/api/v1/auth/otp/**").permitAll();
 				auth.requestMatchers("/actuator/health", "/actuator/health/**").permitAll();
+				// The second exception (task 11.13): the provider's callbacks have no token. They prove who they are with
+				// an HMAC signature of the body (WebhookSignature), checked before anything is read.
+				auth.requestMatchers(HttpMethod.POST, "/api/v1/webhooks/**").permitAll();
 				// The one exception (task 8.10): the API docs and the Swagger page can be read without a token, but only
 				// when they are switched on (dev and test). Calls made from Swagger still need a real token.
 				if (apiDocsOn) {

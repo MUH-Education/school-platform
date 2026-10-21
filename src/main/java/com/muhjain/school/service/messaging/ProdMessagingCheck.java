@@ -1,5 +1,6 @@
 package com.muhjain.school.service.messaging;
 
+import com.muhjain.school.config.WebhookProperties;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
@@ -15,7 +16,12 @@ import org.springframework.stereotype.Component;
 public class ProdMessagingCheck {
 
 	public ProdMessagingCheck(Environment environment, @Value("${app.messaging.sms-provider:log}") String smsProvider,
-			ObjectProvider<ProviderApi> providerApi) {
+			ObjectProvider<ProviderApi> providerApi, WebhookProperties webhook) {
+		// The provider's callbacks (delivered, read, STOP) are open URLs; the shared secret is their only key.
+		if (environment.matchesProfiles("prod") && webhook.secret().length() < 32) {
+			throw new IllegalStateException("In prod APP_PROVIDER_WEBHOOK_SECRET must be set (at least 32 characters). "
+					+ "Without it nobody can prove a webhook comes from the provider.");
+		}
 		if (environment.matchesProfiles("prod") && "log".equalsIgnoreCase(smsProvider.trim())) {
 			throw new IllegalStateException("In prod app.messaging.sms-provider cannot be 'log'. "
 					+ "Parents would never get an SMS. Set it to the real provider.");

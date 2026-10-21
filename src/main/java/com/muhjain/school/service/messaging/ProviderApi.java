@@ -4,7 +4,6 @@ import com.muhjain.school.config.ProviderProperties;
 import com.muhjain.school.exception.SmsSendException;
 import com.muhjain.school.service.messaging.impl.ProviderHttp;
 
-import java.util.Map;
 
 /**
  * THE ONE CLASS TO WRITE PER PROVIDER (question C1). Everything else is ready: the queue, the worker, retries,
@@ -38,29 +37,38 @@ public interface ProviderApi {
 	void sendSmsOtp(String phone, String code) throws SmsSendException;
 
 	/**
-	 * A Marketing/Notice WhatsApp template to one phone, for a broadcast (Phase 11, not built yet —
-	 * see docs/09-marketing.md). Added early so the shape is ready; no real class implements it yet (question C1).
+	 * A notification as an approved WhatsApp template to one phone (Phase 11).
+	 * <p>
+	 * Throw {@link SmsSendException} with problem {@code NOT_ON_WHATSAPP} when the number has no WhatsApp: the worker
+	 * then sends the notification's SMS text instead.
 	 *
 	 * @param phone {@code +91XXXXXXXXXX}
-	 * @param providerTemplateId the approved WhatsApp template id, from {@code message_template}
-	 * @param params placeholder number to value, for example {@code {"1": "Rajesh Punia"}}; empty if the template
-	 * has no placeholders
-	 * @param mediaUrl the template's poster image, or null if it has none
+	 * @param templateName the approved template's name at the provider, from {@code message_template}. Example:
+	 * {@code open_day_oct}
+	 * @param language the template's language. Example: {@code hi}
+	 * @param params the values of the template's {boxes}, in the order they appear in its text ({{1}}, {{2}}, ...)
+	 * @param mediaId the header file's id from {@link #uploadMedia}, or null for a text-only template
 	 * @return the provider's id for the message, or null
 	 */
-	String sendWhatsAppTemplate(String phone, String providerTemplateId, Map<String, String> params, String mediaUrl)
-			throws SmsSendException;
+	String sendWhatsAppTemplate(String phone, String templateName, String language, java.util.List<String> params,
+			String mediaId) throws SmsSendException;
 
 	/**
-	 * A text or media message into one existing, small WhatsApp group (Phase 11, not built yet, question C12 —
-	 * see docs/09-marketing.md). Not for parent broadcasts: group size is too small and buttons do not work inside
-	 * a group.
+	 * Free text on WhatsApp (no template). WhatsApp allows it only inside the 24-hour window, after the person wrote
+	 * to the school; the guard chain has checked that already.
 	 *
-	 * @param groupId the provider's own id for the group, saved on {@code whatsapp_group.provider_group_id}
-	 * @param text the message text
-	 * @param mediaUrl an image or document to attach, or null for text only
+	 * @param mediaId a file from {@link #uploadMedia} to send with it, or null
 	 * @return the provider's id for the message, or null
 	 */
-	String sendWhatsAppGroupMessage(String groupId, String text, String mediaUrl) throws SmsSendException;
+	String sendWhatsAppText(String phone, String text, String mediaId) throws SmsSendException;
+
+	/**
+	 * Uploads a file once, so many messages can point at it. The provider keeps it about 30 days.
+	 *
+	 * @param contentType example {@code video/mp4}
+	 * @param fileName a name for the provider, example {@code 9b1e.mp4} (never a person's name)
+	 * @return the provider's id for the file
+	 */
+	String uploadMedia(byte[] bytes, String contentType, String fileName) throws SmsSendException;
 
 }

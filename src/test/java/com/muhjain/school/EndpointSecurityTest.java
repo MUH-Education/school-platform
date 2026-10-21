@@ -105,6 +105,10 @@ class EndpointSecurityTest extends AbstractIntegrationTest {
 				Arguments.of("POST", "/api/v1/notifications/1/test", null, Role.OFFICE_ADMIN),
 				Arguments.of("POST", "/api/v1/notifications/1/send", "{\"sendNow\":true}", Role.TRANSPORT_INCHARGE),
 				Arguments.of("DELETE", "/api/v1/notifications/1", null, Role.OFFICE_ADMIN),
+				Arguments.of("POST", "/api/v1/notifications/refine", "{\"text\":\"PTM\",\"action\":\"SHORTER\"}",
+						Role.ADMISSIONS_DESK),
+				Arguments.of("GET", "/api/v1/notifications/1/report", null, Role.TRANSPORT_INCHARGE),
+				Arguments.of("POST", "/api/v1/notifications/1/resend-failed", null, Role.OFFICE_ADMIN),
 				Arguments.of("POST", "/api/v1/auth/logout", null, null),
 				Arguments.of("GET", "/api/v1/users", null, Role.OFFICE_ADMIN),
 				Arguments.of("POST", "/api/v1/users", USER_BODY, Role.OFFICE_ADMIN),
@@ -233,7 +237,11 @@ class EndpointSecurityTest extends AbstractIntegrationTest {
 	static Stream<Arguments> openEndpoints() {
 		return Stream.of(Arguments.of("POST", "/api/v1/auth/otp/request", "{\"phone\":\"9812340066\"}"),
 				Arguments.of("POST", "/api/v1/auth/otp/verify", "{\"phone\":\"9812340066\",\"otp\":\"123456\"}"),
-				Arguments.of("GET", "/actuator/health", null));
+				Arguments.of("GET", "/actuator/health", null),
+				// Phase 11: no token needed, but no signature → 401 BAD_SIGNATURE (not "please log in").
+				Arguments.of("POST", "/api/v1/webhooks/log/status", "{\"providerRef\":\"x\",\"status\":\"READ\"}"),
+				Arguments.of("POST", "/api/v1/webhooks/log/inbound", "{\"providerRef\":\"x\",\"phone\":\"9811100001\"}"),
+				Arguments.of("POST", "/api/v1/webhooks/log/template-status", "{\"templateName\":\"x\"}"));
 	}
 
 	private static AbstractMockHttpServletRequestBuilder<?> call(String method, String url, String body) {
