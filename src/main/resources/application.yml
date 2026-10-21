@@ -13,10 +13,10 @@ spring:
       ddl-auto: validate
   servlet:
     multipart:
-      # The photo limit is 2 MB and the code checks it with a clear message (PhotoRules).
-      # The student CSV may be bigger. These two numbers only stop huge uploads.
-      max-file-size: 5MB
-      max-request-size: 6MB
+      # The code checks every real limit with a clear message: photo 2 MB (PhotoRules), notification files
+      # 5 to 16 MB (MediaRules). These two numbers only stop huge uploads, so they sit just above 16 MB.
+      max-file-size: 20MB
+      max-request-size: 21MB
 
 # API docs (springdoc). OFF by default, so any profile except local and test has no docs and no Swagger page.
 # SecurityConfig opens /v3/api-docs and /swagger-ui only when these are true.
@@ -56,9 +56,9 @@ app:
       whatsapp-otp-template: ${APP_PROVIDER_WHATSAPP_OTP_TEMPLATE:}
       timeout: 5s
     worker-enabled: true           # the OutboxWorker runs every 5 seconds. Tests turn it off and call runOnce().
-  photos:
-    storage: local                 # local = a folder on this machine. prod: S3PhotoStorage comes in Phase 9.
-    folder: ./data/photos          # the folder is in .gitignore
+  storage:                         # student photos and notification files (FileStorage)
+    type: local                    # local = a folder on this machine. prod: S3FileStorage comes in Phase 9.
+    folder: ./data/photos          # the folder is in .gitignore. Same folder as before the rename.
 
 ---
 # test: ./gradlew test. PostgreSQL comes from Testcontainers.

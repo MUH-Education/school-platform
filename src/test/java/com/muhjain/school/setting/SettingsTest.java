@@ -20,6 +20,7 @@ class SettingsTest extends AbstractIntegrationTest {
 	void putStartValuesBack() {
 		jdbc.update("update app_setting set value = '11', updated_by = null where key = 'transport.months_operated'");
 		jdbc.update("update app_setting set value = 'MUH Jain Global School', updated_by = null where key = 'school.name'");
+		jdbc.update("update app_setting set value = '21:00', updated_by = null where key = 'notifications.quiet_from'");
 	}
 
 	@Test
@@ -28,7 +29,7 @@ class SettingsTest extends AbstractIntegrationTest {
 
 		mockMvc.perform(get("/api/v1/settings").header("Authorization", bearer(token)))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.length()").value(11))
+			.andExpect(jsonPath("$.length()").value(14))
 			.andExpect(jsonPath("$[?(@.key == 'transport.months_operated')].value").value("11"));
 	}
 
@@ -63,6 +64,22 @@ class SettingsTest extends AbstractIntegrationTest {
 		assertThat(jdbc.queryForObject("select value from app_setting where key = 'transport.months_operated'",
 				String.class))
 			.isEqualTo("11");
+	}
+
+	@Test
+	void quietHoursAreATimeOfDay() throws Exception {
+		String token = tokenFor(addUser("+919812340001", Role.OWNER));
+
+		// The Settings screen sends every value back: the seeded "21:00" must pass, not only numbers.
+		update(token, "{\"values\":{\"notifications.quiet_from\":\"21:00\",\"notifications.quiet_to\":\"08:00\"}}")
+			.andExpect(status().isOk());
+		update(token, "{\"values\":{\"notifications.quiet_from\":\"9:30\"}}").andExpect(status().isOk())
+			.andExpect(jsonPath("$[?(@.key == 'notifications.quiet_from')].value").value("09:30"));
+		update(token, "{\"values\":{\"notifications.quiet_from\":\"25:00\"}}").andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$['fields']['notifications.quiet_from']").value("must be a time like 21:00"));
+		update(token, "{\"values\":{\"notifications.quiet_to\":\"8 pm\"}}").andExpect(status().isBadRequest());
+		update(token, "{\"values\":{\"notifications.max_marketing_per_family_per_week\":\"two\"}}")
+			.andExpect(status().isBadRequest());
 	}
 
 	@Test

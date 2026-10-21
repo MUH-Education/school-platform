@@ -2,6 +2,7 @@ package com.muhjain.school.model.repository;
 
 import com.muhjain.school.model.entity.MessageTemplate;
 import com.muhjain.school.model.enums.Gender;
+import com.muhjain.school.model.enums.TemplateKind;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -22,5 +23,11 @@ public interface MessageTemplateRepository extends JpaRepository<MessageTemplate
 	 * {@code message_outbox} row (a known gap until a future phase, see docs/08-decisions.md).
 	 */
 	List<MessageTemplate> findByCode(String code);
+
+	/** The notification templates of one kind that are still in use (an edited APPROVED row is turned off). */
+	List<MessageTemplate> findByKindAndActiveTrueOrderByNameAsc(TemplateKind kind);
+
+	/** Every notification template still in use, for the Templates screen. SYSTEM texts are not in it. */
+	List<MessageTemplate> findByKindNotAndActiveTrueOrderByNameAsc(TemplateKind kind);
 
 }

@@ -51,6 +51,15 @@ public class FeeStatusService {
 	}
 
 	/**
+	 * {@link #summaries} for the current session, as of today. Notifications use it for fee reminders: the numbers
+	 * are read live at send time, never stored.
+	 */
+	@Transactional(readOnly = true)
+	public Map<Long, FeeStatusCalculator.Summary> currentSummaries(Collection<Long> studentIds) {
+		return summaries(sessions.current().getId(), studentIds);
+	}
+
+	/**
 	 * The full fee numbers of each child that has dues in that session, as of today. Analytics uses it, so a
 	 * list there shows exactly what the child's own page shows. Example: {118 → Summary(status DELAYED,
 	 * pendingNow 7500)}.

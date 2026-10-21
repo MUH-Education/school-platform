@@ -3,6 +3,7 @@ package com.muhjain.school.service.student;
 import com.muhjain.school.exception.ApiException;
 import com.muhjain.school.model.dto.request.GuardianRequest;
 import com.muhjain.school.model.dto.request.UpdateGuardianRequest;
+import com.muhjain.school.model.dto.response.FamilyContact;
 import com.muhjain.school.model.dto.response.GuardianResponse;
 import com.muhjain.school.model.entity.Guardian;
 import com.muhjain.school.model.entity.StudentGuardian;
@@ -198,6 +199,59 @@ public class GuardianService {
 			}
 		}
 		return first;
+	}
+
+	/**
+	 * The family contact of each child: its primary guardian, or the oldest phone when none is primary. A child with
+	 * no phone at all is not in the map. Notifications use it to send one message per family.
+	 * Example: {118 → (210, "Rajesh Punia", +919811100001), 119 → the same}.
+	 */
+	@Transactional(readOnly = true)
+	public Map<Long, FamilyContact> familyContacts(java.util.Collection<Long> studentIds) {
+		if (studentIds.isEmpty()) {
+			return Map.of();
+		}
+		List<StudentGuardian> found = links.findByStudentIdInOrderByIdAsc(studentIds);
+		Map<Long, Guardian> byId = guardians.findByIdIn(found.stream().map(StudentGuardian::getGuardianId).toList())
+			.stream()
+			.collect(Collectors.toMap(Guardian::getId, g -> g));
+		Map<Long, StudentGuardian> chosen = new java.util.HashMap<>();
+		for (StudentGuardian link : found) {
+			StudentGuardian before = chosen.get(link.getStudentId());
+			if (before == null || (link.isPrimary() && !before.isPrimary())) {
+				chosen.put(link.getStudentId(), link);
+			}
+		}
+		Map<Long, FamilyContact> contacts = new java.util.HashMap<>();
+		chosen.forEach((studentId, link) -> {
+			Guardian g = byId.get(link.getGuardianId());
+			contacts.put(studentId, new FamilyContact(g.getId(), g.getName(), g.getPhone()));
+		});
+		return contacts;
+	}
+
+	/** One guardian as a family contact, or empty if the id is unknown. */
+	@Transactional(readOnly = true)
+	public java.util.Optional<FamilyContact> contact(Long guardianId) {
+		return guardians.findById(guardianId).map(g -> new FamilyContact(g.getId(), g.getName(), g.getPhone()));
+	}
+
+	/** The children this phone is linked to (any relation, primary or not). Example: 210 → [118, 119]. */
+	@Transactional(readOnly = true)
+	public List<Long> childrenOf(Long guardianId) {
+		return links.findByGuardianId(guardianId).stream().map(StudentGuardian::getStudentId).distinct().toList();
+	}
+
+	/** The phone of each guardian. Example: {210 → "+919811100001"}. A guardian with no phone is not in the map. */
+	@Transactional(readOnly = true)
+	public Map<Long, String> phones(java.util.Collection<Long> guardianIds) {
+		if (guardianIds.isEmpty()) {
+			return Map.of();
+		}
+		return guardians.findByIdIn(guardianIds)
+			.stream()
+			.filter(g -> g.getPhone() != null)
+			.collect(Collectors.toMap(Guardian::getId, Guardian::getPhone));
 	}
 
 	static String tidyName(String name) {

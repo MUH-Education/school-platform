@@ -18,6 +18,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * School-wide numbers. The keys are fixed by the Flyway file; this service only changes values.
@@ -39,6 +41,11 @@ public class SettingService {
 	private static final String PHONE_KEY = "school.office_phone";
 
 	private static final String PERCENT_KEY = "transport.collection_pct";
+
+	// A time of day in school time, "HH:mm". Example: quiet hours from "21:00" to "08:00".
+	private static final Set<String> TIME_KEYS = Set.of("notifications.quiet_from", "notifications.quiet_to");
+
+	private static final Pattern TIME = Pattern.compile("([01]?[0-9]|2[0-3]):([0-5][0-9])");
 
 	private final AppSettingRepository settings;
 
@@ -91,8 +98,8 @@ public class SettingService {
 		return list();
 	}
 
-	// A few keys are free text (some may be left blank), one is a phone number, the rest are whole
-	// numbers of 0 or more. A percent is at most 100.
+	// A few keys are free text (some may be left blank), one is a phone number, two are times of day, the rest
+	// are whole numbers of 0 or more. A percent is at most 100.
 	private static String checkValue(String key, String raw) {
 		String value = (raw == null) ? "" : raw.strip();
 		if (OPTIONAL_TEXT_KEYS.contains(key)) {
@@ -117,6 +124,14 @@ public class SettingService {
 			catch (ApiException ex) {
 				throw ApiException.validation(key, "must be a valid Indian mobile number, like 98123 45678");
 			}
+		}
+		if (TIME_KEYS.contains(key)) {
+			Matcher time = TIME.matcher(value);
+			if (!time.matches()) {
+				throw ApiException.validation(key, "must be a time like 21:00");
+			}
+			// "9:00" is saved as "09:00", so every reader can compare the text.
+			return String.format("%02d:%s", Integer.parseInt(time.group(1)), time.group(2));
 		}
 		long number;
 		try {

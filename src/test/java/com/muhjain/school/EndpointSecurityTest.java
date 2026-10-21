@@ -6,11 +6,14 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.web.servlet.request.AbstractMockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import java.util.stream.Stream;
 
 import static org.hamcrest.Matchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -69,10 +72,18 @@ class EndpointSecurityTest extends AbstractIntegrationTest {
 
 	private static final String TEMPLATE_BODY = "{\"body\":\"{name} {time}\",\"active\":true}";
 
+	/** Not JSON: {@link #call} sends a small PNG as the multipart field {@code file}. */
+	private static final String FILE_UPLOAD = "<multipart file>";
+
 	/** method, URL, body, a role WITHOUT the permission (null = any login is enough) */
 	static Stream<Arguments> protectedEndpoints() {
 		return Stream.of(
 				Arguments.of("GET", "/api/v1/auth/me", null, null),
+				// Phase 11: notifications are owner-only for now (MARKETING_EDIT or MARKETING_SEND).
+				Arguments.of("POST", "/api/v1/notification-media", FILE_UPLOAD, Role.OFFICE_ADMIN),
+				Arguments.of("POST", "/api/v1/notification-media", FILE_UPLOAD, Role.TRANSPORT_INCHARGE),
+				Arguments.of("POST", "/api/v1/notification-media", FILE_UPLOAD, Role.ADMISSIONS_DESK),
+				Arguments.of("POST", "/api/v1/notification-media", FILE_UPLOAD, Role.ATTENDANT),
 				Arguments.of("POST", "/api/v1/auth/logout", null, null),
 				Arguments.of("GET", "/api/v1/users", null, Role.OFFICE_ADMIN),
 				Arguments.of("POST", "/api/v1/users", USER_BODY, Role.OFFICE_ADMIN),
@@ -204,7 +215,12 @@ class EndpointSecurityTest extends AbstractIntegrationTest {
 				Arguments.of("GET", "/actuator/health", null));
 	}
 
-	private static MockHttpServletRequestBuilder call(String method, String url, String body) {
+	private static AbstractMockHttpServletRequestBuilder<?> call(String method, String url, String body) {
+		if (FILE_UPLOAD.equals(body)) {
+			byte[] png = { (byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
+			return multipart(HttpMethod.valueOf(method), url)
+				.file(new MockMultipartFile("file", "poster.png", "image/png", png));
+		}
 		MockHttpServletRequestBuilder builder = request(HttpMethod.valueOf(method), url);
 		if (body != null) {
 			builder.contentType(MediaType.APPLICATION_JSON).content(body);

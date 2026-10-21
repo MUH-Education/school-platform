@@ -146,14 +146,18 @@ Bind these with one `@ConfigurationProperties` record per group (`JwtProperties`
 - `service_date` (the school day of a trip) is a `LocalDate` in the school zone.
 - All `timestamptz` values are instants. The API sends them as ISO text with offset, for example `2026-10-07T07:42:10+05:30`.
 
-## Files (student photos)
+## Files (student photos, notification media)
 
-One interface `PhotoStorage` with `save(bytes) → key` and `open(key) → stream`.
+One interface `service.storage.FileStorage` with `save(folder, bytes, extension) → key`, `open(key) → stream` and
+`delete(key)`. Settings `app.storage.type` and `app.storage.folder`.
 
-- `local`: `LocalFolderPhotoStorage` writes under `./data/photos`.
-- `prod`: `S3PhotoStorage` (an S3-compatible bucket in India).
+- `local` and `test`: `LocalFolderFileStorage` writes under `./data/photos`. Example keys: `students/3f2a.jpg`,
+  `notifications/9b1e.mp4`.
+- `prod`: `S3FileStorage` (an S3-compatible bucket in India, Phase 9).
 
-The database stores only the key. The photo is served by `GET /api/v1/students/{id}/photo`, which checks permission.
+The database stores only the key. A photo is served by `GET /api/v1/students/{id}/photo`, which checks permission.
+A notification file goes to the WhatsApp provider only at send time. The real type of an upload is read from its
+first bytes (`PhotoRules`, `MediaRules`), never from the file name.
 
 ## Build file
 

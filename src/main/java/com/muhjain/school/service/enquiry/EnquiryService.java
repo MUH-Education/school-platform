@@ -261,6 +261,19 @@ public class EnquiryService {
 	 * Count per stage, total, overdue, admitted percent and count per village (rule 9).
 	 * Example: 29 enquiries, 4 admitted → 14%.
 	 */
+	/**
+	 * Every enquiry in these stages, as message recipients (notifications). Oldest first.
+	 * Example: [NEW, CONTACTED, VISITED, APPLIED] → every open enquiry.
+	 */
+	@Transactional(readOnly = true)
+	public List<EnquiryContact> contacts(java.util.Set<EnquiryStatus> statuses) {
+		return enquiries.findByStatusInOrderByIdAsc(statuses)
+			.stream()
+			.map(e -> new EnquiryContact(e.getId(), e.getParentName(), e.getPhone(), e.getChildName(),
+					e.getClassSought(), e.getStatus()))
+			.toList();
+	}
+
 	@Transactional(readOnly = true)
 	public EnquirySummaryResponse summary() {
 		Map<EnquiryStatus, Long> byStatus = new java.util.EnumMap<>(EnquiryStatus.class);

@@ -1,3 +1,5 @@
+Superseded on 21 Oct 2026 by phase-11-notifications.md. Kept for history.
+
 # Phase 11 — Marketing: templates, broadcasts, staff notices
 
 ## Goal

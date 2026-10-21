@@ -2,14 +2,21 @@ package com.muhjain.school.model.entity;
 
 import com.muhjain.school.model.enums.*;
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * One message to one phone. Example: BOARDING, SMS, +919811100001, Aryan, 7 Oct 2026, BOARDED_MORNING, QUEUED.
  * Other features are ids, not objects. {@code templateCode} has no foreign key any more (bus texts now have a
  * boy row and a girl row for the same code), it is only kept for reading.
+ * <p>
+ * A notification (Phase 11) makes one row per person and channel, with {@code notificationId} set. Example:
+ * NOTICE, WHATSAPP, +919811100001, notification 17, values {"Parent name": "Rajesh Punia"}, QUEUED.
  */
 @Entity
 @Table(name = "message_outbox")
@@ -45,7 +52,7 @@ public class MessageOutbox extends BaseEntity {
 	@Column(name = "template_code", length = 40)
 	private String templateCode;
 
-	@Column(nullable = false, length = 1000)
+	@Column(nullable = false, length = 1024)
 	private String body;
 
 	@Enumerated(EnumType.STRING)
@@ -82,7 +89,52 @@ public class MessageOutbox extends BaseEntity {
 	@Column(name = "created_by")
 	private Long createdBy;
 
+	@Column(name = "notification_id")
+	private Long notificationId;
+
+	// A STAFF recipient of a notification.
+	@Column(name = "staff_id")
+	private Long staffId;
+
+	// An ENQUIRY recipient of a notification.
+	@Column(name = "enquiry_id")
+	private Long enquiryId;
+
+	@Column(name = "read_at")
+	private Instant readAt;
+
+	// The last button this person tapped.
+	@Enumerated(EnumType.STRING)
+	@Column(name = "button_action", length = 30)
+	private ButtonAction buttonAction;
+
+	// Null for text only.
+	@Column(name = "media_key", length = 120)
+	private String mediaKey;
+
+	// The {box} values of this one person, so the row can be sent (again) on its own.
+	@JdbcTypeCode(SqlTypes.JSON)
+	@Column(name = "template_values", nullable = false, columnDefinition = "jsonb")
+	private Map<String, String> templateValues = new HashMap<>();
+
+	// Why a guard said no. Set only with status SKIPPED.
+	@Enumerated(EnumType.STRING)
+	@Column(name = "skip_reason", length = 30)
+	private SkipReason skipReason;
+
 	protected MessageOutbox() {
+	}
+
+	/**
+	 * A new QUEUED row, ready to send from {@code now}. Used for notification rows; bus SMS are still saved with
+	 * the one-statement insert of {@code MessageOutboxRepository.queueBoarding}.
+	 */
+	public MessageOutbox(MessagePurpose purpose, MessageChannel channel, String phone, String body, Instant now) {
+		this.purpose = purpose;
+		this.channel = channel;
+		this.phone = phone;
+		this.body = body;
+		this.nextTryAt = now;
 	}
 
 	public MessagePurpose getPurpose() {
@@ -163,6 +215,97 @@ public class MessageOutbox extends BaseEntity {
 
 	public Long getCreatedBy() {
 		return createdBy;
+	}
+
+	public void setCreatedBy(Long createdBy) {
+		this.createdBy = createdBy;
+	}
+
+	public void setGuardianId(Long guardianId) {
+		this.guardianId = guardianId;
+	}
+
+	public void setStudentId(Long studentId) {
+		this.studentId = studentId;
+	}
+
+	public void setTemplateCode(String templateCode) {
+		this.templateCode = templateCode;
+	}
+
+	public void setFallbackOfId(Long fallbackOfId) {
+		this.fallbackOfId = fallbackOfId;
+	}
+
+	/** Do not try before this time. Example: quiet hours hold a 10 pm row until 8 am. */
+	public void setNextTryAt(Instant nextTryAt) {
+		this.nextTryAt = nextTryAt;
+	}
+
+	public Long getNotificationId() {
+		return notificationId;
+	}
+
+	public void setNotificationId(Long notificationId) {
+		this.notificationId = notificationId;
+	}
+
+	public Long getStaffId() {
+		return staffId;
+	}
+
+	public void setStaffId(Long staffId) {
+		this.staffId = staffId;
+	}
+
+	public Long getEnquiryId() {
+		return enquiryId;
+	}
+
+	public void setEnquiryId(Long enquiryId) {
+		this.enquiryId = enquiryId;
+	}
+
+	public Instant getReadAt() {
+		return readAt;
+	}
+
+	public void setReadAt(Instant readAt) {
+		this.readAt = readAt;
+	}
+
+	public ButtonAction getButtonAction() {
+		return buttonAction;
+	}
+
+	public void setButtonAction(ButtonAction buttonAction) {
+		this.buttonAction = buttonAction;
+	}
+
+	public String getMediaKey() {
+		return mediaKey;
+	}
+
+	public void setMediaKey(String mediaKey) {
+		this.mediaKey = mediaKey;
+	}
+
+	public Map<String, String> getTemplateValues() {
+		return templateValues;
+	}
+
+	public void setTemplateValues(Map<String, String> templateValues) {
+		this.templateValues = (templateValues == null) ? new HashMap<>() : new HashMap<>(templateValues);
+	}
+
+	public SkipReason getSkipReason() {
+		return skipReason;
+	}
+
+	/** A guard said no. The worker never picks a SKIPPED row; the report shows the reason. */
+	public void markSkipped(SkipReason reason) {
+		this.status = MessageStatus.SKIPPED;
+		this.skipReason = reason;
 	}
 
 	/** The provider took it (or test mode logged it). */

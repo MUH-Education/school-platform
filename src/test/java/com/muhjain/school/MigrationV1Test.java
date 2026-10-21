@@ -13,7 +13,10 @@ class MigrationV1Test extends AbstractIntegrationTest {
 		assertThat(jdbc.queryForObject("select value from app_setting where key = 'transport.months_operated'",
 				String.class))
 			.isEqualTo("11");
-		assertThat(jdbc.queryForObject("select count(*) from app_setting", Integer.class)).isEqualTo(11);
+		// V1 seeds 11 settings. Later migrations add their own (V14: 3 notifications.* keys, see MigrationV14Test).
+		assertThat(jdbc.queryForObject("select count(*) from app_setting where key not like 'notifications.%'",
+				Integer.class))
+			.isEqualTo(11);
 	}
 
 	@Test

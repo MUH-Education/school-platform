@@ -10,10 +10,14 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 public interface EnquiryRepository extends JpaRepository<Enquiry, Long> {
+
+	/** Every enquiry in these stages, oldest first. Example: [LOST] → the families who went elsewhere. */
+	List<Enquiry> findByStatusInOrderByIdAsc(Collection<EnquiryStatus> statuses);
 
 	/**
 	 * The open enquiry (not ADMITTED, not LOST) with this phone and class, if any. The database allows only one

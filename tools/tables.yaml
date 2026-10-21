@@ -38,6 +38,11 @@ areas:
     file: V5__messaging.sql
     phase: 5
     tables: [bus_sms_rule, message_template, message_outbox]
+  - key: notifications
+    title: Notifications to parents and staff
+    file: V14__notifications.sql
+    phase: 11
+    tables: [notification, message_template_button, message_stop, inbound_message]
   - key: enquiries
     title: Enquiries
     file: V6__enquiries.sql
@@ -222,7 +227,8 @@ tables:
     purpose: A message text. Bus texts have a boy row (M) and a girl row (F).
     rules:
       - '`body` is the text as changed on School settings. `approved_body` is the text the phone company approved (DLT). The server always sends `approved_body`.'
-      - One row per (code, gender); fee texts have gender empty (`unique nulls not distinct`).
+      - One row per (code, gender) among SYSTEM texts; fee texts have gender empty (`nulls not distinct`). Notification templates (V14, kind NOTICE, MARKETING, ...) have no code.
+      - Editing an APPROVED notification template makes a new row (`replaces_id`).
     example: code = 'BOARDED_MORNING'
     used_by: ['/message-templates/*', 'the sending job']
   message_outbox:
@@ -231,8 +237,40 @@ tables:
       - One bus event gives one SMS per phone, whatever happens (partial unique index).
       - Login codes are never stored here.
       - After 3 failed tries a row is FAILED. If WhatsApp fails, a new SMS row is made with `fallback_of_id`.
+      - A notification gives one row per phone per channel (URGENT has WhatsApp and SMS). A guard that says no makes a SKIPPED row with `skip_reason`.
     example: student_id = 57 or receipt_id is not null
     used_by: ['GET /messages', 'POST /messages/*/retry', 'webhooks', 'receipts on WhatsApp', 'reminders']
+
+  notification:
+    purpose: One send by the office (notice, urgent, marketing, greeting, fee reminder, one family, staff). The people are rows in message_outbox with this notification_id.
+    rules:
+      - Rows are written by NotificationDispatcher (every 60 s), never by the request. "Send now" only sets SENDING.
+      - '`audience` is the question ("families with dues, 2+ months"), never the answer. The list is made at expand time and checked again before each send.'
+      - SCHEDULED needs `scheduled_at`. A file needs its `media_type`. `rule_id` only for `source = RULE` (Phase 12).
+      - No cost, price or budget column.
+    example: kind = 'MARKETING' and status = 'SENT'
+    used_by: ['POST /notifications', 'POST /notifications/{id}/send', 'GET /notifications/{id}/report']
+  message_template_button:
+    purpose: Up to 3 WhatsApp buttons under a notification template.
+    rules:
+      - REPLY → action STOP_MESSAGES, BOOK_VISIT, GOT_IT or CALL_ME. CALL → a +91 phone. URL → an https link.
+      - A MARKETING or GREETING template always ends with REPLY STOP_MESSAGES (added by the server).
+    example: type = 'REPLY'
+    used_by: ['POST /notification-templates']
+  message_stop:
+    purpose: Families who said stop to MARKETING and GREETING. They still get notices, urgent messages, fee reminders, bus SMS and receipts.
+    rules:
+      - One row per guardian (unique). Taking a family off the list deletes the row.
+    example: reason = 'WROTE_STOP'
+    used_by: ['GET /message-stops', 'webhooks/inbound']
+  inbound_message:
+    purpose: Every WhatsApp message that comes in to the school number. Used for STOP, button taps, the 24-hour window and "promised to pay by".
+    rules:
+      - '`provider_ref` is unique: the same webhook twice saves one row.'
+      - A text or a button tap, at least one. Any country's phone is saved.
+      - '`promised_until` set → no fee reminder to this family until that day.'
+    example: handled = false
+    used_by: ['GET /inbound-messages', 'webhooks/inbound']
 
   enquiry:
     purpose: A parent who asked about admission, and where they are now.

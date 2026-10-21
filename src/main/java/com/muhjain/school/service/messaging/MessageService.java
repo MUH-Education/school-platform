@@ -166,10 +166,10 @@ public class MessageService {
 			return result;
 		}
 		for (MessageOutbox m : outbox.boardingFor(studentIds, day)) {
-			// DELIVERED and CANCELLED do not happen for a boarding SMS today (this view is bus-only); they
+			// DELIVERED, CANCELLED and SKIPPED do not happen for a boarding SMS today (this view is bus-only); they
 			// are mapped to the closest state so the switch stays exhaustive if that ever changes.
 			SmsState state = switch (m.getStatus()) {
-				case FAILED, CANCELLED -> SmsState.FAILED;
+				case FAILED, CANCELLED, SKIPPED -> SmsState.FAILED;
 				case QUEUED -> SmsState.QUEUED;
 				case SENT, DELIVERED -> SmsState.SENT;
 				case TEST_ONLY -> SmsState.TEST_ONLY;

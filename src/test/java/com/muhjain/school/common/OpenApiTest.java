@@ -30,7 +30,8 @@ class OpenApiTest extends AbstractIntegrationTest {
 	private static final Set<String> OPEN = Set.of("POST /api/v1/auth/otp/request", "POST /api/v1/auth/otp/verify");
 
 	private static final Set<String> TAGS = Set.of("Auth", "Users", "Vehicles", "Staff", "Routes", "Students",
-			"Admissions", "Trips", "Bus status", "Messages", "Enquiries", "Fees", "Analytics", "Settings");
+			"Admissions", "Trips", "Bus status", "Messages", "Notifications", "Enquiries", "Fees", "Analytics",
+			"Settings");
 
 	@Autowired
 	@org.springframework.beans.factory.annotation.Qualifier("requestMappingHandlerMapping")

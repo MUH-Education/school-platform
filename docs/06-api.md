@@ -248,21 +248,41 @@ One route in `GET /bus-status`:
 | `GET /message-templates` | `MESSAGES_VIEW` | The templates |
 | `PUT /message-templates/{code}` | `SETTINGS_EDIT` | Change text or provider template id |
 
-## Marketing — Phase 11
+## Notifications — Phase 11
 
-| Method and URL | Permission | What it does |
+Design: `docs/10-notifications.md`. Replaces the first "Marketing" plan (`docs/phases/phase-11-marketing.md`).
+
+All under `/api/v1`. **No new permissions and no role changes for now** (owner's decision, 21 Oct 2026, see
+`docs/08-decisions.md` section D). The short words in the table map to the permissions that already exist, which
+today only OWNER has: VIEW = `MARKETING_VIEW`, TEMPLATES = `MARKETING_EDIT`, SEND = `MARKETING_SEND`.
+`KindPolicy.whoMaySend()` returns `MARKETING_SEND` for every kind; opening a kind to the office later is a change
+in that one policy class (and a new permission row in `docs/05-roles-permissions.md`).
+
+| Method and URL | Permission | What |
 |---|---|---|
-| `GET /marketing-templates` | `MARKETING_VIEW` | List templates (Marketing + Notice), with WhatsApp approval status |
-| `POST /marketing-templates` | `MARKETING_EDIT` | New template (name, kind, language, text, poster, buttons) |
-| `PUT /marketing-templates/{id}` | `MARKETING_EDIT` | Change a template. Sends it to WhatsApp for checking again |
-| `GET /broadcasts` | `MARKETING_VIEW` | List of broadcasts: sent, scheduled, cancelled, with counts |
-| `POST /broadcasts` | `MARKETING_SEND` | Step 1–2: template + who gets it. Answers the family count before sending |
-| `POST /broadcasts/{id}/test` | `MARKETING_SEND` | Send a test copy to the caller's own phone |
-| `POST /broadcasts/{id}/send` | `MARKETING_SEND` | Step 3: send now, or schedule for later |
-| `DELETE /broadcasts/{id}` | `MARKETING_SEND` | Cancel a `DRAFT`/`SCHEDULED` broadcast |
-| `GET /broadcasts/{id}/report` | `MARKETING_VIEW` | Delivered/read/tapped counts, replies, who said stop |
-| `GET /message-stops` | `MARKETING_VIEW` | Families who said stop to marketing messages |
-| `DELETE /message-stops/{guardianId}` | `MARKETING_SEND` | Take a family off the stop list (they asked again) |
+| `GET /notification-templates?kind=` | VIEW | list with approval status |
+| `POST /notification-templates` | TEMPLATES | new (name, kind, language, body, smsBody, headerType, mediaKey, buttons, exampleValues) |
+| `PUT /notification-templates/{id}` | TEMPLATES | edit → new row, WAITING |
+| `PUT /notification-templates/{id}/approval` | TEMPLATES | dev/test only: APPROVED / REJECTED + reason |
+| `POST /notification-media` | TEMPLATES or SEND | multipart → `{ mediaKey, mediaType, bytes, width, height, seconds }` |
+| `POST /notifications/refine` | SEND | AI suggestion (section 7) |
+| `POST /notifications` | SEND (kind-checked) | DRAFT + counts |
+| `PUT /notifications/{id}` | SEND | change a DRAFT/SCHEDULED |
+| `GET /notifications/{id}/recipients` | VIEW | the resolved list (paged), to show "See the 246 families" |
+| `POST /notifications/{id}/test` | SEND | one TEST row to the caller's phone |
+| `POST /notifications/{id}/send` | SEND | `{ sendNow: true }` or `{ scheduledAt }` |
+| `DELETE /notifications/{id}` | SEND | cancel DRAFT/SCHEDULED; a SENDING one cancels only the QUEUED rows |
+| `GET /notifications?kind=&status=&from=&to=` | VIEW | list (Home and Reports screens) |
+| `GET /notifications/{id}/report` | VIEW | counts by status, by button, by failure reason, read-by-hour |
+| `POST /notifications/{id}/resend-failed` | SEND | new QUEUED rows for FAILED ones |
+| `GET /message-stops`, `DELETE /message-stops/{guardianId}` | VIEW / SEND | stop list |
+| `GET /inbound-messages?handled=false` | VIEW | replies (STOP handled by the server, the rest for a person) |
+| `POST /inbound-messages/{id}/handle` | SEND | mark done, note, or `makeEnquiry: true` |
+| `POST /webhooks/{provider}/status`, `/inbound`, `/template-status` | none (signature check) | provider callbacks |
+
+Errors (409 unless said): `TEMPLATE_NOT_APPROVED`, `KIND_NOT_ALLOWED_FOR_ROLE` (403), `AUDIENCE_NOT_ALLOWED`,
+`NOTIFICATION_NOT_EDITABLE`, `NO_RECIPIENTS`, `MEDIA_TOO_BIG`, `MEDIA_WRONG_TYPE`, `SCHEDULE_IN_PAST`,
+`SCHEDULE_IN_QUIET_HOURS` (unless URGENT), `REFINE_NOT_CONFIGURED`, `REFINE_LOST_PLACEHOLDER`.
 
 ## Enquiries — Phase 6
 

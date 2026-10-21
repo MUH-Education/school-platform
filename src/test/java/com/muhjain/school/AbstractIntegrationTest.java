@@ -197,7 +197,15 @@ public abstract class AbstractIntegrationTest {
 		jdbc.update("delete from enquiry_stage");
 		jdbc.update("delete from enquiry_follow_up");
 		jdbc.update("delete from enquiry");
+		// Notification tables (V14): replies and stops point at outbox rows and notifications, outbox rows
+		// point at notifications, notifications at templates. Only SYSTEM templates are seeded reference data.
+		jdbc.update("delete from inbound_message");
+		jdbc.update("delete from message_stop");
 		jdbc.update("delete from message_outbox");
+		jdbc.update("delete from notification");
+		jdbc.update("delete from message_template_button");
+		jdbc.update("update message_template set replaces_id = null where replaces_id is not null");
+		jdbc.update("delete from message_template where kind <> 'SYSTEM'");
 		// bus_sms_rule is seeded reference data (like app_setting), not per-test rows: not deleted here.
 		jdbc.update("delete from boarding_event");
 		jdbc.update("delete from holiday");
@@ -221,7 +229,7 @@ public abstract class AbstractIntegrationTest {
 		jdbc.update("update app_setting set updated_by = null");
 		// message_template is seeded reference data (like bus_sms_rule): a test may approve one and
 		// set updated_by, but the row itself is never deleted, so the pointer must be cleared here too.
-		jdbc.update("update message_template set updated_by = null");
+		jdbc.update("update message_template set updated_by = null, created_by = null");
 		jdbc.update("delete from audit_log");
 		jdbc.update("delete from user_session");
 		jdbc.update("delete from otp_whitelist");

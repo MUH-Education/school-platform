@@ -41,7 +41,7 @@ Never put these in Git. Keep one written copy in a safe place.
 
 - [ ] 9.1 `application-prod.yml`: no secrets in the file, only `${ENV_NAME}` references. `server.forward-headers-strategy` set so the real client IP is seen behind a proxy (the OTP limit per IP needs it).
 - [ ] 9.2 CORS: allow only the web app's address. Or build the React app into the jar's `static` folder so there is one address and no CORS at all.
-- [ ] 9.3 `S3PhotoStorage` behind the `PhotoStorage` interface.
+- [ ] 9.3 `S3FileStorage` behind the `FileStorage` interface (renamed from `PhotoStorage` in task 11.4; it also holds notification files).
 - [ ] 9.4 Logging: JSON lines, one line per request with user id, URL, status, time taken. No phone numbers, no OTP, no token.
 - [ ] 9.5 A `Dockerfile` (or a systemd unit file) and a short `docs/deploy.md`: how to deploy, how to roll back, in numbered steps.
 - [ ] 9.6 Error tracking (for example Sentry) and an uptime checker that calls `/actuator/health` every minute and alerts your phone.

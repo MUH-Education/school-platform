@@ -84,6 +84,8 @@ public class OpenApiConfig {
 					tag("Trips", "The attendant's phone app: own route, boarding taps, children list."),
 					tag("Bus status", "The office view of every bus."),
 					tag("Messages", "Parent SMS and message templates."),
+					tag("Notifications", "Notices, urgent messages, marketing, greetings, fee reminders: templates, files, "
+							+ "sending and reports. Owner only for now."),
 					tag("Enquiries", "Admission enquiries with stages and follow-ups."),
 					tag("Fees", "School years, class fees, fee plans, payments."),
 					tag("Analytics", "Filters, numbers for graphs, the student list and its CSV file."),

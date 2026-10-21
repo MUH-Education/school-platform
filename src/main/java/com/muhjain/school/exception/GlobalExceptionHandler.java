@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -87,6 +88,14 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(MissingServletRequestParameterException.class)
 	ResponseEntity<ApiErrorResponse> handleMissingParameter(MissingServletRequestParameterException ex) {
 		return validation(VALIDATION_MESSAGE, Map.of(ex.getParameterName(), "is required"));
+	}
+
+	// An upload above spring.servlet.multipart.max-file-size (20 MB). Every real limit is smaller and is checked in
+	// the code with its own message; this only stops a huge file. Example: a 300 MB phone video → 413.
+	@ExceptionHandler(MaxUploadSizeExceededException.class)
+	ResponseEntity<ApiErrorResponse> handleTooBigUpload(MaxUploadSizeExceededException ex) {
+		return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE)
+			.body(new ApiErrorResponse("CONTENT_TOO_LARGE", "The file is too big.", null));
 	}
 
 	/**

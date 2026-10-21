@@ -7,6 +7,7 @@ import com.muhjain.school.model.entity.Student;
 import com.muhjain.school.model.enums.AuditAction;
 import com.muhjain.school.model.repository.StudentRepository;
 import com.muhjain.school.service.audit.AuditService;
+import com.muhjain.school.service.storage.FileStorage;
 import com.muhjain.school.util.PhotoRules;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +28,7 @@ import java.util.Map;
  * A student's photo. Rules 18 to 21 of docs/phases/phase-3-students-admission.md.
  * <ul>
  * <li>JPEG or PNG, up to 2 MB, checked from the first bytes.</li>
- * <li>Saved through {@link PhotoStorage}. The key is in {@code student.photo_key}.</li>
+ * <li>Saved through {@link FileStorage}. The key is in {@code student.photo_key}.</li>
  * <li>A new photo removes the old file, after the new row is saved.</li>
  * </ul>
  * There is no public URL. The controller checks STUDENTS_VIEW before it streams a photo.
@@ -39,13 +40,13 @@ public class StudentPhotoService {
 
 	private final StudentRepository students;
 
-	private final PhotoStorage storage;
+	private final FileStorage storage;
 
 	private final AuditService auditService;
 
 	private final Clock clock;
 
-	public StudentPhotoService(StudentRepository students, PhotoStorage storage, AuditService auditService,
+	public StudentPhotoService(StudentRepository students, FileStorage storage, AuditService auditService,
 			Clock clock) {
 		this.students = students;
 		this.storage = storage;
@@ -125,7 +126,7 @@ public class StudentPhotoService {
 
 	private String write(byte[] bytes, PhotoRules.Kind kind) {
 		try {
-			return storage.save(bytes, kind.extension());
+			return storage.save("students", bytes, kind.extension());
 		}
 		catch (IOException ex) {
 			throw new UncheckedIOException("The photo could not be saved", ex);
