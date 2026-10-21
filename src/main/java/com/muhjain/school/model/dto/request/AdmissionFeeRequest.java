@@ -1,13 +1,13 @@
 package com.muhjain.school.model.dto.request;
 
-import java.math.BigDecimal;
-
+import com.muhjain.school.model.enums.DiscountReason;
+import com.muhjain.school.model.enums.PayFrequency;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
-import com.muhjain.school.model.enums.DiscountReason;
-import com.muhjain.school.model.enums.PayFrequency;
+
+import java.math.BigDecimal;
 
 /**
  * The fee part of an admission (part 4 "Fees" of screen 6). The bus fee is not here: it is on the bus part of

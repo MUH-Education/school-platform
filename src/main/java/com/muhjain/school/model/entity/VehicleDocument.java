@@ -1,14 +1,9 @@
 package com.muhjain.school.model.entity;
 
-import java.time.LocalDate;
-
-import com.muhjain.school.model.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Table;
 import com.muhjain.school.model.enums.DocType;
+import jakarta.persistence.*;
+
+import java.time.LocalDate;
 
 /**
  * One paper of one vehicle. Example: Van 4, INSURANCE, valid till 28 Oct 2026.

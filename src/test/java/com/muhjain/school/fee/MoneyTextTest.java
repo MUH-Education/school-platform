@@ -1,11 +1,11 @@
 package com.muhjain.school.fee;
 
-import java.math.BigDecimal;
-
+import com.muhjain.school.util.MoneyText;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
+
 import static org.assertj.core.api.Assertions.assertThat;
-import com.muhjain.school.util.MoneyText;
 
 class MoneyTextTest {
 

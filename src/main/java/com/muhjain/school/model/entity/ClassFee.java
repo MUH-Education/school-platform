@@ -1,11 +1,10 @@
 package com.muhjain.school.model.entity;
 
-import java.math.BigDecimal;
-
-import com.muhjain.school.model.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+
+import java.math.BigDecimal;
 
 /** The standard school fee of a class in a session, a month. Example: session 2026-27, class "3", 2500.00. */
 @Entity

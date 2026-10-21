@@ -1,25 +1,19 @@
 package com.muhjain.school.service.fee;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import com.muhjain.school.model.enums.AuditAction;
-import com.muhjain.school.service.audit.AuditService;
 import com.muhjain.school.exception.ApiException;
+import com.muhjain.school.model.dto.request.ClassFeesRequest;
+import com.muhjain.school.model.dto.response.ClassFeeItem;
+import com.muhjain.school.model.entity.ClassFee;
+import com.muhjain.school.model.enums.AuditAction;
+import com.muhjain.school.model.repository.ClassFeeRepository;
+import com.muhjain.school.service.audit.AuditService;
 import com.muhjain.school.util.ClassNames;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.muhjain.school.model.dto.response.ClassFeeItem;
-import com.muhjain.school.model.dto.request.ClassFeesRequest;
-import com.muhjain.school.model.entity.ClassFee;
-import com.muhjain.school.model.repository.ClassFeeRepository;
+
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * The standard school fee of each class (rule 2 of phase 7). The admission form reads it to fill the fee field.

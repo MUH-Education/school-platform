@@ -1,13 +1,11 @@
 package com.muhjain.school.model.dto.response;
 
+import com.muhjain.school.model.entity.BoardingEvent;
+import com.muhjain.school.model.enums.EventType;
+
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
-
-import com.muhjain.school.model.dto.response.StopTimes;
-import com.muhjain.school.model.dto.response.RouteChild;
-import com.muhjain.school.model.entity.BoardingEvent;
-import com.muhjain.school.model.enums.EventType;
 
 /**
  * Everything about one route on one school day: its stops (morning order), the children on it that day, and the

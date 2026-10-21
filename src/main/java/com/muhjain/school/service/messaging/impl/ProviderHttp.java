@@ -1,10 +1,10 @@
 package com.muhjain.school.service.messaging.impl;
 
-import java.net.http.HttpClient;
-
+import com.muhjain.school.config.ProviderProperties;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
-import com.muhjain.school.config.ProviderProperties;
+
+import java.net.http.HttpClient;
 
 /** A {@link RestClient} with the 5 second timeout. A slow provider must not hang a login or the worker. */
 public final class ProviderHttp {

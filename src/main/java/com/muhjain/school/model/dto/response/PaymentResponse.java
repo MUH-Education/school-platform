@@ -1,9 +1,10 @@
 package com.muhjain.school.model.dto.response;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import com.muhjain.school.model.entity.FeePayment;
 import com.muhjain.school.model.enums.FeeHead;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /** One line of a receipt. Example: SCHOOL, September 2026, ₹2,500. A reversal has a negative amount. */
 public record PaymentResponse(Long id, Long studentId, Long receiptId, LocalDate month, FeeHead feeHead,

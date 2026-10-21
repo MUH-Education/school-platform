@@ -1,10 +1,10 @@
 package com.muhjain.school.model.dto.request;
 
-import java.math.BigDecimal;
-
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
+
+import java.math.BigDecimal;
 
 /**
  * Set what one employee is paid in a month. Money is always {@code BigDecimal}, never a {@code double}.

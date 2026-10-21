@@ -1,8 +1,9 @@
 package com.muhjain.school.model.dto.response;
 
-import java.util.List;
 import com.muhjain.school.model.enums.Permission;
 import com.muhjain.school.model.enums.Role;
+
+import java.util.List;
 
 /**
  * The table "Which role has which permission", for the Users and roles screen.

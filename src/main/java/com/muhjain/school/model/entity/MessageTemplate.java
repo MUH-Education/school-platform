@@ -1,16 +1,11 @@
 package com.muhjain.school.model.entity;
 
-import com.muhjain.school.model.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Table;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 import com.muhjain.school.model.enums.Gender;
 import com.muhjain.school.model.enums.MessageChannel;
 import com.muhjain.school.model.enums.TemplateApproval;
+import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 /**
  * One approved text. Bus texts have a boy row and a girl row ({@code gender} M/F); fee texts have one row

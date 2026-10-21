@@ -1,12 +1,12 @@
 package com.muhjain.school.model.dto.response;
 
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
-
-import com.muhjain.school.model.enums.PaperStatus;
 import com.muhjain.school.model.entity.Staff;
 import com.muhjain.school.model.entity.TeacherProfile;
+import com.muhjain.school.model.enums.PaperStatus;
 import com.muhjain.school.model.enums.StaffType;
+
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 
 /**
  * One employee. For a DRIVER, {@code licenceStatus} is calculated like a vehicle paper (VALID, ENDING_SOON, ENDED).

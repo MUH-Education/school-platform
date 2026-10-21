@@ -1,26 +1,26 @@
 package com.muhjain.school.service.vehicle;
 
+import com.muhjain.school.exception.ApiException;
+import com.muhjain.school.model.dto.request.CreateVehicleRequest;
+import com.muhjain.school.model.dto.request.UpdateVehicleRequest;
+import com.muhjain.school.model.dto.request.VehicleDocumentsRequest;
+import com.muhjain.school.model.dto.response.AttentionItem;
+import com.muhjain.school.model.dto.response.Crew;
+import com.muhjain.school.model.dto.response.RouteRef;
+import com.muhjain.school.model.dto.response.VehicleResponse;
+import com.muhjain.school.service.route.RouteService;
+import com.muhjain.school.service.staff.AssignmentService;
+import com.muhjain.school.service.staff.StaffService;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-
-import com.muhjain.school.exception.ApiException;
-import com.muhjain.school.model.dto.response.RouteRef;
-import com.muhjain.school.service.route.RouteService;
-import com.muhjain.school.service.staff.AssignmentService;
-import com.muhjain.school.model.dto.response.Crew;
-import com.muhjain.school.service.staff.StaffService;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import com.muhjain.school.model.dto.response.AttentionItem;
-import com.muhjain.school.model.dto.request.CreateVehicleRequest;
-import com.muhjain.school.model.dto.request.UpdateVehicleRequest;
-import com.muhjain.school.model.dto.request.VehicleDocumentsRequest;
-import com.muhjain.school.model.dto.response.VehicleResponse;
 
 /**
  * What the Vehicles screens show: a vehicle together with the people on it. The controller calls only this class.

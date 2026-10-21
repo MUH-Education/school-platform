@@ -1,44 +1,26 @@
 package com.muhjain.school.service.analytics;
 
+import com.muhjain.school.exception.ApiException;
+import com.muhjain.school.model.dto.response.*;
+import com.muhjain.school.model.enums.AuditAction;
+import com.muhjain.school.model.enums.FatherOccupation;
+import com.muhjain.school.model.enums.FeeHead;
+import com.muhjain.school.model.enums.FeeStatus;
+import com.muhjain.school.security.CurrentUser;
+import com.muhjain.school.service.audit.AuditService;
+import com.muhjain.school.util.AnalyticsCsv;
+import com.muhjain.school.util.ClassNames;
+import com.muhjain.school.util.CollectionMath;
+import com.muhjain.school.util.FeeStatusCalculator.MonthInput;
+import com.muhjain.school.util.MonthlyCollectionCalculator;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
-
-import com.muhjain.school.model.enums.AuditAction;
-import com.muhjain.school.service.audit.AuditService;
-import com.muhjain.school.security.CurrentUser;
-import com.muhjain.school.exception.ApiException;
-import com.muhjain.school.model.dto.response.PageResponse;
-import com.muhjain.school.model.enums.FeeHead;
-import com.muhjain.school.util.FeeStatusCalculator.MonthInput;
-import com.muhjain.school.model.enums.FeeStatus;
-import com.muhjain.school.model.dto.response.SessionResponse;
-import com.muhjain.school.util.ClassNames;
-import com.muhjain.school.model.enums.FatherOccupation;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import com.muhjain.school.model.dto.response.AnalyticsStudent;
-import com.muhjain.school.model.dto.response.AnalyticsStudentFilter;
-import com.muhjain.school.model.dto.response.AnalyticsStudentItem;
-import com.muhjain.school.model.dto.response.ClassCount;
-import com.muhjain.school.model.dto.response.CsvFile;
-import com.muhjain.school.model.dto.response.MonthlyCollectionResponse;
-import com.muhjain.school.model.dto.response.OccupationRow;
-import com.muhjain.school.model.dto.response.PaymentByOccupationResponse;
-import com.muhjain.school.model.dto.response.StudentsByClassResponse;
-import com.muhjain.school.model.dto.response.StudentsByVillageResponse;
-import com.muhjain.school.model.dto.response.SummaryResponse;
-import com.muhjain.school.model.dto.response.VillageCount;
-import com.muhjain.school.util.AnalyticsCsv;
-import com.muhjain.school.util.CollectionMath;
-import com.muhjain.school.util.MonthlyCollectionCalculator;
 
 /**
  * The numbers behind the Analytics screen. Every method starts from {@link AnalyticsBase#students}, so all of them

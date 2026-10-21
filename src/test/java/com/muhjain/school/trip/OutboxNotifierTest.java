@@ -1,18 +1,18 @@
 package com.muhjain.school.trip;
 
-import java.util.List;
-
+import com.muhjain.school.model.dto.request.MarkRequest;
+import com.muhjain.school.model.enums.EventType;
+import com.muhjain.school.model.enums.Outcome;
+import com.muhjain.school.service.trip.MarkService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import com.muhjain.school.model.dto.request.MarkRequest;
-import com.muhjain.school.model.enums.EventType;
-import com.muhjain.school.model.enums.Outcome;
-import com.muhjain.school.service.trip.MarkService;
 
 /**
  * Rules 2 to 7 of Phase 5: the tap writes the parent SMS into the queue, in the same transaction.

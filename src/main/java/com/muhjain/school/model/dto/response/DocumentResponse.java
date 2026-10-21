@@ -1,9 +1,10 @@
 package com.muhjain.school.model.dto.response;
 
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import com.muhjain.school.model.enums.DocType;
 import com.muhjain.school.model.enums.PaperStatus;
+
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 
 /**
  * One paper of a vehicle, with its calculated status.

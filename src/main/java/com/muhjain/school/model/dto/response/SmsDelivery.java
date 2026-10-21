@@ -1,7 +1,8 @@
 package com.muhjain.school.model.dto.response;
 
-import java.time.OffsetDateTime;
 import com.muhjain.school.model.enums.SmsState;
+
+import java.time.OffsetDateTime;
 
 /** SMS state with the time it was sent, null unless SENT or TEST_ONLY. Example: {@code SENT, 07:42}. */
 public record SmsDelivery(SmsState state, OffsetDateTime sentAt) {

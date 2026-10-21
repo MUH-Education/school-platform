@@ -1,9 +1,10 @@
 package com.muhjain.school.controller;
 
-import com.muhjain.school.model.dto.response.PageResponse;
-import com.muhjain.school.model.enums.FeeStatus;
+import com.muhjain.school.model.dto.response.*;
 import com.muhjain.school.model.enums.BusFilter;
 import com.muhjain.school.model.enums.FatherOccupation;
+import com.muhjain.school.model.enums.FeeStatus;
+import com.muhjain.school.service.analytics.AnalyticsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpHeaders;
@@ -14,15 +15,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import com.muhjain.school.model.dto.response.AnalyticsStudentFilter;
-import com.muhjain.school.model.dto.response.AnalyticsStudentItem;
-import com.muhjain.school.model.dto.response.CsvFile;
-import com.muhjain.school.model.dto.response.MonthlyCollectionResponse;
-import com.muhjain.school.model.dto.response.PaymentByOccupationResponse;
-import com.muhjain.school.model.dto.response.StudentsByClassResponse;
-import com.muhjain.school.model.dto.response.StudentsByVillageResponse;
-import com.muhjain.school.model.dto.response.SummaryResponse;
-import com.muhjain.school.service.analytics.AnalyticsService;
 
 /**
  * The Analytics screen. Every URL needs ANALYTICS_VIEW and takes the same filter in the query:

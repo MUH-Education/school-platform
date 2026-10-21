@@ -1,17 +1,17 @@
 package com.muhjain.school.auth;
 
-import java.time.Duration;
-import java.util.List;
-
 import com.muhjain.school.AbstractIntegrationTest;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.muhjain.school.config.OtpProperties;
 import com.muhjain.school.security.JwtProperties;
 import com.muhjain.school.security.SessionProperties;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import java.time.Duration;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class AuthPropertiesTest extends AbstractIntegrationTest {
 

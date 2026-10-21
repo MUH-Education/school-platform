@@ -1,7 +1,8 @@
 package com.muhjain.school.model.dto.response;
 
-import java.time.LocalDate;
 import com.muhjain.school.model.enums.StudentStatus;
+
+import java.time.LocalDate;
 
 /**
  * The few facts about a child that fees need. Example: Aryan, class 3, joined 1 Apr 2026, ACTIVE.

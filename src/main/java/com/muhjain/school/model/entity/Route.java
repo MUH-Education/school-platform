@@ -1,11 +1,10 @@
 package com.muhjain.school.model.entity;
 
-import java.time.LocalTime;
-
-import com.muhjain.school.model.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+
+import java.time.LocalTime;
 
 /**
  * A route is run by one vehicle and has ordered stops. Example: "Route 4" runs on Van 4.

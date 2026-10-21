@@ -1,8 +1,9 @@
 package com.muhjain.school.model.dto.response;
 
+import com.muhjain.school.model.enums.EnquiryStatus;
+
 import java.util.List;
 import java.util.Map;
-import com.muhjain.school.model.enums.EnquiryStatus;
 
 /**
  * The numbers above the enquiry list (rule 9). {@code byStatus} has all six stages, also with 0.

@@ -1,16 +1,14 @@
 package com.muhjain.school.model.repository;
 
-import java.time.LocalDate;
-import java.util.Collection;
-import java.util.List;
-
+import com.muhjain.school.model.entity.Student;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import com.muhjain.school.model.entity.Guardian;
-import com.muhjain.school.model.entity.Student;
-import com.muhjain.school.model.entity.StudentGuardian;
+
+import java.time.LocalDate;
+import java.util.Collection;
+import java.util.List;
 
 public interface StudentRepository extends JpaRepository<Student, Long>, JpaSpecificationExecutor<Student> {
 

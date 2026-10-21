@@ -1,11 +1,11 @@
 package com.muhjain.school.model.entity;
 
-import java.time.Instant;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+
+import java.time.Instant;
 
 /**
  * A phone that always gets the same fixed OTP, and never a real WhatsApp/SMS message.

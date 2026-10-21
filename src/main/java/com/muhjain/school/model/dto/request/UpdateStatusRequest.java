@@ -1,11 +1,11 @@
 package com.muhjain.school.model.dto.request;
 
-import java.time.LocalDate;
-
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import com.muhjain.school.model.enums.LeftReason;
 import com.muhjain.school.model.enums.StudentStatus;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+import java.time.LocalDate;
 
 /**
  * A child leaves school, or comes back after a wrong entry.

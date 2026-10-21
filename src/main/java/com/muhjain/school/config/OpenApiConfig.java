@@ -1,8 +1,6 @@
 package com.muhjain.school.config;
 
-import java.util.List;
-import java.util.regex.Pattern;
-
+import com.muhjain.school.model.dto.response.ApiErrorResponse;
 import io.swagger.v3.core.converter.AnnotatedType;
 import io.swagger.v3.core.converter.ModelConverters;
 import io.swagger.v3.core.converter.ResolvedSchema;
@@ -22,7 +20,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.method.HandlerMethod;
-import com.muhjain.school.model.dto.response.ApiErrorResponse;
+
+import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * The API documentation (task 8.10). It is built from the controllers, so it cannot drift from the code.

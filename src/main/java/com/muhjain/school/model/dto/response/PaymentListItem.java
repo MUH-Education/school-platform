@@ -1,9 +1,10 @@
 package com.muhjain.school.model.dto.response;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import com.muhjain.school.model.enums.FeeHead;
 import com.muhjain.school.model.enums.PaymentMode;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
  * One row of the payment list, with the child's name and the receipt it belongs to. A reversal has a negative

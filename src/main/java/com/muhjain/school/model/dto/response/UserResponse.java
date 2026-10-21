@@ -1,11 +1,12 @@
 package com.muhjain.school.model.dto.response;
 
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import com.muhjain.school.model.entity.AppUser;
 import com.muhjain.school.model.enums.LoginClient;
 import com.muhjain.school.model.enums.Role;
+
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 
 /**
  * One row of the Users and roles screen.

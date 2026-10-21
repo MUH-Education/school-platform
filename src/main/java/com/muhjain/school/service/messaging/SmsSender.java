@@ -1,7 +1,7 @@
 package com.muhjain.school.service.messaging;
 
-import com.muhjain.school.model.dto.response.SendResult;
 import com.muhjain.school.exception.SmsSendException;
+import com.muhjain.school.model.dto.response.SendResult;
 
 /**
  * One way to send a parent SMS. To change the SMS company later, write one new class. Nothing else changes.

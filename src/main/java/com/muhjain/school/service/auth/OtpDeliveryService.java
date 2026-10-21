@@ -1,17 +1,17 @@
 package com.muhjain.school.service.auth;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
+import com.muhjain.school.config.OtpProperties;
+import com.muhjain.school.exception.OtpSendException;
 import com.muhjain.school.util.PhoneNumbers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
-import com.muhjain.school.config.OtpProperties;
-import com.muhjain.school.exception.OtpSendException;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Tries the channels in the order of {@code app.otp.channels}. The first one that does not fail wins.

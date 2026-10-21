@@ -1,25 +1,18 @@
 package com.muhjain.school.service.trip;
 
+import com.muhjain.school.exception.ApiException;
+import com.muhjain.school.model.dto.response.*;
+import com.muhjain.school.security.TripAccess;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import com.muhjain.school.exception.ApiException;
-import com.muhjain.school.model.dto.response.AttendantRoute;
-import com.muhjain.school.model.dto.response.StopTimes;
-import com.muhjain.school.model.dto.response.RouteChild;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import com.muhjain.school.model.dto.response.EventsResponse;
-import com.muhjain.school.model.dto.response.ManifestChild;
-import com.muhjain.school.model.dto.response.ManifestResponse;
-import com.muhjain.school.model.dto.response.ManifestStop;
-import com.muhjain.school.model.dto.response.RouteDay;
-import com.muhjain.school.security.TripAccess;
 
 /**
  * The manifest (rules 11 to 13). Stops in morning order. Under each stop the children who are on the route <b>on

@@ -1,16 +1,16 @@
 package com.muhjain.school.analytics;
 
+import com.muhjain.school.util.AnalyticsCsv;
+import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpHeaders;
+
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.http.HttpHeaders;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import com.muhjain.school.util.AnalyticsCsv;
 
 class AnalyticsCsvTest extends AnalyticsTestBase {
 

@@ -1,8 +1,8 @@
 package com.muhjain.school.model.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.muhjain.school.model.enums.EventType;
 import com.muhjain.school.model.dto.request.MarkRequest;
+import com.muhjain.school.model.enums.EventType;
 
 /**
  * The answer for one tap. {@code error} is missing when {@code ok} is true.

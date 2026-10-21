@@ -1,15 +1,10 @@
 package com.muhjain.school.model.entity;
 
+import com.muhjain.school.model.enums.TransportReason;
+import jakarta.persistence.*;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
-
-import com.muhjain.school.model.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Table;
-import com.muhjain.school.model.enums.TransportReason;
 
 /**
  * A child's bus history, as periods that never overlap. Every change is a new row, and the row before it

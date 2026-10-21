@@ -1,21 +1,15 @@
 package com.muhjain.school.model.entity;
 
-import java.time.Instant;
-import java.time.LocalDate;
-
-import com.muhjain.school.model.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Table;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 import com.muhjain.school.model.enums.FatherOccupation;
 import com.muhjain.school.model.enums.Gender;
 import com.muhjain.school.model.enums.LeftReason;
 import com.muhjain.school.model.enums.StudentStatus;
-import com.muhjain.school.util.ClassNames;
+import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import java.time.Instant;
+import java.time.LocalDate;
 
 /**
  * One child. Never deleted: when the child leaves, {@code status} is LEFT and {@code leftOn} is set.

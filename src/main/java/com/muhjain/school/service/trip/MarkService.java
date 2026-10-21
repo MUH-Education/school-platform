@@ -1,28 +1,24 @@
 package com.muhjain.school.service.trip;
 
-import java.time.Clock;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import com.muhjain.school.model.dto.response.StudentBus;
-import com.muhjain.school.service.student.StudentQueryService;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import com.muhjain.school.model.dto.request.MarkRequest;
 import com.muhjain.school.model.dto.response.MarkResult;
+import com.muhjain.school.model.dto.response.StudentBus;
 import com.muhjain.school.model.entity.BoardingEvent;
 import com.muhjain.school.model.enums.EventType;
 import com.muhjain.school.model.enums.Outcome;
 import com.muhjain.school.model.repository.BoardingEventRepository;
 import com.muhjain.school.security.TripAccess;
+import com.muhjain.school.service.student.StudentQueryService;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Saves taps (rules 4 to 10 of the phase file).

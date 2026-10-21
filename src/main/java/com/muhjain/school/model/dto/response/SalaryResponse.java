@@ -1,8 +1,9 @@
 package com.muhjain.school.model.dto.response;
 
+import com.muhjain.school.model.entity.StaffSalary;
+
 import java.math.BigDecimal;
 import java.time.Instant;
-import com.muhjain.school.model.entity.StaffSalary;
 
 /**
  * What one employee is paid in a month. Only for a user with STAFF_SALARY_VIEW.

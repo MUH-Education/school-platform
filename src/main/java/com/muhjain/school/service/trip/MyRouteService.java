@@ -1,20 +1,15 @@
 package com.muhjain.school.service.trip;
 
+import com.muhjain.school.model.dto.response.*;
+import com.muhjain.school.model.entity.BoardingEvent;
+import com.muhjain.school.model.enums.EventType;
+import com.muhjain.school.service.route.AttendantRouteService;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Optional;
-
-import com.muhjain.school.model.dto.response.AttendantRoute;
-import com.muhjain.school.service.route.AttendantRouteService;
-import com.muhjain.school.model.dto.response.RouteChild;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import com.muhjain.school.model.dto.response.JobCount;
-import com.muhjain.school.model.dto.response.JobsResponse;
-import com.muhjain.school.model.dto.response.MyRouteResponse;
-import com.muhjain.school.model.dto.response.RouteDay;
-import com.muhjain.school.model.entity.BoardingEvent;
-import com.muhjain.school.model.enums.EventType;
 
 /** {@code GET /trips/my-route}: the route of the logged-in attendant today, from the server's own records. */
 @Service

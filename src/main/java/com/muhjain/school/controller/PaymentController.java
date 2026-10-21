@@ -1,8 +1,8 @@
 package com.muhjain.school.controller;
 
-import java.time.LocalDate;
-
 import com.muhjain.school.model.dto.response.PageResponse;
+import com.muhjain.school.model.dto.response.PaymentListItem;
+import com.muhjain.school.service.fee.PaymentQueryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import com.muhjain.school.model.dto.response.PaymentListItem;
-import com.muhjain.school.service.fee.PaymentQueryService;
+
+import java.time.LocalDate;
 
 /**
  * {@code GET /api/v1/payments?from=2026-10-01&to=2026-10-07&page=0&size=25} — FEES_VIEW.

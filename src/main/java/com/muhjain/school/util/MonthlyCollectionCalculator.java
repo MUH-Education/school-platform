@@ -1,14 +1,14 @@
 package com.muhjain.school.util;
 
+import com.muhjain.school.model.enums.FeeHead;
+import com.muhjain.school.util.FeeStatusCalculator.MonthInput;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
-import com.muhjain.school.model.enums.FeeHead;
-import com.muhjain.school.util.FeeStatusCalculator.MonthInput;
 
 /**
  * Rule 5 of phase 8: for each month of the school year, up to this month, and for each fee head, how much of that

@@ -1,15 +1,13 @@
 package com.muhjain.school.service.student;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
-import java.time.Clock;
-import java.time.Instant;
-import java.util.Map;
-
-import com.muhjain.school.model.enums.AuditAction;
-import com.muhjain.school.service.audit.AuditService;
 import com.muhjain.school.exception.ApiException;
+import com.muhjain.school.model.dto.response.PhotoContent;
+import com.muhjain.school.model.dto.response.PhotoResponse;
+import com.muhjain.school.model.entity.Student;
+import com.muhjain.school.model.enums.AuditAction;
+import com.muhjain.school.model.repository.StudentRepository;
+import com.muhjain.school.service.audit.AuditService;
+import com.muhjain.school.util.PhotoRules;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -17,11 +15,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
-import com.muhjain.school.model.dto.response.PhotoContent;
-import com.muhjain.school.model.dto.response.PhotoResponse;
-import com.muhjain.school.model.entity.Student;
-import com.muhjain.school.model.repository.StudentRepository;
-import com.muhjain.school.util.PhotoRules;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.time.Clock;
+import java.time.Instant;
+import java.util.Map;
 
 /**
  * A student's photo. Rules 18 to 21 of docs/phases/phase-3-students-admission.md.

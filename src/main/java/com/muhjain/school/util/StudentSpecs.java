@@ -1,15 +1,5 @@
 package com.muhjain.school.util;
 
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
-import jakarta.persistence.criteria.Subquery;
-import org.springframework.data.jpa.domain.Specification;
 import com.muhjain.school.model.dto.response.StudentFilter;
 import com.muhjain.school.model.entity.Guardian;
 import com.muhjain.school.model.entity.Student;
@@ -17,6 +7,16 @@ import com.muhjain.school.model.entity.StudentGuardian;
 import com.muhjain.school.model.entity.TransportEnrolment;
 import com.muhjain.school.model.enums.BusFilter;
 import com.muhjain.school.model.enums.StudentStatus;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
+import org.springframework.data.jpa.domain.Specification;
+
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
 /**
  * The WHERE part of the Students list (rules 22). Each filter is one condition. Phone and bus use sub-queries,
@@ -81,12 +81,12 @@ public final class StudentSpecs {
 		Root<TransportEnrolment> e = sub.from(TransportEnrolment.class);
 		List<Predicate> where = new ArrayList<>();
 		where.add(cb.equal(e.get("studentId"), student.get("id")));
-		where.add(cb.lessThanOrEqualTo(e.<LocalDate>get("fromDate"), today));
-		where.add(cb.or(cb.isNull(e.get("toDate")), cb.greaterThanOrEqualTo(e.<LocalDate>get("toDate"), today)));
+		where.add(cb.lessThanOrEqualTo(e.get("fromDate"), today));
+		where.add(cb.or(cb.isNull(e.get("toDate")), cb.greaterThanOrEqualTo(e.get("toDate"), today)));
 		if (routeId != null) {
 			where.add(cb.equal(e.get("routeId"), routeId));
 		}
-		return sub.select(e.<Long>get("id")).where(where.toArray(new Predicate[0]));
+		return sub.select(e.get("id")).where(where.toArray(new Predicate[0]));
 	}
 
 	// A typed % or _ must not act as a wildcard.

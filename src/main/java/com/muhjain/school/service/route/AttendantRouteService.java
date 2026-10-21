@@ -1,17 +1,16 @@
 package com.muhjain.school.service.route;
 
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
-
-import com.muhjain.school.service.staff.AssignmentService;
+import com.muhjain.school.model.dto.response.AttendantRoute;
 import com.muhjain.school.model.entity.AppUser;
+import com.muhjain.school.service.staff.AssignmentService;
 import com.muhjain.school.service.user.UserService;
 import com.muhjain.school.service.vehicle.VehicleService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.muhjain.school.model.dto.response.AttendantRoute;
-import com.muhjain.school.model.entity.Route;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * "Which route is this attendant on today?" This is the third query of "Three queries used everywhere" in

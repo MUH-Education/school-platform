@@ -1,46 +1,37 @@
 package com.muhjain.school.service.fee;
 
+import com.muhjain.school.exception.ApiException;
+import com.muhjain.school.model.dto.request.CorrectionRequest;
+import com.muhjain.school.model.dto.request.PaymentRequest;
+import com.muhjain.school.model.dto.response.PaymentLine;
+import com.muhjain.school.model.dto.response.PaymentResponse;
+import com.muhjain.school.model.dto.response.ReceiptResponse;
+import com.muhjain.school.model.dto.response.StudentBasics;
+import com.muhjain.school.model.entity.AcademicSession;
+import com.muhjain.school.model.entity.FeeMonthView;
+import com.muhjain.school.model.entity.FeePayment;
+import com.muhjain.school.model.entity.Receipt;
+import com.muhjain.school.model.enums.*;
+import com.muhjain.school.model.repository.FeeMonthViewRepository;
+import com.muhjain.school.model.repository.FeePaymentRepository;
+import com.muhjain.school.model.repository.FeePlanRepository;
+import com.muhjain.school.model.repository.ReceiptRepository;
+import com.muhjain.school.service.audit.AuditService;
+import com.muhjain.school.service.student.GuardianService;
+import com.muhjain.school.service.student.StudentQueryService;
+import com.muhjain.school.util.MoneyText;
+import jakarta.persistence.EntityManager;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
-
-import com.muhjain.school.model.enums.AuditAction;
-import com.muhjain.school.service.audit.AuditService;
-import com.muhjain.school.exception.ApiException;
-import com.muhjain.school.model.dto.response.StudentBasics;
-import com.muhjain.school.service.student.GuardianService;
-import com.muhjain.school.service.student.StudentQueryService;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import com.muhjain.school.model.dto.request.CorrectionRequest;
-import com.muhjain.school.model.dto.response.PaymentLine;
-import com.muhjain.school.model.dto.request.PaymentRequest;
-import com.muhjain.school.model.dto.response.PaymentResponse;
-import com.muhjain.school.model.dto.response.ReceiptResponse;
-import com.muhjain.school.model.entity.AcademicSession;
-import com.muhjain.school.model.entity.FeeMonthView;
-import com.muhjain.school.model.entity.FeePayment;
-import com.muhjain.school.model.entity.Receipt;
-import com.muhjain.school.model.enums.FeeHead;
-import com.muhjain.school.model.enums.ReceiptKind;
-import com.muhjain.school.model.enums.ReceiptSource;
-import com.muhjain.school.model.enums.ReceiptStatus;
-import com.muhjain.school.model.repository.FeeMonthViewRepository;
-import com.muhjain.school.model.repository.FeePaymentRepository;
-import com.muhjain.school.model.repository.FeePlanRepository;
-import com.muhjain.school.model.repository.ReceiptRepository;
-import com.muhjain.school.util.MoneyText;
-import jakarta.persistence.EntityManager;
 
 /**
  * Payments and receipt cancellations (rules 9 to 13 of phase 7).

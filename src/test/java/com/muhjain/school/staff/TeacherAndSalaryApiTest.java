@@ -1,7 +1,5 @@
 package com.muhjain.school.staff;
 
-import java.time.Instant;
-
 import com.muhjain.school.AbstractIntegrationTest;
 import com.muhjain.school.model.enums.Role;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,15 +8,13 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
+import java.time.Instant;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsStringIgnoringCase;
 import static org.hamcrest.Matchers.not;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /** The tests of docs/phases/phase-10-staff-and-teachers.md. */
 class TeacherAndSalaryApiTest extends AbstractIntegrationTest {

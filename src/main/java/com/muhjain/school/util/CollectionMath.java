@@ -1,12 +1,12 @@
 package com.muhjain.school.util;
 
+import com.muhjain.school.model.enums.FeeHead;
+import com.muhjain.school.util.FeeStatusCalculator.MonthInput;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.Collection;
-
-import com.muhjain.school.model.enums.FeeHead;
-import com.muhjain.school.util.FeeStatusCalculator.MonthInput;
 
 /**
  * The one place that turns "due and the part covered" into "percent collected". Pure Java: no Spring, no clock.

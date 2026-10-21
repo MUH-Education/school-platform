@@ -1,10 +1,10 @@
 package com.muhjain.school.model.dto.request;
 
-import java.util.List;
-
+import com.muhjain.school.model.dto.response.ClassFeeItem;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import com.muhjain.school.model.dto.response.ClassFeeItem;
+
+import java.util.List;
 
 /**
  * The whole list of standard fees of a session. A class that is not in the list has no standard fee.

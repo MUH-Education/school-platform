@@ -1,10 +1,10 @@
 package com.muhjain.school.service.messaging;
 
-import java.util.Map;
-
 import com.muhjain.school.config.ProviderProperties;
 import com.muhjain.school.exception.SmsSendException;
 import com.muhjain.school.service.messaging.impl.ProviderHttp;
+
+import java.util.Map;
 
 /**
  * THE ONE CLASS TO WRITE PER PROVIDER (question C1). Everything else is ready: the queue, the worker, retries,

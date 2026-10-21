@@ -1,10 +1,10 @@
 package com.muhjain.school.model.dto.request;
 
+import com.muhjain.school.model.enums.CancelReason;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import com.muhjain.school.model.enums.CancelReason;
 
 /**
  * Cancels a whole receipt, by the owner only. Every line of the receipt gets a negative line that reverses

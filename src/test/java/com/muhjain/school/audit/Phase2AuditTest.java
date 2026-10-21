@@ -1,8 +1,5 @@
 package com.muhjain.school.audit;
 
-import java.time.Instant;
-import java.util.List;
-
 import com.muhjain.school.AbstractIntegrationTest;
 import com.muhjain.school.model.entity.AppUser;
 import com.muhjain.school.model.enums.Role;
@@ -12,10 +9,11 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
+import java.time.Instant;
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**

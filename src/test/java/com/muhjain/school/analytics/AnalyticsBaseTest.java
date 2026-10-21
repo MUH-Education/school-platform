@@ -1,21 +1,21 @@
 package com.muhjain.school.analytics;
 
-import java.util.List;
-
+import com.jayway.jsonpath.JsonPath;
 import com.muhjain.school.exception.ApiException;
-import com.muhjain.school.model.enums.FeeStatus;
+import com.muhjain.school.model.dto.response.AnalyticsStudent;
+import com.muhjain.school.model.dto.response.AnalyticsStudentFilter;
 import com.muhjain.school.model.enums.BusFilter;
 import com.muhjain.school.model.enums.FatherOccupation;
-import com.jayway.jsonpath.JsonPath;
+import com.muhjain.school.model.enums.FeeStatus;
+import com.muhjain.school.service.analytics.AnalyticsBase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import com.muhjain.school.model.dto.response.AnalyticsStudent;
-import com.muhjain.school.model.dto.response.AnalyticsStudentFilter;
-import com.muhjain.school.service.analytics.AnalyticsBase;
 
 class AnalyticsBaseTest extends AnalyticsTestBase {
 

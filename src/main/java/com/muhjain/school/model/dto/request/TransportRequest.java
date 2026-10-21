@@ -1,13 +1,13 @@
 package com.muhjain.school.model.dto.request;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-
+import com.muhjain.school.model.enums.TransportReason;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import com.muhjain.school.model.enums.TransportReason;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
  * Start the bus, change the route or stop, or stop the bus. One body for all three. {@code reason} and

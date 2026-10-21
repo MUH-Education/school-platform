@@ -1,11 +1,11 @@
 package com.muhjain.school.model.dto.response;
 
-import java.math.BigDecimal;
-
+import com.muhjain.school.model.enums.FatherOccupation;
 import com.muhjain.school.model.enums.FeeHead;
 import com.muhjain.school.model.enums.FeeStatus;
 import com.muhjain.school.util.FeeStatusCalculator;
-import com.muhjain.school.model.enums.FatherOccupation;
+
+import java.math.BigDecimal;
 
 /**
  * One child in an Analytics answer, with the fee numbers of the chosen school year. {@code fee} is the result of

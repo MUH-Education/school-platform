@@ -1,10 +1,10 @@
 package com.muhjain.school.model.dto.request;
 
+import com.muhjain.school.model.enums.Role;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
-import com.muhjain.school.model.enums.Role;
 
 /**
  * Add a user. Phone and role are enough.

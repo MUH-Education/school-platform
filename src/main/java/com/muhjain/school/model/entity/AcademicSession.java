@@ -1,11 +1,10 @@
 package com.muhjain.school.model.entity;
 
-import java.time.LocalDate;
-
-import com.muhjain.school.model.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+
+import java.time.LocalDate;
 
 /**
  * One school year. Example: "2026-27", 1 Apr 2026 to 31 Mar 2027.

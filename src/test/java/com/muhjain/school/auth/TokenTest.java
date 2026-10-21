@@ -1,16 +1,14 @@
 package com.muhjain.school.auth;
 
-import java.time.Duration;
-
 import com.muhjain.school.AbstractIntegrationTest;
 import com.muhjain.school.model.entity.AppUser;
 import com.muhjain.school.model.enums.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import java.time.Duration;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 

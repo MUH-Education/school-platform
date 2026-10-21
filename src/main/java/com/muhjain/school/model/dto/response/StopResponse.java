@@ -1,9 +1,9 @@
 package com.muhjain.school.model.dto.response;
 
-import java.time.LocalTime;
-
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.muhjain.school.model.entity.RouteStop;
+
+import java.time.LocalTime;
 
 /**
  * One stop of a route. {@code children} is the number of children who board there today (0 until Phase 3).

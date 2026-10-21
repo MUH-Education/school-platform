@@ -1,15 +1,15 @@
 package com.muhjain.school.messaging;
 
-import java.util.List;
-import java.util.Set;
-
 import com.muhjain.school.AbstractIntegrationTest;
 import com.muhjain.school.model.enums.EventType;
+import com.muhjain.school.service.messaging.BusSmsRuleService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.List;
+import java.util.Set;
+
 import static org.assertj.core.api.Assertions.assertThat;
-import com.muhjain.school.service.messaging.BusSmsRuleService;
 
 /** All 15 classes x 4 events, against the seeded bus_sms_rule rows of V5. */
 class BusSmsRuleServiceTest extends AbstractIntegrationTest {

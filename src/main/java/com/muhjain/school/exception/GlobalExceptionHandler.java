@@ -1,8 +1,6 @@
 package com.muhjain.school.exception;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-
+import com.muhjain.school.model.dto.response.ApiErrorResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.MessageSourceResolvable;
@@ -23,7 +21,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-import com.muhjain.school.model.dto.response.ApiErrorResponse;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Turns every error from a controller into one JSON shape, {@link ApiErrorResponse}.

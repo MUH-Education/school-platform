@@ -1,16 +1,11 @@
 package com.muhjain.school.model.entity;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-
-import com.muhjain.school.model.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Table;
 import com.muhjain.school.model.enums.DiscountReason;
 import com.muhjain.school.model.enums.PayFrequency;
+import jakarta.persistence.*;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
  * What one child pays, from a month on. The plan for month M is the row with the biggest {@code fromMonth}

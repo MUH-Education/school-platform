@@ -1,38 +1,27 @@
 package com.muhjain.school.service.student;
 
-import java.math.BigDecimal;
-import java.time.Clock;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
+import com.muhjain.school.exception.ApiException;
+import com.muhjain.school.model.dto.request.AdmissionRequest;
+import com.muhjain.school.model.dto.request.GuardianRequest;
+import com.muhjain.school.model.dto.response.*;
+import com.muhjain.school.model.entity.Student;
 import com.muhjain.school.model.enums.AuditAction;
+import com.muhjain.school.model.enums.TransportReason;
+import com.muhjain.school.model.repository.StudentRepository;
 import com.muhjain.school.service.audit.AuditService;
 import com.muhjain.school.service.enquiry.EnquiryService;
-import com.muhjain.school.model.dto.response.DueResponse;
-import com.muhjain.school.model.dto.response.FeePlanResponse;
+import com.muhjain.school.service.fee.AcademicSessionService;
 import com.muhjain.school.service.fee.FeePlanService;
 import com.muhjain.school.service.fee.PaymentService;
-import com.muhjain.school.service.fee.AcademicSessionService;
-import com.muhjain.school.model.dto.response.ReceiptResponse;
-import com.muhjain.school.exception.ApiException;
+import com.muhjain.school.util.ClassNames;
 import com.muhjain.school.util.NameKeys;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.muhjain.school.model.dto.response.AdmissionBus;
-import com.muhjain.school.model.dto.request.AdmissionRequest;
-import com.muhjain.school.model.dto.response.AdmissionResponse;
-import com.muhjain.school.model.dto.request.GuardianRequest;
-import com.muhjain.school.model.dto.response.GuardianResponse;
-import com.muhjain.school.model.dto.response.TransportWarning;
-import com.muhjain.school.model.entity.Student;
-import com.muhjain.school.model.enums.TransportReason;
-import com.muhjain.school.model.repository.StudentRepository;
-import com.muhjain.school.util.ClassNames;
+
+import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.LocalDate;
+import java.util.*;
 
 /**
  * A new admission. Rules 1 to 4 of docs/phases/phase-3-students-admission.md.

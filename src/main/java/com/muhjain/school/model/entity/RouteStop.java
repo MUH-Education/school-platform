@@ -1,11 +1,10 @@
 package com.muhjain.school.model.entity;
 
-import java.time.LocalTime;
-
-import com.muhjain.school.model.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+
+import java.time.LocalTime;
 
 /**
  * One stop of a route. Example: Route 4, number 2, "Jakhal", morning 07:40.

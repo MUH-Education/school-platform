@@ -1,31 +1,22 @@
 package com.muhjain.school.controller;
 
-import com.muhjain.school.security.CurrentUser;
+import com.muhjain.school.model.dto.request.EnquiryRequest;
+import com.muhjain.school.model.dto.request.FollowUpRequest;
+import com.muhjain.school.model.dto.request.StatusRequest;
+import com.muhjain.school.model.dto.response.EnquiryResponse;
+import com.muhjain.school.model.dto.response.EnquirySummaryResponse;
 import com.muhjain.school.model.dto.response.PageResponse;
+import com.muhjain.school.model.dto.response.PrefillResponse;
+import com.muhjain.school.model.enums.EnquirySource;
+import com.muhjain.school.model.enums.EnquiryStatus;
+import com.muhjain.school.security.CurrentUser;
+import com.muhjain.school.service.enquiry.EnquiryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
-import com.muhjain.school.model.dto.request.EnquiryRequest;
-import com.muhjain.school.model.dto.response.EnquiryResponse;
-import com.muhjain.school.model.dto.response.EnquirySummaryResponse;
-import com.muhjain.school.model.dto.request.FollowUpRequest;
-import com.muhjain.school.model.dto.response.PrefillResponse;
-import com.muhjain.school.model.dto.request.StatusRequest;
-import com.muhjain.school.model.entity.Enquiry;
-import com.muhjain.school.model.enums.EnquirySource;
-import com.muhjain.school.model.enums.EnquiryStatus;
-import com.muhjain.school.service.enquiry.EnquiryService;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * The Enquiry screens. Reading needs ENQUIRIES_VIEW, changing needs ENQUIRIES_EDIT.

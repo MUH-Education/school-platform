@@ -1,15 +1,10 @@
 package com.muhjain.school.model.entity;
 
-import java.time.Instant;
-
-import com.muhjain.school.model.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Table;
 import com.muhjain.school.model.enums.LoginClient;
 import com.muhjain.school.model.enums.Role;
+import jakarta.persistence.*;
+
+import java.time.Instant;
 
 /**
  * A person who can log in. Example: +919812340002, "Neelam", OFFICE_ADMIN, active.

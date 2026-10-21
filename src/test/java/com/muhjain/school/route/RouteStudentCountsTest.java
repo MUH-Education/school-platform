@@ -1,27 +1,24 @@
 package com.muhjain.school.route;
 
-import java.time.Instant;
-import java.time.LocalDate;
-import java.util.Map;
-
 import com.muhjain.school.AbstractIntegrationTest;
 import com.muhjain.school.model.enums.Role;
+import com.muhjain.school.service.route.StudentCounts;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.Map;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import com.muhjain.school.model.entity.Route;
-import com.muhjain.school.service.route.StudentCounts;
 
 /**
  * Rule 15 and the "children" rules, with children pretended. There are no students before Phase 3, so

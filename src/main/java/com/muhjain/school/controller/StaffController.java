@@ -1,33 +1,23 @@
 package com.muhjain.school.controller;
 
-import java.util.List;
-import java.util.Set;
-
+import com.muhjain.school.model.dto.request.CreateStaffRequest;
+import com.muhjain.school.model.dto.request.SetSalaryRequest;
+import com.muhjain.school.model.dto.request.UpdateStaffRequest;
+import com.muhjain.school.model.dto.response.SalaryResponse;
+import com.muhjain.school.model.dto.response.StaffResponse;
+import com.muhjain.school.model.enums.StaffType;
 import com.muhjain.school.security.CurrentUser;
+import com.muhjain.school.service.staff.StaffSalaryService;
+import com.muhjain.school.service.staff.StaffService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
-import com.muhjain.school.model.dto.request.CreateStaffRequest;
-import com.muhjain.school.model.dto.response.SalaryResponse;
-import com.muhjain.school.model.dto.request.SetSalaryRequest;
-import com.muhjain.school.model.dto.response.StaffResponse;
-import com.muhjain.school.model.dto.request.UpdateStaffRequest;
-import com.muhjain.school.model.entity.Staff;
-import com.muhjain.school.model.enums.StaffType;
-import com.muhjain.school.service.staff.StaffSalaryService;
-import com.muhjain.school.service.staff.StaffService;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Set;
 
 /**
  * The staff list of the Vehicles and staff screen, and the Employees screen. Reading needs VEHICLES_VIEW,

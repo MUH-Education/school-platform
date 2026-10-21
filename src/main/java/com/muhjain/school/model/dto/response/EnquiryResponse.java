@@ -1,15 +1,12 @@
 package com.muhjain.school.model.dto.response;
 
+import com.muhjain.school.model.entity.Enquiry;
+import com.muhjain.school.model.enums.*;
+
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
-import com.muhjain.school.model.entity.Enquiry;
-import com.muhjain.school.model.enums.EnquiryLostReason;
-import com.muhjain.school.model.enums.EnquiryNextType;
-import com.muhjain.school.model.enums.EnquirySource;
-import com.muhjain.school.model.enums.EnquiryStatus;
-import com.muhjain.school.model.enums.NeedsBus;
 
 /**
  * An enquiry as the screens see it. {@code overdue} is calculated (next follow-up before today, and the enquiry is not

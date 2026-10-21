@@ -1,7 +1,8 @@
 package com.muhjain.school.model.dto.response;
 
-import java.util.List;
 import com.muhjain.school.model.enums.Gender;
+
+import java.util.List;
 
 /**
  * What the messaging feature needs to write a parent SMS for one child: the name, gender and class, and the phones

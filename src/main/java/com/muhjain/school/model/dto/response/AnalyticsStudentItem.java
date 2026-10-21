@@ -1,9 +1,9 @@
 package com.muhjain.school.model.dto.response;
 
-import java.math.BigDecimal;
-
-import com.muhjain.school.model.enums.FeeStatus;
 import com.muhjain.school.model.enums.FatherOccupation;
+import com.muhjain.school.model.enums.FeeStatus;
+
+import java.math.BigDecimal;
 
 /**
  * One row of the Analytics list and of the CSV file (rule 9). There is no phone number on purpose.

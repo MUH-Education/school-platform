@@ -1,7 +1,7 @@
 package com.muhjain.school.model.dto.response;
 
-import jakarta.validation.constraints.Size;
 import com.muhjain.school.model.entity.TeacherProfile;
+import jakarta.validation.constraints.Size;
 
 /**
  * The extra file of a teacher. Sent and read only when {@code staffType} is TEACHER.

@@ -1,11 +1,11 @@
 package com.muhjain.school.service.auth.impl;
 
+import com.muhjain.school.service.auth.OtpSender;
 import com.muhjain.school.util.PhoneNumbers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
-import com.muhjain.school.service.auth.OtpSender;
 
 /**
  * Sends nothing. In the {@code dev} profile it prints the code in the console:

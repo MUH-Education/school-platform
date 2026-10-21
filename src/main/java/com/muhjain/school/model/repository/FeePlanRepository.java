@@ -1,14 +1,14 @@
 package com.muhjain.school.model.repository;
 
-import java.util.List;
-import java.util.Optional;
-
+import com.muhjain.school.model.entity.FeePlan;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import com.muhjain.school.model.entity.FeePlan;
+
+import java.util.List;
+import java.util.Optional;
 
 public interface FeePlanRepository extends JpaRepository<FeePlan, Long> {
 

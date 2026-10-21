@@ -1,9 +1,9 @@
 package com.muhjain.school.model.dto.request;
 
-import java.time.LocalDate;
-
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+
+import java.time.LocalDate;
 
 /**
  * Add a school year. There is no "make current" flag: a session is current exactly when today falls

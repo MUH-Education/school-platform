@@ -1,8 +1,9 @@
 package com.muhjain.school.service.student;
 
+import com.muhjain.school.service.student.impl.LocalFolderPhotoStorage;
+
 import java.io.IOException;
 import java.io.InputStream;
-import com.muhjain.school.service.student.impl.LocalFolderPhotoStorage;
 
 /**
  * Where student photos are kept. The database stores only the key. Example key: {@code students/3f2a...c1.jpg}.

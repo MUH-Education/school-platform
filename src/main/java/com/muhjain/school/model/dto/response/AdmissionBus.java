@@ -1,11 +1,11 @@
 package com.muhjain.school.model.dto.response;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
  * The bus part of an admission. Leave the whole {@code bus} object out for a child with no bus.

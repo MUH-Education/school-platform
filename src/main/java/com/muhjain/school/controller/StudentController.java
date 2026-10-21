@@ -1,53 +1,25 @@
 package com.muhjain.school.controller;
 
-import java.util.List;
-
+import com.muhjain.school.model.dto.request.*;
+import com.muhjain.school.model.dto.response.*;
+import com.muhjain.school.model.enums.BusFilter;
+import com.muhjain.school.model.enums.StudentStatus;
 import com.muhjain.school.security.CurrentUser;
-import java.io.IOException;
-
-import com.muhjain.school.model.dto.response.PageResponse;
+import com.muhjain.school.service.student.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.CacheControl;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
-import com.muhjain.school.model.dto.response.EnrolmentResponse;
-import com.muhjain.school.model.dto.request.GuardianRequest;
-import com.muhjain.school.model.dto.response.GuardianResponse;
-import com.muhjain.school.model.dto.response.HistoryItem;
-import com.muhjain.school.model.dto.response.ImportResponse;
-import com.muhjain.school.model.dto.response.PhotoContent;
-import com.muhjain.school.model.dto.response.PhotoResponse;
-import com.muhjain.school.model.dto.response.StudentFilter;
-import com.muhjain.school.model.dto.response.StudentListItem;
-import com.muhjain.school.model.dto.response.StudentResponse;
-import com.muhjain.school.model.dto.request.TransportRequest;
-import com.muhjain.school.model.dto.response.TransportSaveResponse;
-import com.muhjain.school.model.dto.request.UpdateGuardianRequest;
-import com.muhjain.school.model.dto.request.UpdateStatusRequest;
-import com.muhjain.school.model.dto.request.UpdateStudentRequest;
-import com.muhjain.school.model.enums.BusFilter;
-import com.muhjain.school.model.enums.StudentStatus;
-import com.muhjain.school.service.student.GuardianService;
-import com.muhjain.school.service.student.StudentImportService;
-import com.muhjain.school.service.student.StudentPhotoService;
-import com.muhjain.school.service.student.StudentService;
-import com.muhjain.school.service.student.TransportEnrolmentService;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.util.List;
 
 /**
  * The Students screens. Reading needs STUDENTS_VIEW, changing needs STUDENTS_EDIT.

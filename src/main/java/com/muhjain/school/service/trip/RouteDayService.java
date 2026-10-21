@@ -1,22 +1,18 @@
 package com.muhjain.school.service.trip;
 
-import java.time.LocalDate;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-import com.muhjain.school.service.route.RouteService;
-import com.muhjain.school.model.dto.response.RouteSummary;
 import com.muhjain.school.model.dto.response.RouteChild;
-import com.muhjain.school.service.student.StudentQueryService;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import com.muhjain.school.model.dto.response.RouteDay;
+import com.muhjain.school.model.dto.response.RouteSummary;
 import com.muhjain.school.model.entity.BoardingEvent;
 import com.muhjain.school.model.enums.EventType;
 import com.muhjain.school.model.repository.BoardingEventRepository;
+import com.muhjain.school.service.route.RouteService;
+import com.muhjain.school.service.student.StudentQueryService;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.util.*;
 
 /**
  * Loads a {@link RouteDay}. The children come from {@link StudentQueryService#onRoute} (the one place that knows

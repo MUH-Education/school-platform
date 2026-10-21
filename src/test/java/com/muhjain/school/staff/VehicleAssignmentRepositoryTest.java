@@ -1,15 +1,15 @@
 package com.muhjain.school.staff;
 
-import java.time.LocalDate;
-
 import com.muhjain.school.AbstractIntegrationTest;
+import com.muhjain.school.model.entity.VehicleAssignment;
+import com.muhjain.school.model.repository.VehicleAssignmentRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.time.LocalDate;
+
 import static org.assertj.core.api.Assertions.assertThat;
-import com.muhjain.school.model.entity.VehicleAssignment;
-import com.muhjain.school.model.repository.VehicleAssignmentRepository;
 
 /** The queries behind "who is on the vehicle on day D". Example data: Jagdish drives Van 4 from 1 Apr 2026. */
 class VehicleAssignmentRepositoryTest extends AbstractIntegrationTest {

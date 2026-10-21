@@ -1,44 +1,33 @@
 package com.muhjain.school.service.student;
 
-import java.time.Clock;
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.Locale;
-
-import com.muhjain.school.model.enums.AuditAction;
-import com.muhjain.school.util.AuditChanges;
-import com.muhjain.school.model.entity.AuditLog;
-import com.muhjain.school.service.audit.AuditService;
 import com.muhjain.school.exception.ApiException;
+import com.muhjain.school.model.dto.request.UpdateStatusRequest;
+import com.muhjain.school.model.dto.request.UpdateStudentRequest;
+import com.muhjain.school.model.dto.response.*;
+import com.muhjain.school.model.entity.AuditLog;
+import com.muhjain.school.model.entity.Student;
+import com.muhjain.school.model.enums.AuditAction;
 import com.muhjain.school.model.enums.FeeStatus;
+import com.muhjain.school.model.enums.StudentStatus;
+import com.muhjain.school.model.repository.StudentRepository;
+import com.muhjain.school.service.audit.AuditService;
 import com.muhjain.school.service.fee.FeeStatusService;
-import com.muhjain.school.util.DayText;
-import com.muhjain.school.util.NameKeys;
-import com.muhjain.school.model.dto.response.PageResponse;
 import com.muhjain.school.service.user.UserService;
+import com.muhjain.school.util.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.muhjain.school.model.dto.response.EnrolmentResponse;
-import com.muhjain.school.model.dto.response.GuardianResponse;
-import com.muhjain.school.model.dto.response.HistoryItem;
-import com.muhjain.school.model.dto.response.StudentFilter;
-import com.muhjain.school.model.dto.response.StudentListItem;
-import com.muhjain.school.model.dto.response.StudentResponse;
-import com.muhjain.school.model.dto.request.UpdateStatusRequest;
-import com.muhjain.school.model.dto.request.UpdateStudentRequest;
-import com.muhjain.school.model.entity.Student;
-import com.muhjain.school.model.enums.Gender;
-import com.muhjain.school.model.enums.StudentStatus;
-import com.muhjain.school.model.repository.StudentRepository;
-import com.muhjain.school.util.ClassNames;
-import com.muhjain.school.util.StudentSpecs;
+
+import java.time.Clock;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Looking at a student and changing the details. Rules 15 and 16 of docs/phases/phase-3-students-admission.md.

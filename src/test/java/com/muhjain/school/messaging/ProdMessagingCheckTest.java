@@ -1,12 +1,12 @@
 package com.muhjain.school.messaging;
 
+import com.muhjain.school.service.messaging.ProdMessagingCheck;
+import com.muhjain.school.service.messaging.ProviderApi;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.env.MockEnvironment;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import com.muhjain.school.service.messaging.ProdMessagingCheck;
-import com.muhjain.school.service.messaging.ProviderApi;
 
 class ProdMessagingCheckTest {
 

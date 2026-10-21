@@ -1,9 +1,9 @@
 package com.muhjain.school.model.dto.response;
 
-import java.time.LocalDate;
-
 import com.muhjain.school.model.enums.GuardianRelation;
 import com.muhjain.school.model.enums.NeedsBus;
+
+import java.time.LocalDate;
 
 /**
  * What the New admission screen can copy from an enquiry, and the text of the blue box "Started from the enquiry of

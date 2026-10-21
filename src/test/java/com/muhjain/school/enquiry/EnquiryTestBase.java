@@ -1,16 +1,14 @@
 package com.muhjain.school.enquiry;
 
-import java.time.Instant;
-
 import com.muhjain.school.AbstractIntegrationTest;
 import com.muhjain.school.model.enums.Role;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import java.time.Instant;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 
 /**
  * Story for the Phase 6 tests. Today is 7 Oct 2026, 10:00 school time. Neelam (admissions desk) types the enquiries.

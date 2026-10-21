@@ -1,12 +1,12 @@
 package com.muhjain.school.model.dto.response;
 
-import java.math.BigDecimal;
-
+import com.muhjain.school.model.enums.FeeHead;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
-import com.muhjain.school.model.enums.FeeHead;
+
+import java.math.BigDecimal;
 
 /** Money for one fee head. Example: {@code {"feeHead":"SCHOOL","amount":7500}} */
 @Schema(example = "{\"feeHead\": \"SCHOOL\", \"amount\": 7500}")

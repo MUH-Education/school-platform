@@ -1,11 +1,12 @@
 package com.muhjain.school.model.dto.response;
 
-import java.time.LocalDate;
-import java.util.List;
 import com.muhjain.school.model.enums.FatherOccupation;
 import com.muhjain.school.model.enums.Gender;
 import com.muhjain.school.model.enums.LeftReason;
 import com.muhjain.school.model.enums.StudentStatus;
+
+import java.time.LocalDate;
+import java.util.List;
 
 /**
  * The full profile of one student (screen 10). {@code busNow} is the bus today, null if the child has none.

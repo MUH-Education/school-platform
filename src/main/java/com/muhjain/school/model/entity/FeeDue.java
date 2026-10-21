@@ -1,12 +1,11 @@
 package com.muhjain.school.model.entity;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-
-import com.muhjain.school.model.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
  * What one child must pay in one month. Made by the server from {@code fee_plan}, {@code transport_enrolment}

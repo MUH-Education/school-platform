@@ -1,17 +1,15 @@
 package com.muhjain.school.model.repository;
 
+import com.muhjain.school.model.dto.response.RouteChild;
+import com.muhjain.school.model.entity.TransportEnrolment;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-import com.muhjain.school.model.dto.response.RouteChild;
-import com.muhjain.school.model.entity.Student;
-import com.muhjain.school.model.entity.TransportEnrolment;
-import com.muhjain.school.model.enums.StudentStatus;
 
 public interface TransportEnrolmentRepository extends JpaRepository<TransportEnrolment, Long> {
 

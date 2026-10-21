@@ -1,12 +1,11 @@
 package com.muhjain.school.model.dto.response;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-
-import com.muhjain.school.util.FeeStatusCalculator.HeadStatus;
 import com.muhjain.school.model.enums.FeeHead;
 import com.muhjain.school.model.enums.FeeStatus;
-import com.muhjain.school.util.FeeStatusCalculator;
+import com.muhjain.school.util.FeeStatusCalculator.HeadStatus;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
  * The status of one fee head. Example: SCHOOL, DELAYED, 45 days late since 1 Jul, 7500 pending now.

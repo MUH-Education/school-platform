@@ -1,18 +1,18 @@
 package com.muhjain.school.dev;
 
-import java.time.Instant;
-
 import com.muhjain.school.AbstractIntegrationTest;
 import com.muhjain.school.model.enums.Role;
+import com.muhjain.school.service.dev.DevDataLoader;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.time.Instant;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import com.muhjain.school.service.dev.DevDataLoader;
 
 /** Task 7.13: the dev data has class fees and a fee plan for every active child, with all three statuses. */
 @ActiveProfiles({ "test", "dev" })

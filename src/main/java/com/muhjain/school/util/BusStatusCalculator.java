@@ -1,12 +1,13 @@
 package com.muhjain.school.util;
 
+import com.muhjain.school.model.enums.BusPhase;
+import com.muhjain.school.model.enums.RouteState;
+import com.muhjain.school.model.enums.StopState;
+
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import com.muhjain.school.model.enums.BusPhase;
-import com.muhjain.school.model.enums.RouteState;
-import com.muhjain.school.model.enums.StopState;
 
 /**
  * The maths of Bus status (rules 14 to 17 of the phase file). Pure Java: no Spring, no database, no clock.

@@ -1,10 +1,10 @@
 package com.muhjain.school.config;
 
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
-
-import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * {@code app.otp.*}. Example: 6 digits, 5 minutes, 5 wrong tries, 60 seconds between codes,

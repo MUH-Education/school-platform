@@ -1,5 +1,7 @@
 package com.muhjain.school.common;
 
+import com.muhjain.school.exception.ApiException;
+import com.muhjain.school.util.PhoneNumbers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -7,8 +9,6 @@ import org.springframework.http.HttpStatus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import com.muhjain.school.exception.ApiException;
-import com.muhjain.school.util.PhoneNumbers;
 
 class PhoneNumbersTest {
 

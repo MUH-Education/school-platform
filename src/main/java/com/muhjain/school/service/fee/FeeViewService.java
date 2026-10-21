@@ -1,17 +1,6 @@
 package com.muhjain.school.service.fee;
 
-import java.math.BigDecimal;
-import java.time.Clock;
-import java.time.LocalDate;
-import java.util.List;
-
 import com.muhjain.school.exception.ApiException;
-import com.muhjain.school.util.FeeStatusCalculator.Summary;
-import com.muhjain.school.service.setting.SettingService;
-import com.muhjain.school.service.student.StudentQueryService;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import com.muhjain.school.model.dto.response.DueView;
 import com.muhjain.school.model.dto.response.FeePlanSummary;
 import com.muhjain.school.model.dto.response.FeesResponse;
@@ -23,7 +12,18 @@ import com.muhjain.school.model.entity.FeePlan;
 import com.muhjain.school.model.repository.FeeMonthViewRepository;
 import com.muhjain.school.model.repository.FeePaymentRepository;
 import com.muhjain.school.model.repository.FeePlanRepository;
+import com.muhjain.school.service.setting.SettingService;
+import com.muhjain.school.service.student.StudentQueryService;
 import com.muhjain.school.util.FeeStatusCalculator;
+import com.muhjain.school.util.FeeStatusCalculator.Summary;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.LocalDate;
+import java.util.List;
 
 /**
  * "Fees this year" for one child (rule 16 of phase 7). The maths is in {@link FeeStatusCalculator}, reading

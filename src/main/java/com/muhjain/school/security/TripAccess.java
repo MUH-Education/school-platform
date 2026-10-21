@@ -1,19 +1,19 @@
 package com.muhjain.school.security;
 
+import com.muhjain.school.exception.ApiException;
+import com.muhjain.school.model.dto.response.AttendantRoute;
+import com.muhjain.school.model.entity.AppUser;
+import com.muhjain.school.model.enums.Permission;
+import com.muhjain.school.service.route.AttendantRouteService;
+import com.muhjain.school.service.user.UserService;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Component;
+
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-
-import com.muhjain.school.exception.ApiException;
-import com.muhjain.school.model.dto.response.AttendantRoute;
-import com.muhjain.school.service.route.AttendantRouteService;
-import com.muhjain.school.model.entity.AppUser;
-import com.muhjain.school.model.enums.Permission;
-import com.muhjain.school.service.user.UserService;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Component;
 
 /**
  * One place that answers "may this user touch this route on this date?" (rules 1 to 3 of the phase file).

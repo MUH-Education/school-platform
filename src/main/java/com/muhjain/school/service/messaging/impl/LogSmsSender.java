@@ -1,12 +1,12 @@
 package com.muhjain.school.service.messaging.impl;
 
+import com.muhjain.school.model.dto.response.SendResult;
+import com.muhjain.school.service.messaging.SmsSender;
 import com.muhjain.school.util.PhoneNumbers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
-import com.muhjain.school.model.dto.response.SendResult;
-import com.muhjain.school.service.messaging.SmsSender;
 
 /**
  * Test mode: writes the SMS to the log and sends nothing. The outbox row becomes TEST_ONLY.

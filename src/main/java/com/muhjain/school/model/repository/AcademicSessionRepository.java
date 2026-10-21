@@ -1,11 +1,11 @@
 package com.muhjain.school.model.repository;
 
+import com.muhjain.school.model.entity.AcademicSession;
+import org.springframework.data.jpa.repository.JpaRepository;
+
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
-
-import org.springframework.data.jpa.repository.JpaRepository;
-import com.muhjain.school.model.entity.AcademicSession;
 
 public interface AcademicSessionRepository extends JpaRepository<AcademicSession, Long> {
 

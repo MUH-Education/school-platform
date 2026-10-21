@@ -1,13 +1,13 @@
 package com.muhjain.school.audit;
 
+import com.muhjain.school.util.AuditChanges;
+import org.junit.jupiter.api.Test;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Map;
 
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
-import com.muhjain.school.util.AuditChanges;
 
 class AuditChangesTest {
 

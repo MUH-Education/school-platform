@@ -1,15 +1,15 @@
 package com.muhjain.school.model.dto.request;
 
-import java.time.LocalDate;
-import java.util.List;
-
+import com.muhjain.school.model.dto.response.PaymentLine;
+import com.muhjain.school.model.enums.PaymentMode;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import com.muhjain.school.model.enums.PaymentMode;
-import com.muhjain.school.model.dto.response.PaymentLine;
+
+import java.time.LocalDate;
+import java.util.List;
 
 /**
  * Money the office received. One receipt may cover both heads: then it has two lines. Money for a head is

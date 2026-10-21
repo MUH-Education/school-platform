@@ -1,8 +1,8 @@
 package com.muhjain.school.model.dto.request;
 
+import com.muhjain.school.model.enums.GuardianRelation;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import com.muhjain.school.model.enums.GuardianRelation;
 
 /**
  * Change a phone of one child: name, relation, SMS on or off. The number itself is not changed here: remove the

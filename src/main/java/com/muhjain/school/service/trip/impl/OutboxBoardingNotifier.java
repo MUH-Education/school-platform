@@ -1,26 +1,26 @@
 package com.muhjain.school.service.trip.impl;
 
-import java.time.Clock;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalTime;
-
-import com.muhjain.school.util.PhoneNumbers;
-import com.muhjain.school.model.enums.Gender;
 import com.muhjain.school.model.dto.response.SmsTarget;
+import com.muhjain.school.model.entity.MessageTemplate;
+import com.muhjain.school.model.enums.EventType;
+import com.muhjain.school.model.enums.Gender;
+import com.muhjain.school.model.repository.MessageOutboxRepository;
+import com.muhjain.school.model.repository.MessageTemplateRepository;
+import com.muhjain.school.service.messaging.BusSmsRuleService;
 import com.muhjain.school.service.student.StudentQueryService;
 import com.muhjain.school.service.trip.BoardingNotifier;
-import com.muhjain.school.model.enums.EventType;
+import com.muhjain.school.util.PhoneNumbers;
+import com.muhjain.school.util.SmsTextBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import com.muhjain.school.model.entity.MessageTemplate;
-import com.muhjain.school.model.repository.MessageOutboxRepository;
-import com.muhjain.school.model.repository.MessageTemplateRepository;
-import com.muhjain.school.service.messaging.BusSmsRuleService;
-import com.muhjain.school.util.SmsTextBuilder;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 /**
  * Writes the parent SMS into the queue (rules 2 to 7 of the phase file). It runs inside the transaction that saves

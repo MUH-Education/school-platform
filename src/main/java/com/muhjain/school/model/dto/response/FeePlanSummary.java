@@ -1,10 +1,11 @@
 package com.muhjain.school.model.dto.response;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import com.muhjain.school.model.entity.FeePlan;
 import com.muhjain.school.model.enums.DiscountReason;
 import com.muhjain.school.model.enums.PayFrequency;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /** The current time slice of the plan, without its dues. Example: school 2500 a month, from April, MONTHLY. */
 public record FeePlanSummary(Long id, LocalDate fromMonth, BigDecimal schoolFeePerMonth,

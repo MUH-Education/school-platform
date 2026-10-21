@@ -1,14 +1,14 @@
 package com.muhjain.school.model.dto.response;
 
-import java.util.List;
-
 import com.muhjain.school.exception.ApiException;
-import com.muhjain.school.model.enums.FeeStatus;
 import com.muhjain.school.model.enums.BusFilter;
-import com.muhjain.school.util.ClassNames;
 import com.muhjain.school.model.enums.FatherOccupation;
-import io.swagger.v3.oas.annotations.media.Schema;
+import com.muhjain.school.model.enums.FeeStatus;
 import com.muhjain.school.service.analytics.AnalyticsBase;
+import com.muhjain.school.util.ClassNames;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+import java.util.List;
 
 /**
  * The one filter of all seven Analytics URLs (rule 1 of phase 8). Every part is optional.

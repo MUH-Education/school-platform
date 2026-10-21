@@ -1,11 +1,11 @@
 package com.muhjain.school.model.dto.request;
 
-import java.time.LocalTime;
-
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
+
+import java.time.LocalTime;
 
 /**
  * Change a route. Send the whole route: name, vehicle (null = no vehicle), {@code active}, and the two school

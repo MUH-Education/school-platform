@@ -1,17 +1,17 @@
 package com.muhjain.school.trip;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
-import com.muhjain.school.util.BusStatusCalculator.Status;
-import com.muhjain.school.util.BusStatusCalculator.StopInput;
-import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
 import com.muhjain.school.model.enums.BusPhase;
 import com.muhjain.school.model.enums.RouteState;
 import com.muhjain.school.model.enums.StopState;
 import com.muhjain.school.util.BusStatusCalculator;
+import com.muhjain.school.util.BusStatusCalculator.Status;
+import com.muhjain.school.util.BusStatusCalculator.StopInput;
+import org.junit.jupiter.api.Test;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /** Pure tests. The time is fixed: 7 Oct 2026, 7:48. late_after_minutes is 10. */
 class BusStatusCalculatorTest {

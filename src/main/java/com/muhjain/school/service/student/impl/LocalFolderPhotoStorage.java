@@ -1,16 +1,16 @@
 package com.muhjain.school.service.student.impl;
 
+import com.muhjain.school.config.PhotoProperties;
+import com.muhjain.school.service.student.PhotoStorage;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Component;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
-
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Component;
-import com.muhjain.school.config.PhotoProperties;
-import com.muhjain.school.service.student.PhotoStorage;
 
 /**
  * Photos in a folder on this machine ({@code app.photos.folder}, default {@code ./data/photos}).

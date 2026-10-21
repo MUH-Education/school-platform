@@ -1,12 +1,12 @@
 package com.muhjain.school.model.dto.request;
 
-import java.time.LocalDate;
-
+import com.muhjain.school.model.enums.FatherOccupation;
+import com.muhjain.school.model.enums.Gender;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import com.muhjain.school.model.enums.FatherOccupation;
-import com.muhjain.school.model.enums.Gender;
+
+import java.time.LocalDate;
 
 /**
  * The whole edit form of a student, like the other PUT requests. The admission number, the joining day and the

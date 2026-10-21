@@ -1,9 +1,10 @@
 package com.muhjain.school.model.dto.response;
 
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import com.muhjain.school.model.enums.DocType;
 import com.muhjain.school.model.enums.PaperStatus;
+
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 
 /**
  * One line of "Papers and licences that need attention": ended, or ending within 30 days.

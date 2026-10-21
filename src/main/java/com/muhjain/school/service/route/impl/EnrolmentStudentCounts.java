@@ -1,11 +1,11 @@
 package com.muhjain.school.service.route.impl;
 
+import com.muhjain.school.service.route.StudentCounts;
+import com.muhjain.school.service.student.StudentQueryService;
+import org.springframework.stereotype.Component;
+
 import java.time.LocalDate;
 import java.util.Map;
-
-import com.muhjain.school.service.route.StudentCounts;
-import org.springframework.stereotype.Component;
-import com.muhjain.school.service.student.StudentQueryService;
 
 /**
  * The real answer to the Phase 2 question "how many children ride on this route?". It only passes the question to

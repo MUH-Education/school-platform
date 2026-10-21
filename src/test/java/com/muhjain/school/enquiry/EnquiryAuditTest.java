@@ -1,11 +1,10 @@
 package com.muhjain.school.enquiry;
 
-import java.util.List;
-
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
-import com.muhjain.school.model.entity.Enquiry;
 
 /** Task 6.10: create, status change and follow-up are in the change history. */
 class EnquiryAuditTest extends EnquiryTestBase {

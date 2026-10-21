@@ -1,32 +1,18 @@
 package com.muhjain.school.fee;
 
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.time.LocalDate;
-
 import com.muhjain.school.AbstractIntegrationTest;
+import com.muhjain.school.model.entity.*;
+import com.muhjain.school.model.enums.*;
+import com.muhjain.school.model.repository.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+
 import static org.assertj.core.api.Assertions.assertThat;
-import com.muhjain.school.model.entity.AcademicSession;
-import com.muhjain.school.model.entity.FeeDue;
-import com.muhjain.school.model.entity.FeeMonthView;
-import com.muhjain.school.model.entity.FeePayment;
-import com.muhjain.school.model.entity.FeePlan;
-import com.muhjain.school.model.entity.Receipt;
-import com.muhjain.school.model.enums.FeeHead;
-import com.muhjain.school.model.enums.PayFrequency;
-import com.muhjain.school.model.enums.PaymentMode;
-import com.muhjain.school.model.enums.ReceiptKind;
-import com.muhjain.school.model.enums.ReceiptSource;
-import com.muhjain.school.model.repository.AcademicSessionRepository;
-import com.muhjain.school.model.repository.FeeDueRepository;
-import com.muhjain.school.model.repository.FeeMonthViewRepository;
-import com.muhjain.school.model.repository.FeePaymentRepository;
-import com.muhjain.school.model.repository.FeePlanRepository;
-import com.muhjain.school.model.repository.ReceiptRepository;
 
 /** The fee entities match the V7 tables (Hibernate runs with ddl-auto=validate) and save and load. */
 class FeeRepositoryTest extends AbstractIntegrationTest {

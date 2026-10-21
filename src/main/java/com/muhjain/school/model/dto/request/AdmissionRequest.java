@@ -1,19 +1,17 @@
 package com.muhjain.school.model.dto.request;
 
-import java.time.LocalDate;
-import java.util.List;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.muhjain.school.model.dto.request.AdmissionFeeRequest;
-import com.muhjain.school.model.dto.request.PaymentRequest;
+import com.muhjain.school.model.dto.response.AdmissionBus;
+import com.muhjain.school.model.enums.FatherOccupation;
+import com.muhjain.school.model.enums.Gender;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import com.muhjain.school.model.enums.FatherOccupation;
-import com.muhjain.school.model.enums.Gender;
-import com.muhjain.school.model.dto.response.AdmissionBus;
+
+import java.time.LocalDate;
+import java.util.List;
 
 /**
  * A new admission: the child, the parents' phones and the bus, saved together.

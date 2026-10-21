@@ -1,9 +1,10 @@
 package com.muhjain.school.model.dto.response;
 
-import java.time.ZoneId;
-import java.util.Map;
 import com.muhjain.school.model.entity.BoardingEvent;
 import com.muhjain.school.model.enums.EventType;
+
+import java.time.ZoneId;
+import java.util.Map;
 
 /**
  * The four events of one child on one day. A job with no tap yet is null.

@@ -3,7 +3,6 @@ package com.muhjain.school.util;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
-import com.muhjain.school.model.entity.Route;
 
 /**
  * The maths of the "Routes and load" screen (rule 16 and 17). Pure Java: no Spring, no database, no clock.

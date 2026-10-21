@@ -1,5 +1,16 @@
 package com.muhjain.school.service.route;
 
+import com.muhjain.school.model.dto.response.LoadBoardResponse;
+import com.muhjain.school.model.dto.response.LoadBoardRow;
+import com.muhjain.school.model.dto.response.VehicleSummary;
+import com.muhjain.school.model.entity.Route;
+import com.muhjain.school.model.repository.RouteRepository;
+import com.muhjain.school.service.setting.SettingService;
+import com.muhjain.school.service.vehicle.VehicleService;
+import com.muhjain.school.util.LoadBoardCalculator;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
@@ -7,17 +18,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import com.muhjain.school.service.setting.SettingService;
-import com.muhjain.school.service.vehicle.VehicleService;
-import com.muhjain.school.model.dto.response.VehicleSummary;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import com.muhjain.school.model.dto.response.LoadBoardResponse;
-import com.muhjain.school.model.dto.response.LoadBoardRow;
-import com.muhjain.school.model.entity.Route;
-import com.muhjain.school.model.repository.RouteRepository;
-import com.muhjain.school.util.LoadBoardCalculator;
 
 /**
  * The Routes and load screen (rule 16). This class only collects the numbers. The maths is in

@@ -1,19 +1,14 @@
 package com.muhjain.school.security;
 
-import java.time.Clock;
-
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
-
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtEncoder;
-import org.springframework.security.oauth2.jwt.JwtTimestampValidator;
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
-import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
+import org.springframework.security.oauth2.jwt.*;
+
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import java.time.Clock;
 
 /**
  * One shared secret (APP_JWT_SECRET) signs and checks every token with HS256.

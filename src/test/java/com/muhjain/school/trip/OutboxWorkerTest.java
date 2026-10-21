@@ -1,28 +1,24 @@
 package com.muhjain.school.trip;
 
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-
-import com.muhjain.school.service.messaging.OutboxWorker;
-import com.muhjain.school.model.dto.response.SendResult;
 import com.muhjain.school.exception.SmsSendException;
+import com.muhjain.school.model.dto.response.SendResult;
+import com.muhjain.school.service.messaging.OutboxWorker;
 import com.muhjain.school.service.messaging.SmsSender;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /** Rules 8 to 11: the postman. The real provider is replaced by a mock, so nothing is ever sent. */
 class OutboxWorkerTest extends TripTestBase {

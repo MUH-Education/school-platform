@@ -1,5 +1,26 @@
 package com.muhjain.school.service.auth;
 
+import com.muhjain.school.config.OtpProperties;
+import com.muhjain.school.exception.ApiException;
+import com.muhjain.school.exception.OtpSendException;
+import com.muhjain.school.model.dto.response.AuthUserResponse;
+import com.muhjain.school.model.dto.response.IssuedToken;
+import com.muhjain.school.model.dto.response.LoginResponse;
+import com.muhjain.school.model.dto.response.OtpRequestResponse;
+import com.muhjain.school.model.entity.AppUser;
+import com.muhjain.school.model.entity.OtpWhitelist;
+import com.muhjain.school.model.enums.AuditAction;
+import com.muhjain.school.model.repository.OtpWhitelistRepository;
+import com.muhjain.school.service.audit.AuditService;
+import com.muhjain.school.service.user.UserService;
+import com.muhjain.school.util.OtpHasher;
+import com.muhjain.school.util.PhoneNumbers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Duration;
@@ -7,27 +28,6 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
-
-import com.muhjain.school.model.enums.AuditAction;
-import com.muhjain.school.service.audit.AuditService;
-import com.muhjain.school.exception.ApiException;
-import com.muhjain.school.util.PhoneNumbers;
-import com.muhjain.school.model.entity.AppUser;
-import com.muhjain.school.service.user.UserService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import com.muhjain.school.config.OtpProperties;
-import com.muhjain.school.model.dto.response.AuthUserResponse;
-import com.muhjain.school.model.dto.response.IssuedToken;
-import com.muhjain.school.model.dto.response.LoginResponse;
-import com.muhjain.school.model.dto.response.OtpRequestResponse;
-import com.muhjain.school.exception.OtpSendException;
-import com.muhjain.school.model.entity.OtpWhitelist;
-import com.muhjain.school.model.repository.OtpWhitelistRepository;
-import com.muhjain.school.util.OtpHasher;
 
 /**
  * Login codes: ask for one ({@link #request}) and check one ({@link #verify}). The code, its

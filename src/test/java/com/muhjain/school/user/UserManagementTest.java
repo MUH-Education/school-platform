@@ -1,19 +1,17 @@
 package com.muhjain.school.user;
 
 import com.muhjain.school.AbstractIntegrationTest;
+import com.muhjain.school.model.entity.AppUser;
+import com.muhjain.school.model.enums.Role;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import com.muhjain.school.model.entity.AppUser;
-import com.muhjain.school.model.enums.Role;
 
 /** The "Users" tests of docs/phases/phase-1-login-users.md. */
 class UserManagementTest extends AbstractIntegrationTest {

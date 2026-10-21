@@ -1,8 +1,8 @@
 package com.muhjain.school.model.dto.response;
 
-import java.util.Map;
-
 import io.swagger.v3.oas.annotations.media.Schema;
+
+import java.util.Map;
 
 /**
  * The JSON body of every error.

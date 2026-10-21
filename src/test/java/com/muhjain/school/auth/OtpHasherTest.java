@@ -1,13 +1,13 @@
 package com.muhjain.school.auth;
 
+import com.muhjain.school.config.OtpProperties;
+import com.muhjain.school.util.OtpHasher;
+import org.junit.jupiter.api.Test;
+
 import java.time.Duration;
 import java.util.List;
 
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
-import com.muhjain.school.config.OtpProperties;
-import com.muhjain.school.util.OtpHasher;
 
 class OtpHasherTest {
 

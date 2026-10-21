@@ -1,5 +1,14 @@
 package com.muhjain.school.service.fee;
 
+import com.muhjain.school.model.entity.FeeMonthView;
+import com.muhjain.school.model.enums.FeeStatus;
+import com.muhjain.school.model.repository.FeeMonthViewRepository;
+import com.muhjain.school.service.setting.SettingService;
+import com.muhjain.school.util.FeeStatusCalculator;
+import com.muhjain.school.util.FeeStatusCalculator.MonthInput;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Collection;
@@ -7,15 +16,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import com.muhjain.school.util.FeeStatusCalculator.MonthInput;
-import com.muhjain.school.service.setting.SettingService;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import com.muhjain.school.model.entity.FeeMonthView;
-import com.muhjain.school.model.enums.FeeStatus;
-import com.muhjain.school.model.repository.FeeMonthViewRepository;
-import com.muhjain.school.util.FeeStatusCalculator;
 
 /**
  * The fee status of many children at once, for lists (the "Fee" column of the Students screen, and later

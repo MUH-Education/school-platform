@@ -1,49 +1,27 @@
 package com.muhjain.school.service.trip;
 
-import java.time.Clock;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
 import com.muhjain.school.exception.ApiException;
-import com.muhjain.school.service.messaging.MessageService;
-import com.muhjain.school.model.dto.response.SmsDelivery;
-import com.muhjain.school.service.messaging.BusSmsRuleService;
-import com.muhjain.school.model.dto.response.StopTimes;
-import com.muhjain.school.service.setting.SettingService;
-import com.muhjain.school.service.staff.AssignmentService;
-import com.muhjain.school.model.dto.response.Crew;
-import com.muhjain.school.model.dto.response.RouteChild;
-import com.muhjain.school.util.BusStatusCalculator.StopInput;
-import com.muhjain.school.service.vehicle.VehicleService;
-import com.muhjain.school.model.dto.response.VehicleSummary;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import com.muhjain.school.model.dto.response.BusStatusResponse;
-import com.muhjain.school.model.dto.response.EventsResponse;
-import com.muhjain.school.model.dto.response.RouteChildStatus;
-import com.muhjain.school.model.dto.response.RouteDay;
-import com.muhjain.school.model.dto.response.RouteDetailResponse;
-import com.muhjain.school.model.dto.response.RouteStatusResponse;
-import com.muhjain.school.model.dto.response.SmsResponse;
-import com.muhjain.school.model.dto.response.StopStatusResponse;
+import com.muhjain.school.model.dto.response.*;
 import com.muhjain.school.model.entity.BoardingEvent;
 import com.muhjain.school.model.enums.BusPhase;
 import com.muhjain.school.model.enums.EventType;
 import com.muhjain.school.model.enums.Outcome;
 import com.muhjain.school.model.enums.RouteState;
+import com.muhjain.school.service.messaging.BusSmsRuleService;
+import com.muhjain.school.service.messaging.MessageService;
+import com.muhjain.school.service.setting.SettingService;
+import com.muhjain.school.service.staff.AssignmentService;
+import com.muhjain.school.service.vehicle.VehicleService;
 import com.muhjain.school.util.BusStatusCalculator;
+import com.muhjain.school.util.BusStatusCalculator.StopInput;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.*;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Bus status for the office (rules 14 to 19). Nothing is stored: every answer is worked out from the taps.

@@ -1,9 +1,9 @@
 package com.muhjain.school.fee;
 
-import java.time.Instant;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;

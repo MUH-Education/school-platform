@@ -1,12 +1,12 @@
 package com.muhjain.school.model.dto.request;
 
-import java.time.LocalDate;
-
+import com.muhjain.school.model.enums.EnquiryFollowType;
+import com.muhjain.school.model.enums.EnquiryNextType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import com.muhjain.school.model.enums.EnquiryFollowType;
-import com.muhjain.school.model.enums.EnquiryNextType;
+
+import java.time.LocalDate;
 
 /**
  * A call or a visit. {@code happenedOn} is optional and means today. {@code nextOn} is the next day to call, it

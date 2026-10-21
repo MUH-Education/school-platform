@@ -1,7 +1,8 @@
 package com.muhjain.school.model.dto.response;
 
-import java.time.OffsetDateTime;
 import com.muhjain.school.model.enums.Outcome;
+
+import java.time.OffsetDateTime;
 
 /** One tap in an answer. Example: {@code {"outcome":"DONE","occurredAt":"2026-10-07T07:42:10+05:30"}}. */
 public record TapResponse(Outcome outcome, OffsetDateTime occurredAt) {

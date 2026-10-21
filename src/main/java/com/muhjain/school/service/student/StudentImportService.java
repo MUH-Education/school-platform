@@ -1,42 +1,29 @@
 package com.muhjain.school.service.student;
 
+import com.muhjain.school.exception.ApiException;
+import com.muhjain.school.model.dto.request.AdmissionRequest;
+import com.muhjain.school.model.dto.request.GuardianRequest;
+import com.muhjain.school.model.dto.response.*;
+import com.muhjain.school.model.enums.FatherOccupation;
+import com.muhjain.school.model.enums.Gender;
+import com.muhjain.school.model.enums.GuardianRelation;
+import com.muhjain.school.model.repository.StudentRepository;
+import com.muhjain.school.service.route.RouteService;
+import com.muhjain.school.util.ClassNames;
+import com.muhjain.school.util.CsvReader;
+import com.muhjain.school.util.NameKeys;
+import com.muhjain.school.util.PhoneNumbers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
-
-import com.muhjain.school.exception.ApiException;
-import com.muhjain.school.util.NameKeys;
-import com.muhjain.school.util.PhoneNumbers;
-import com.muhjain.school.model.dto.response.RouteResponse;
-import com.muhjain.school.service.route.RouteService;
-import com.muhjain.school.model.dto.response.StopResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import com.muhjain.school.model.dto.response.AdmissionBus;
-import com.muhjain.school.model.dto.request.AdmissionRequest;
-import com.muhjain.school.model.dto.request.GuardianRequest;
-import com.muhjain.school.model.dto.response.ImportError;
-import com.muhjain.school.model.dto.response.ImportResponse;
-import com.muhjain.school.model.entity.Student;
-import com.muhjain.school.model.enums.FatherOccupation;
-import com.muhjain.school.model.enums.Gender;
-import com.muhjain.school.model.enums.GuardianRelation;
-import com.muhjain.school.model.repository.StudentRepository;
-import com.muhjain.school.util.ClassNames;
-import com.muhjain.school.util.CsvReader;
 
 /**
  * Import of the existing students from a CSV file. Rules 24 to 26 of docs/phases/phase-3-students-admission.md.

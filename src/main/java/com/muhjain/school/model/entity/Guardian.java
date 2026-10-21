@@ -1,6 +1,5 @@
 package com.muhjain.school.model.entity;
 
-import com.muhjain.school.model.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -22,7 +21,7 @@ public class Guardian extends BaseEntity {
 	private String phone;
 
 	@Column(name = "preferred_language", nullable = false, length = 5)
-	private String preferredLanguage = "hi";
+	private final String preferredLanguage = "hi";
 
 	protected Guardian() {
 	}

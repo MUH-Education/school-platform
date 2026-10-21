@@ -1,13 +1,13 @@
 package com.muhjain.school.dev;
 
 import com.muhjain.school.AbstractIntegrationTest;
+import com.muhjain.school.service.dev.DevDataLoader;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import com.muhjain.school.service.dev.DevDataLoader;
 
 /** The loader must not exist in the {@code test} profile (and so not in {@code prod} either). */
 class DevDataLoaderNotInTestTest extends AbstractIntegrationTest {

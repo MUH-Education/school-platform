@@ -1,5 +1,28 @@
 package com.muhjain.school.service.staff;
 
+import com.muhjain.school.exception.ApiException;
+import com.muhjain.school.model.dto.request.CreateStaffRequest;
+import com.muhjain.school.model.dto.request.UpdateStaffRequest;
+import com.muhjain.school.model.dto.response.*;
+import com.muhjain.school.model.entity.Staff;
+import com.muhjain.school.model.entity.TeacherProfile;
+import com.muhjain.school.model.entity.VehicleAssignment;
+import com.muhjain.school.model.enums.AuditAction;
+import com.muhjain.school.model.enums.PaperStatus;
+import com.muhjain.school.model.enums.StaffType;
+import com.muhjain.school.model.repository.StaffRepository;
+import com.muhjain.school.model.repository.TeacherProfileRepository;
+import com.muhjain.school.model.repository.VehicleAssignmentRepository;
+import com.muhjain.school.service.audit.AuditService;
+import com.muhjain.school.service.vehicle.VehicleService;
+import com.muhjain.school.util.AuditChanges;
+import com.muhjain.school.util.ClassNames;
+import com.muhjain.school.util.NameKeys;
+import com.muhjain.school.util.PhoneNumbers;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
@@ -8,33 +31,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import com.muhjain.school.model.enums.AuditAction;
-import com.muhjain.school.util.AuditChanges;
-import com.muhjain.school.service.audit.AuditService;
-import com.muhjain.school.exception.ApiException;
-import com.muhjain.school.util.NameKeys;
-import com.muhjain.school.util.PhoneNumbers;
-import com.muhjain.school.util.ClassNames;
-import com.muhjain.school.model.dto.response.AttentionItem;
-import com.muhjain.school.model.enums.PaperStatus;
-import com.muhjain.school.service.vehicle.VehicleService;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import com.muhjain.school.model.dto.request.CreateStaffRequest;
-import com.muhjain.school.model.dto.response.EmployeeDetails;
-import com.muhjain.school.model.dto.response.Placement;
-import com.muhjain.school.model.dto.response.StaffResponse;
-import com.muhjain.school.model.dto.response.Teaching;
-import com.muhjain.school.model.dto.request.UpdateStaffRequest;
-import com.muhjain.school.model.entity.Staff;
-import com.muhjain.school.model.entity.TeacherProfile;
-import com.muhjain.school.model.entity.VehicleAssignment;
-import com.muhjain.school.model.enums.StaffType;
-import com.muhjain.school.model.repository.StaffRepository;
-import com.muhjain.school.model.repository.TeacherProfileRepository;
-import com.muhjain.school.model.repository.VehicleAssignmentRepository;
 
 /**
  * Every employee of the school: drivers, attendants, helpers and teachers. Rules 4 and 5 of

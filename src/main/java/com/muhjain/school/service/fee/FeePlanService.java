@@ -1,5 +1,26 @@
 package com.muhjain.school.service.fee;
 
+import com.muhjain.school.exception.ApiException;
+import com.muhjain.school.model.dto.request.AdmissionFeeRequest;
+import com.muhjain.school.model.dto.request.FeePlanRequest;
+import com.muhjain.school.model.dto.response.FeePlanResponse;
+import com.muhjain.school.model.dto.response.StudentBasics;
+import com.muhjain.school.model.entity.AcademicSession;
+import com.muhjain.school.model.entity.FeeDue;
+import com.muhjain.school.model.entity.FeePlan;
+import com.muhjain.school.model.entity.SessionFeeSetting;
+import com.muhjain.school.model.enums.AuditAction;
+import com.muhjain.school.model.enums.DiscountReason;
+import com.muhjain.school.model.repository.FeePlanRepository;
+import com.muhjain.school.model.repository.SessionFeeSettingRepository;
+import com.muhjain.school.service.audit.AuditService;
+import com.muhjain.school.service.student.StudentQueryService;
+import com.muhjain.school.util.MoneyText;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
@@ -7,27 +28,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
-import com.muhjain.school.model.enums.AuditAction;
-import com.muhjain.school.service.audit.AuditService;
-import com.muhjain.school.exception.ApiException;
-import com.muhjain.school.model.dto.response.StudentBasics;
-import com.muhjain.school.service.student.StudentQueryService;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import com.muhjain.school.model.dto.request.AdmissionFeeRequest;
-import com.muhjain.school.model.dto.request.FeePlanRequest;
-import com.muhjain.school.model.dto.response.FeePlanResponse;
-import com.muhjain.school.model.entity.AcademicSession;
-import com.muhjain.school.model.entity.FeeDue;
-import com.muhjain.school.model.entity.FeePlan;
-import com.muhjain.school.model.enums.DiscountReason;
-import com.muhjain.school.model.repository.FeePlanRepository;
-import com.muhjain.school.model.entity.SessionFeeSetting;
-import com.muhjain.school.model.repository.SessionFeeSettingRepository;
-import com.muhjain.school.util.MoneyText;
 
 /**
  * The fee plan of a child (rules 3 to 7 of phase 7).

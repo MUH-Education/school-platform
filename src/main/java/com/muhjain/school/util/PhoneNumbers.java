@@ -1,9 +1,9 @@
 package com.muhjain.school.util;
 
-import java.util.regex.Pattern;
-
-import org.springframework.http.HttpStatus;
 import com.muhjain.school.exception.ApiException;
+import org.springframework.http.HttpStatus;
+
+import java.util.regex.Pattern;
 
 /**
  * Turns what a person types into one stored form: {@code +91XXXXXXXXXX}.

@@ -1,34 +1,25 @@
 package com.muhjain.school.service.user;
 
-import java.time.Clock;
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-
-import com.muhjain.school.model.enums.AuditAction;
-import com.muhjain.school.service.audit.AuditService;
 import com.muhjain.school.exception.ApiException;
-import com.muhjain.school.util.PhoneNumbers;
+import com.muhjain.school.model.dto.request.CreateUserRequest;
+import com.muhjain.school.model.dto.request.UpdateUserRequest;
+import com.muhjain.school.model.dto.response.RolesResponse;
+import com.muhjain.school.model.dto.response.UserResponse;
+import com.muhjain.school.model.entity.AppUser;
+import com.muhjain.school.model.enums.*;
+import com.muhjain.school.model.repository.AppUserRepository;
+import com.muhjain.school.service.audit.AuditService;
 import com.muhjain.school.service.auth.SessionService;
 import com.muhjain.school.service.staff.StaffService;
-import com.muhjain.school.model.enums.StaffType;
+import com.muhjain.school.util.PhoneNumbers;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.muhjain.school.model.dto.request.CreateUserRequest;
-import com.muhjain.school.model.dto.response.RolesResponse;
-import com.muhjain.school.model.dto.request.UpdateUserRequest;
-import com.muhjain.school.model.dto.response.UserResponse;
-import com.muhjain.school.model.entity.AppUser;
-import com.muhjain.school.model.enums.LoginClient;
-import com.muhjain.school.model.enums.Permission;
-import com.muhjain.school.model.enums.Role;
-import com.muhjain.school.model.repository.AppUserRepository;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.util.*;
 
 /**
  * Users: find, add, change, turn off. Other features use this service, never {@link AppUserRepository}.

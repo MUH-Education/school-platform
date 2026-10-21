@@ -1,18 +1,11 @@
 package com.muhjain.school;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
-import java.time.ZoneId;
-import java.util.List;
-
 import com.jayway.jsonpath.JsonPath;
+import com.muhjain.school.model.entity.AppUser;
+import com.muhjain.school.model.enums.Role;
+import com.muhjain.school.model.repository.AppUserRepository;
 import com.muhjain.school.service.auth.SessionService;
 import com.muhjain.school.service.auth.impl.LogOtpSender;
-import com.muhjain.school.model.entity.AppUser;
-import com.muhjain.school.model.repository.AppUserRepository;
-import com.muhjain.school.model.enums.Role;
 import com.redis.testcontainers.RedisContainer;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.ArgumentCaptor;
@@ -33,10 +26,15 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.clearInvocations;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 

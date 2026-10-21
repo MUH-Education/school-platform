@@ -1,16 +1,11 @@
 package com.muhjain.school.model.entity;
 
-import java.time.Instant;
-import java.time.LocalDate;
-
-import com.muhjain.school.model.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Table;
 import com.muhjain.school.model.enums.EventType;
 import com.muhjain.school.model.enums.Outcome;
+import jakarta.persistence.*;
+
+import java.time.Instant;
+import java.time.LocalDate;
 
 /**
  * One tap. There is at most one row for (student, day, event type): a tap sent twice is one row.

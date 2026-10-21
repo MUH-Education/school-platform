@@ -1,28 +1,22 @@
 package com.muhjain.school.controller;
 
-import java.time.LocalDate;
-import java.util.List;
-
+import com.muhjain.school.model.dto.request.UpdateTemplateRequest;
+import com.muhjain.school.model.dto.response.MessageResponse;
+import com.muhjain.school.model.dto.response.MessageSummaryResponse;
 import com.muhjain.school.model.dto.response.PageResponse;
+import com.muhjain.school.model.dto.response.TemplateResponse;
+import com.muhjain.school.model.enums.MessageStatus;
+import com.muhjain.school.security.CurrentUser;
+import com.muhjain.school.service.messaging.MessageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-import com.muhjain.school.model.dto.response.MessageResponse;
-import com.muhjain.school.model.dto.response.MessageSummaryResponse;
-import com.muhjain.school.model.dto.response.TemplateResponse;
-import com.muhjain.school.model.dto.request.UpdateTemplateRequest;
-import com.muhjain.school.model.enums.MessageStatus;
-import com.muhjain.school.security.CurrentUser;
-import com.muhjain.school.service.messaging.MessageService;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.util.List;
 
 /**
  * The Messages screen. Reading needs MESSAGES_VIEW. Changing a text needs SETTINGS_EDIT (the owner), because every

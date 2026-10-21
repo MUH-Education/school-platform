@@ -1,12 +1,10 @@
 package com.muhjain.school.model.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.muhjain.school.model.enums.VehicleType;
+
 import java.time.LocalTime;
 import java.util.List;
-
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.muhjain.school.model.dto.response.VehicleSummary;
-import com.muhjain.school.model.enums.VehicleType;
-import com.muhjain.school.model.entity.Route;
 
 /**
  * One route with its vehicle and stops in order. {@code schoolArrivalTime}/{@code schoolLeaveTime} are the time

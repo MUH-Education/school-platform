@@ -1,15 +1,15 @@
 package com.muhjain.school.config;
 
-import java.lang.reflect.RecordComponent;
-import java.util.Arrays;
-import java.util.Map;
-
+import com.muhjain.school.controller.AnalyticsController;
+import com.muhjain.school.model.dto.response.AnalyticsStudentFilter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.springdoc.core.customizers.ParameterCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import com.muhjain.school.controller.AnalyticsController;
-import com.muhjain.school.model.dto.response.AnalyticsStudentFilter;
+
+import java.lang.reflect.RecordComponent;
+import java.util.Arrays;
+import java.util.Map;
 
 /**
  * Gives the filter parameters of the seven Analytics URLs a description and an example in the API docs.

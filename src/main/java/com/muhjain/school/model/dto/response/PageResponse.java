@@ -1,8 +1,8 @@
 package com.muhjain.school.model.dto.response;
 
-import java.util.List;
-
 import org.springframework.data.domain.Page;
+
+import java.util.List;
 
 /**
  * One page of a long list (students, enquiries, messages, audit).

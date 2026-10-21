@@ -1,20 +1,18 @@
 package com.muhjain.school.trip;
 
-import java.time.Instant;
-
+import com.muhjain.school.model.enums.EventType;
+import com.muhjain.school.service.trip.BoardingNotifier;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import com.muhjain.school.model.enums.EventType;
-import com.muhjain.school.service.trip.BoardingNotifier;
 
 /** Rules 1 to 10: who may tap, and how a tap is saved. */
 class MarkApiTest extends TripTestBase {

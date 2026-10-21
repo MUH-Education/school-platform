@@ -1,9 +1,9 @@
 package com.muhjain.school.model.dto.response;
 
-import java.util.List;
-
 import com.muhjain.school.model.entity.AppUser;
 import com.muhjain.school.model.enums.Permission;
+
+import java.util.List;
 
 /**
  * Who is logged in. Used by the login answer and by {@code GET /api/v1/auth/me}.

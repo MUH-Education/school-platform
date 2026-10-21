@@ -1,12 +1,9 @@
 package com.muhjain.school.util;
 
-import static com.muhjain.school.model.enums.EnquiryStatus.ADMITTED;
-import static com.muhjain.school.model.enums.EnquiryStatus.APPLIED;
-import static com.muhjain.school.model.enums.EnquiryStatus.CONTACTED;
-import static com.muhjain.school.model.enums.EnquiryStatus.LOST;
-import static com.muhjain.school.model.enums.EnquiryStatus.NEW;
-import static com.muhjain.school.model.enums.EnquiryStatus.VISITED;
 import com.muhjain.school.model.enums.EnquiryStatus;
+
+import static com.muhjain.school.model.enums.EnquiryStatus.ADMITTED;
+import static com.muhjain.school.model.enums.EnquiryStatus.LOST;
 
 /**
  * Which stage changes a person may make by hand (rule 3). Pure Java.

@@ -4,22 +4,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
 
-import static com.muhjain.school.model.enums.Permission.ADMISSIONS_CREATE;
-import static com.muhjain.school.model.enums.Permission.ANALYTICS_VIEW;
-import static com.muhjain.school.model.enums.Permission.BUS_STATUS_VIEW;
-import static com.muhjain.school.model.enums.Permission.ENQUIRIES_EDIT;
-import static com.muhjain.school.model.enums.Permission.ENQUIRIES_VIEW;
-import static com.muhjain.school.model.enums.Permission.FEES_EDIT;
-import static com.muhjain.school.model.enums.Permission.FEES_VIEW;
-import static com.muhjain.school.model.enums.Permission.MESSAGES_VIEW;
-import static com.muhjain.school.model.enums.Permission.ROUTES_EDIT;
-import static com.muhjain.school.model.enums.Permission.ROUTES_VIEW;
-import static com.muhjain.school.model.enums.Permission.STUDENTS_EDIT;
-import static com.muhjain.school.model.enums.Permission.STUDENTS_VIEW;
-import static com.muhjain.school.model.enums.Permission.TRIPS_RECORD;
-import static com.muhjain.school.model.enums.Permission.TRIPS_RECORD_ANY;
-import static com.muhjain.school.model.enums.Permission.VEHICLES_EDIT;
-import static com.muhjain.school.model.enums.Permission.VEHICLES_VIEW;
+import static com.muhjain.school.model.enums.Permission.*;
 
 /**
  * A job title. Each role is a fixed bundle of permissions (docs/05-roles-permissions.md).

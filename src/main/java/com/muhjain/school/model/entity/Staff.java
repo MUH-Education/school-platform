@@ -1,17 +1,11 @@
 package com.muhjain.school.model.entity;
 
-import java.time.LocalDate;
-
-import com.muhjain.school.model.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Table;
-import com.muhjain.school.model.dto.response.Teaching;
 import com.muhjain.school.model.enums.IdProofType;
 import com.muhjain.school.model.enums.StaffGender;
 import com.muhjain.school.model.enums.StaffType;
+import jakarta.persistence.*;
+
+import java.time.LocalDate;
 
 /**
  * One employee of the school: a driver, attendant, helper or teacher.

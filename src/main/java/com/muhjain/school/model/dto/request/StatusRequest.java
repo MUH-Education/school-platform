@@ -1,9 +1,9 @@
 package com.muhjain.school.model.dto.request;
 
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import com.muhjain.school.model.enums.EnquiryLostReason;
 import com.muhjain.school.model.enums.EnquiryStatus;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 /**
  * Move an enquiry to another stage. {@code lostReason} is needed for LOST; {@code lostNote} is optional free

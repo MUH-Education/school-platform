@@ -1,9 +1,8 @@
 package com.muhjain.school.model.dto.response;
 
-import java.util.Map;
-
-import com.muhjain.school.model.dto.response.SmsDelivery;
 import com.muhjain.school.model.enums.EventType;
+
+import java.util.Map;
 
 /**
  * The SMS state of the four events of one child. Example: {@code boardedMorning: {SENT, 07:42}, reachedSchool:

@@ -1,40 +1,34 @@
 package com.muhjain.school.service.messaging;
 
+import com.muhjain.school.exception.ApiException;
+import com.muhjain.school.model.dto.request.UpdateTemplateRequest;
+import com.muhjain.school.model.dto.response.*;
+import com.muhjain.school.model.entity.MessageOutbox;
+import com.muhjain.school.model.entity.MessageTemplate;
+import com.muhjain.school.model.enums.AuditAction;
+import com.muhjain.school.model.enums.MessageChannel;
+import com.muhjain.school.model.enums.MessageStatus;
+import com.muhjain.school.model.enums.SmsState;
+import com.muhjain.school.model.repository.MessageOutboxRepository;
+import com.muhjain.school.model.repository.MessageTemplateRepository;
+import com.muhjain.school.service.audit.AuditService;
+import com.muhjain.school.service.student.StudentQueryService;
+import com.muhjain.school.util.PhoneNumbers;
+import com.muhjain.school.util.SmsTextBuilder;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.time.Clock;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
-
-import com.muhjain.school.model.enums.AuditAction;
-import com.muhjain.school.service.audit.AuditService;
-import com.muhjain.school.exception.ApiException;
-import com.muhjain.school.model.dto.response.PageResponse;
-import com.muhjain.school.util.PhoneNumbers;
-import com.muhjain.school.service.student.StudentQueryService;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import com.muhjain.school.model.dto.response.MessageResponse;
-import com.muhjain.school.model.dto.response.MessageSummaryResponse;
-import com.muhjain.school.model.dto.response.SmsDelivery;
-import com.muhjain.school.model.dto.response.TemplateResponse;
-import com.muhjain.school.model.dto.request.UpdateTemplateRequest;
-import com.muhjain.school.model.entity.MessageOutbox;
-import com.muhjain.school.model.entity.MessageTemplate;
-import com.muhjain.school.model.enums.MessageChannel;
-import com.muhjain.school.model.enums.MessageStatus;
-import com.muhjain.school.model.enums.SmsState;
-import com.muhjain.school.model.repository.MessageOutboxRepository;
-import com.muhjain.school.model.repository.MessageTemplateRepository;
-import com.muhjain.school.util.SmsTextBuilder;
 
 /**
  * The Messages screen: the SMS log, the counts of a day, and the texts. Phones are always masked here

@@ -1,17 +1,17 @@
 package com.muhjain.school.staff;
 
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Map;
-
 import com.muhjain.school.AbstractIntegrationTest;
+import com.muhjain.school.model.dto.response.Crew;
+import com.muhjain.school.service.staff.AssignmentService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+
 import static org.assertj.core.api.Assertions.assertThat;
-import com.muhjain.school.model.dto.response.Crew;
-import com.muhjain.school.service.staff.AssignmentService;
 
 /** {@code AssignmentService.onDate} with a real database. The rule itself is in {@link AssignmentRulesTest}. */
 class AssignmentOnDateTest extends AbstractIntegrationTest {
@@ -75,7 +75,7 @@ class AssignmentOnDateTest extends AbstractIntegrationTest {
 		assertThat(crews).containsOnlyKeys(van4, van1);
 		assertThat(crews.get(van4).driver().staffId()).isEqualTo(surender);
 		assertThat(crews.get(van1)).isEqualTo(Crew.EMPTY);
-		assertThat(assignmentService.onDate(List.<Long>of(), LocalDate.of(2026, 10, 14))).isEmpty();
+		assertThat(assignmentService.onDate(List.of(), LocalDate.of(2026, 10, 14))).isEmpty();
 	}
 
 }

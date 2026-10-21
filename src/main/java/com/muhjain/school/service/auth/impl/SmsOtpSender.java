@@ -1,11 +1,11 @@
 package com.muhjain.school.service.auth.impl;
 
-import com.muhjain.school.service.messaging.ProviderApi;
+import com.muhjain.school.exception.OtpSendException;
 import com.muhjain.school.exception.SmsSendException;
+import com.muhjain.school.service.auth.OtpSender;
+import com.muhjain.school.service.messaging.ProviderApi;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
-import com.muhjain.school.exception.OtpSendException;
-import com.muhjain.school.service.auth.OtpSender;
 
 /** Sends the login code as an SMS with the approved OTP template, through the one {@link ProviderApi} class. */
 @Component

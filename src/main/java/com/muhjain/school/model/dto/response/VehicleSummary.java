@@ -1,8 +1,9 @@
 package com.muhjain.school.model.dto.response;
 
-import java.math.BigDecimal;
 import com.muhjain.school.model.entity.Vehicle;
 import com.muhjain.school.model.enums.VehicleType;
+
+import java.math.BigDecimal;
 
 /**
  * The few facts about a vehicle that other features need. Example: Van 4, SMALL_VAN, 14 seats, 30300.00 a month.

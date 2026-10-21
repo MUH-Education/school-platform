@@ -1,16 +1,15 @@
 package com.muhjain.school.util;
 
+import com.muhjain.school.config.OtpProperties;
+import org.springframework.stereotype.Component;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
-
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-
-import org.springframework.stereotype.Component;
-import com.muhjain.school.config.OtpProperties;
 
 /**
  * HMAC-SHA256 of a code with {@code app.otp.hash-secret}. The phone is part of the input,

@@ -1,8 +1,8 @@
 package com.muhjain.school.security;
 
-import java.nio.charset.StandardCharsets;
-
 import org.springframework.boot.context.properties.ConfigurationProperties;
+
+import java.nio.charset.StandardCharsets;
 
 /**
  * {@code app.jwt.*}. Example: secret from APP_JWT_SECRET.

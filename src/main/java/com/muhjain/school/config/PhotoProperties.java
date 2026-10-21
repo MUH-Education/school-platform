@@ -1,8 +1,8 @@
 package com.muhjain.school.config;
 
-import java.nio.file.Path;
-
 import org.springframework.boot.context.properties.ConfigurationProperties;
+
+import java.nio.file.Path;
 
 /** {@code app.photos.*}. Example: storage = local, folder = ./data/photos. */
 @ConfigurationProperties("app.photos")

@@ -1,7 +1,8 @@
 package com.muhjain.school.model.dto.response;
 
-import java.time.LocalDate;
 import com.muhjain.school.model.entity.AcademicSession;
+
+import java.time.LocalDate;
 
 /** One school year. Example: {@code {"id":1,"name":"2026-27","startsOn":"2026-04-01","endsOn":"2027-03-31","current":true}} */
 public record SessionResponse(Long id, String name, LocalDate startsOn, LocalDate endsOn, boolean current) {

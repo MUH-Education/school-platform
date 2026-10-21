@@ -1,16 +1,11 @@
 package com.muhjain.school.model.entity;
 
+import com.muhjain.school.model.enums.FeeHead;
+import jakarta.persistence.*;
+import org.hibernate.annotations.Immutable;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
-
-import com.muhjain.school.model.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Table;
-import org.hibernate.annotations.Immutable;
-import com.muhjain.school.model.enums.FeeHead;
 
 /**
  * One line of a receipt: one child, one month, one fee head. Never updated or deleted: a database trigger

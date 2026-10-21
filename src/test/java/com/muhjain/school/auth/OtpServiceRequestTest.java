@@ -1,20 +1,20 @@
 package com.muhjain.school.auth;
 
-import java.time.Duration;
-
 import com.muhjain.school.AbstractIntegrationTest;
 import com.muhjain.school.exception.ApiException;
+import com.muhjain.school.model.dto.response.OtpRequestResponse;
 import com.muhjain.school.model.enums.Role;
+import com.muhjain.school.service.auth.OtpService;
+import com.muhjain.school.service.auth.RedisOtpStore;
+import com.muhjain.school.util.OtpHasher;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verifyNoInteractions;
-import com.muhjain.school.model.dto.response.OtpRequestResponse;
-import com.muhjain.school.service.auth.OtpService;
-import com.muhjain.school.service.auth.RedisOtpStore;
-import com.muhjain.school.util.OtpHasher;
 
 class OtpServiceRequestTest extends AbstractIntegrationTest {
 

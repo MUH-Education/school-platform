@@ -1,25 +1,25 @@
 package com.muhjain.school.staff;
 
-import java.time.Instant;
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Map;
-
 import com.muhjain.school.AbstractIntegrationTest;
+import com.muhjain.school.model.dto.response.CrewMember;
 import com.muhjain.school.model.entity.AppUser;
 import com.muhjain.school.model.enums.Role;
+import com.muhjain.school.service.staff.AssignmentService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import com.muhjain.school.model.dto.response.CrewMember;
-import com.muhjain.school.service.staff.AssignmentService;
 
 /**
  * Rules 6 to 8 and 10 to 12 of docs/phases/phase-2-vehicles-staff-routes.md, through the real URL.

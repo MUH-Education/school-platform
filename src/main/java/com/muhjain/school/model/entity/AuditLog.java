@@ -1,17 +1,12 @@
 package com.muhjain.school.model.entity;
 
-import java.time.Instant;
-import java.util.Map;
-
-import com.muhjain.school.model.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Table;
+import com.muhjain.school.model.enums.AuditAction;
+import jakarta.persistence.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
-import com.muhjain.school.model.enums.AuditAction;
+
+import java.time.Instant;
+import java.util.Map;
 
 /**
  * One line of "who changed what".

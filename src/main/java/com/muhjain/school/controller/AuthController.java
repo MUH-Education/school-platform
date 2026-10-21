@@ -1,11 +1,16 @@
 package com.muhjain.school.controller;
 
-import java.time.Clock;
-import java.time.LocalDate;
-
 import com.muhjain.school.exception.ApiException;
-import com.muhjain.school.service.route.AttendantRouteService;
+import com.muhjain.school.model.dto.request.OtpRequest;
+import com.muhjain.school.model.dto.request.OtpVerifyRequest;
+import com.muhjain.school.model.dto.response.AuthUserResponse;
+import com.muhjain.school.model.dto.response.LoginResponse;
+import com.muhjain.school.model.dto.response.OtpRequestResponse;
 import com.muhjain.school.model.entity.AppUser;
+import com.muhjain.school.security.CurrentUser;
+import com.muhjain.school.service.auth.OtpService;
+import com.muhjain.school.service.auth.SessionService;
+import com.muhjain.school.service.route.AttendantRouteService;
 import com.muhjain.school.service.user.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
@@ -13,20 +18,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
-import com.muhjain.school.model.dto.response.AuthUserResponse;
-import com.muhjain.school.model.dto.response.LoginResponse;
-import com.muhjain.school.model.dto.request.OtpRequest;
-import com.muhjain.school.model.dto.response.OtpRequestResponse;
-import com.muhjain.school.model.dto.request.OtpVerifyRequest;
-import com.muhjain.school.security.CurrentUser;
-import com.muhjain.school.service.auth.OtpService;
-import com.muhjain.school.service.auth.SessionService;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.Clock;
+import java.time.LocalDate;
 
 /**
  * Login with phone and OTP. See docs/04-login-otp-jwt.md.

@@ -1,5 +1,13 @@
 package com.muhjain.school.fee;
 
+import com.muhjain.school.AbstractIntegrationTest;
+import com.muhjain.school.service.fee.ReceiptNumberService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -8,16 +16,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import com.muhjain.school.AbstractIntegrationTest;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import com.muhjain.school.service.fee.ReceiptNumberService;
 
 /**
  * Rule 11 of phase 7: receipt numbers are R-<year>-<4 digits>, from a locked {@code number_counter} row.

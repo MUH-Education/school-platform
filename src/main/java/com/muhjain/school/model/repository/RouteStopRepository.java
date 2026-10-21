@@ -1,10 +1,10 @@
 package com.muhjain.school.model.repository;
 
+import com.muhjain.school.model.entity.RouteStop;
+import org.springframework.data.jpa.repository.JpaRepository;
+
 import java.util.Collection;
 import java.util.List;
-
-import org.springframework.data.jpa.repository.JpaRepository;
-import com.muhjain.school.model.entity.RouteStop;
 
 public interface RouteStopRepository extends JpaRepository<RouteStop, Long> {
 

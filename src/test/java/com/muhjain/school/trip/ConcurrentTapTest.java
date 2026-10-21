@@ -1,15 +1,13 @@
 package com.muhjain.school.trip;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-
+import com.muhjain.school.model.enums.EventType;
+import com.muhjain.school.service.trip.BoardingNotifier;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -18,8 +16,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import com.muhjain.school.model.enums.EventType;
-import com.muhjain.school.service.trip.BoardingNotifier;
 
 /**
  * Task 4.13. Two phones send the same tap at the same moment (bad signal, a retry). The unique row

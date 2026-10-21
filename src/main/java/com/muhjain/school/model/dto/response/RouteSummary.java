@@ -1,7 +1,6 @@
 package com.muhjain.school.model.dto.response;
 
 import java.time.LocalTime;
-import com.muhjain.school.model.entity.Route;
 
 /**
  * A route in short for trips and bus status. {@code schoolArrivalTime}/{@code schoolLeaveTime} are the time the

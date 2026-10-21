@@ -1,10 +1,10 @@
 package com.muhjain.school.model.repository;
 
+import com.muhjain.school.model.entity.TeacherProfile;
+import org.springframework.data.jpa.repository.JpaRepository;
+
 import java.util.List;
 import java.util.Optional;
-
-import org.springframework.data.jpa.repository.JpaRepository;
-import com.muhjain.school.model.entity.TeacherProfile;
 
 public interface TeacherProfileRepository extends JpaRepository<TeacherProfile, Long> {
 

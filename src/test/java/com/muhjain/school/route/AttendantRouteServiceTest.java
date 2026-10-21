@@ -1,22 +1,21 @@
 package com.muhjain.school.route;
 
-import java.time.LocalDate;
-import java.util.Optional;
-
 import com.muhjain.school.AbstractIntegrationTest;
+import com.muhjain.school.model.dto.response.AttendantRoute;
 import com.muhjain.school.model.entity.AppUser;
 import com.muhjain.school.model.enums.Role;
+import com.muhjain.school.service.route.AttendantRouteService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 
+import java.time.LocalDate;
+import java.util.Optional;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import com.muhjain.school.model.dto.response.AttendantRoute;
-import com.muhjain.school.model.entity.Route;
-import com.muhjain.school.service.route.AttendantRouteService;
 
 /**
  * The attendant's route follows the assignment of the day. Phase 4 protects every trip URL with this.

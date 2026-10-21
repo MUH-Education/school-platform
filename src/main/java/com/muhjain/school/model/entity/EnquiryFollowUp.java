@@ -1,15 +1,10 @@
 package com.muhjain.school.model.entity;
 
-import java.time.LocalDate;
-
-import com.muhjain.school.model.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Table;
 import com.muhjain.school.model.enums.EnquiryFollowType;
 import com.muhjain.school.model.enums.EnquiryNextType;
+import jakarta.persistence.*;
+
+import java.time.LocalDate;
 
 /** One call or visit. Example: CALL on 7 Oct, "Called, will visit on Sunday", next VISIT on 12 Oct. */
 @Entity

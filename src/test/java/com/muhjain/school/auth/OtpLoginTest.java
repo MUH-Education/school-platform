@@ -1,24 +1,22 @@
 package com.muhjain.school.auth;
 
-import java.time.Duration;
-
 import com.muhjain.school.AbstractIntegrationTest;
 import com.muhjain.school.model.entity.AppUser;
 import com.muhjain.school.model.enums.Role;
+import com.muhjain.school.service.auth.OtpService;
+import com.muhjain.school.service.auth.RedisOtpStore;
+import com.muhjain.school.util.OtpHasher;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
 
+import java.time.Duration;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import com.muhjain.school.service.auth.OtpService;
-import com.muhjain.school.service.auth.RedisOtpStore;
-import com.muhjain.school.util.OtpHasher;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /** The "Login" tests of docs/phases/phase-1-login-users.md. */
 class OtpLoginTest extends AbstractIntegrationTest {

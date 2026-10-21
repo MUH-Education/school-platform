@@ -1,31 +1,15 @@
 package com.muhjain.school.service.trip;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import com.muhjain.school.model.dto.response.StopTimes;
-import com.muhjain.school.model.dto.response.RouteChild;
+import com.muhjain.school.model.dto.response.*;
+import com.muhjain.school.model.entity.BoardingEvent;
+import com.muhjain.school.model.enums.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.muhjain.school.model.dto.response.AttentionEntry;
-import com.muhjain.school.model.dto.response.MissingChild;
-import com.muhjain.school.model.dto.response.RouteDay;
-import com.muhjain.school.model.dto.response.RouteStatusResponse;
-import com.muhjain.school.model.dto.response.StopStatusResponse;
-import com.muhjain.school.model.entity.BoardingEvent;
-import com.muhjain.school.model.enums.AttentionKind;
-import com.muhjain.school.model.enums.BusPhase;
-import com.muhjain.school.model.enums.EventType;
-import com.muhjain.school.model.enums.Outcome;
-import com.muhjain.school.model.enums.RouteState;
-import com.muhjain.school.model.enums.StopState;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * The attention list (rules 20 to 22). One flat list of plain English sentences, so the wording lives in one

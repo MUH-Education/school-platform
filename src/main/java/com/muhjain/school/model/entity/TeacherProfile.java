@@ -1,11 +1,11 @@
 package com.muhjain.school.model.entity;
 
-import java.time.Instant;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+
+import java.time.Instant;
 
 /**
  * The extra file of one teacher. The key is the {@code staff} id, so one teacher has at most one row.

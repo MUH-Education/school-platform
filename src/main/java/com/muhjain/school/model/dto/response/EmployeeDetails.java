@@ -1,12 +1,12 @@
 package com.muhjain.school.model.dto.response;
 
-import java.time.LocalDate;
-
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import com.muhjain.school.model.entity.Staff;
 import com.muhjain.school.model.enums.IdProofType;
 import com.muhjain.school.model.enums.StaffGender;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+
+import java.time.LocalDate;
 
 /**
  * The office file of one employee. Every field may be left out: the people added in Phase 2 have none of

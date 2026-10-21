@@ -1,15 +1,10 @@
 package com.muhjain.school.model.entity;
 
-import java.time.LocalDate;
-
-import com.muhjain.school.model.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Table;
 import com.muhjain.school.model.enums.ChangeReason;
 import com.muhjain.school.model.enums.Duty;
+import jakarta.persistence.*;
+
+import java.time.LocalDate;
 
 /**
  * Who works on which vehicle, and when. One row = one person, one vehicle, one duty, from a day to a day.

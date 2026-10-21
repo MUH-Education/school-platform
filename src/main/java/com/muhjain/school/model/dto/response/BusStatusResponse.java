@@ -1,9 +1,10 @@
 package com.muhjain.school.model.dto.response;
 
+import com.muhjain.school.model.enums.BusPhase;
+
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
-import com.muhjain.school.model.enums.BusPhase;
 
 /**
  * The answer of {@code GET /bus-status}. {@code date} is the day shown, {@code phase} the one actually used

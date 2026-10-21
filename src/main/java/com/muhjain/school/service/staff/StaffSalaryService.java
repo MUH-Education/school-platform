@@ -1,18 +1,18 @@
 package com.muhjain.school.service.staff;
 
-import java.time.Clock;
-
-import com.muhjain.school.model.enums.AuditAction;
-import com.muhjain.school.util.AuditChanges;
-import com.muhjain.school.service.audit.AuditService;
 import com.muhjain.school.exception.ApiException;
+import com.muhjain.school.model.dto.request.SetSalaryRequest;
+import com.muhjain.school.model.dto.response.SalaryResponse;
+import com.muhjain.school.model.entity.StaffSalary;
+import com.muhjain.school.model.enums.AuditAction;
+import com.muhjain.school.model.repository.StaffSalaryRepository;
+import com.muhjain.school.service.audit.AuditService;
+import com.muhjain.school.util.AuditChanges;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.muhjain.school.model.dto.response.SalaryResponse;
-import com.muhjain.school.model.dto.request.SetSalaryRequest;
-import com.muhjain.school.model.entity.StaffSalary;
-import com.muhjain.school.model.repository.StaffSalaryRepository;
+
+import java.time.Clock;
 
 /**
  * What an employee is paid. Kept away from {@link StaffService} so that no staff list can ever carry a salary

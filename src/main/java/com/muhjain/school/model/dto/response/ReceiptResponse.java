@@ -1,10 +1,11 @@
 package com.muhjain.school.model.dto.response;
 
+import com.muhjain.school.model.entity.Receipt;
+import com.muhjain.school.model.enums.PaymentMode;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
-import com.muhjain.school.model.entity.Receipt;
-import com.muhjain.school.model.enums.PaymentMode;
 
 /**
  * The answer after a payment or a correction. {@code total} is the sum of the lines. {@code stillToPay} is

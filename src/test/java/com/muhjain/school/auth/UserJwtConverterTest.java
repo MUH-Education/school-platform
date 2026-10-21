@@ -4,6 +4,8 @@ import com.muhjain.school.AbstractIntegrationTest;
 import com.muhjain.school.model.dto.response.IssuedToken;
 import com.muhjain.school.model.entity.AppUser;
 import com.muhjain.school.model.enums.Role;
+import com.muhjain.school.security.JwtService;
+import com.muhjain.school.security.UserJwtConverter;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
@@ -13,8 +15,6 @@ import org.springframework.security.oauth2.server.resource.InvalidBearerTokenExc
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import com.muhjain.school.security.JwtService;
-import com.muhjain.school.security.UserJwtConverter;
 
 class UserJwtConverterTest extends AbstractIntegrationTest {
 

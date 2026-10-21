@@ -1,12 +1,7 @@
 package com.muhjain.school.model.entity;
 
-import com.muhjain.school.model.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Table;
 import com.muhjain.school.model.enums.GuardianRelation;
+import jakarta.persistence.*;
 
 /**
  * "This phone belongs to this child." Example: Aryan and Siya are brother and sister. Their mother's phone is one

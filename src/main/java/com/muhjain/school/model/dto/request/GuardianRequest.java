@@ -1,9 +1,9 @@
 package com.muhjain.school.model.dto.request;
 
+import com.muhjain.school.model.enums.GuardianRelation;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import com.muhjain.school.model.enums.GuardianRelation;
 
 /**
  * A phone number of a parent or relative. {@code smsEnabled} is optional and means "yes" when it is missing.

@@ -1,9 +1,9 @@
 package com.muhjain.school.model.dto.response;
 
+import com.muhjain.school.util.FeeStatusCalculator.MonthView;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
-
-import com.muhjain.school.util.FeeStatusCalculator.MonthView;
 
 /**
  * One month's due with what is paid. Example: July 2026, total 3300, paid 800, open 2500, due, not yet late.

@@ -1,35 +1,27 @@
 package com.muhjain.school.service.student;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import com.muhjain.school.model.enums.AuditAction;
-import com.muhjain.school.service.audit.AuditService;
 import com.muhjain.school.exception.ApiException;
-import com.muhjain.school.util.DayText;
-import com.muhjain.school.service.fee.FeePlanService;
-import com.muhjain.school.model.dto.response.RouteInfo;
-import com.muhjain.school.service.route.RouteService;
-import com.muhjain.school.model.dto.response.StopRef;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import com.muhjain.school.model.dto.response.EnrolmentResponse;
 import com.muhjain.school.model.dto.request.TransportRequest;
-import com.muhjain.school.model.dto.response.TransportSaveResponse;
-import com.muhjain.school.model.dto.response.TransportWarning;
+import com.muhjain.school.model.dto.response.*;
 import com.muhjain.school.model.entity.Student;
 import com.muhjain.school.model.entity.TransportEnrolment;
+import com.muhjain.school.model.enums.AuditAction;
 import com.muhjain.school.model.enums.StudentStatus;
 import com.muhjain.school.model.enums.TransportReason;
 import com.muhjain.school.model.repository.StudentRepository;
 import com.muhjain.school.model.repository.TransportEnrolmentRepository;
+import com.muhjain.school.service.audit.AuditService;
+import com.muhjain.school.service.fee.FeePlanService;
+import com.muhjain.school.service.route.RouteService;
+import com.muhjain.school.util.DayText;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * A child's bus history. Rules 10 to 14 of docs/phases/phase-3-students-admission.md.

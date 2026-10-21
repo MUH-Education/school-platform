@@ -1,11 +1,11 @@
 package com.muhjain.school.model.repository;
 
-import java.util.List;
-import java.util.Optional;
-
-import org.springframework.data.jpa.repository.JpaRepository;
 import com.muhjain.school.model.entity.MessageTemplate;
 import com.muhjain.school.model.enums.Gender;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+import java.util.Optional;
 
 public interface MessageTemplateRepository extends JpaRepository<MessageTemplate, Long> {
 

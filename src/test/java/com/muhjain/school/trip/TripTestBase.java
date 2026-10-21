@@ -1,13 +1,13 @@
 package com.muhjain.school.trip;
 
-import java.time.Instant;
-
 import com.muhjain.school.AbstractIntegrationTest;
 import com.muhjain.school.model.entity.AppUser;
 import com.muhjain.school.model.enums.Role;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
+
+import java.time.Instant;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;

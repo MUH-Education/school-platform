@@ -1,17 +1,12 @@
 package com.muhjain.school.model.dto.response;
 
-import java.math.BigDecimal;
-import java.util.List;
-
-import com.muhjain.school.model.dto.response.RouteRef;
-import com.muhjain.school.model.dto.response.Crew;
-import com.muhjain.school.model.dto.response.CrewMember;
 import com.muhjain.school.model.entity.Vehicle;
 import com.muhjain.school.model.enums.OwnedBy;
 import com.muhjain.school.model.enums.PaperStatus;
 import com.muhjain.school.model.enums.VehicleType;
-import com.muhjain.school.service.vehicle.VehicleOverviewService;
-import com.muhjain.school.service.vehicle.VehicleService;
+
+import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * One vehicle. {@code documents} always has the four papers, in the order FITNESS, INSURANCE, PERMIT, PUC.

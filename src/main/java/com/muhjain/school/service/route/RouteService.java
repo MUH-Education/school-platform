@@ -1,45 +1,31 @@
 package com.muhjain.school.service.route;
 
-import java.time.Clock;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import com.muhjain.school.model.enums.AuditAction;
-import com.muhjain.school.util.AuditChanges;
-import com.muhjain.school.service.audit.AuditService;
 import com.muhjain.school.exception.ApiException;
-import com.muhjain.school.util.NameKeys;
+import com.muhjain.school.model.dto.request.CreateRouteRequest;
+import com.muhjain.school.model.dto.request.StopRequest;
+import com.muhjain.school.model.dto.request.UpdateRouteRequest;
+import com.muhjain.school.model.dto.response.*;
+import com.muhjain.school.model.entity.Route;
+import com.muhjain.school.model.entity.RouteStop;
+import com.muhjain.school.model.enums.AuditAction;
+import com.muhjain.school.model.repository.RouteRepository;
+import com.muhjain.school.model.repository.RouteStopRepository;
+import com.muhjain.school.service.audit.AuditService;
 import com.muhjain.school.service.vehicle.VehicleService;
-import com.muhjain.school.model.dto.response.VehicleSummary;
+import com.muhjain.school.util.AuditChanges;
+import com.muhjain.school.util.NameKeys;
 import org.springframework.core.NestedExceptionUtils;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.muhjain.school.model.dto.request.CreateRouteRequest;
-import com.muhjain.school.model.dto.response.RouteInfo;
-import com.muhjain.school.model.dto.response.RouteRef;
-import com.muhjain.school.model.dto.response.RouteResponse;
-import com.muhjain.school.model.dto.response.RouteSummary;
-import com.muhjain.school.model.dto.response.StopRef;
-import com.muhjain.school.model.dto.request.StopRequest;
-import com.muhjain.school.model.dto.response.StopResponse;
-import com.muhjain.school.model.dto.response.StopTimes;
-import com.muhjain.school.model.dto.request.UpdateRouteRequest;
-import com.muhjain.school.model.entity.Route;
-import com.muhjain.school.model.entity.RouteStop;
-import com.muhjain.school.model.repository.RouteRepository;
-import com.muhjain.school.model.repository.RouteStopRepository;
+
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Routes and their ordered stops. Rules 13 to 15 of docs/phases/phase-2-vehicles-staff-routes.md.

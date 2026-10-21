@@ -1,11 +1,10 @@
 package com.muhjain.school.model.dto.response;
 
-import java.math.BigDecimal;
-
-import com.muhjain.school.model.dto.response.VehicleSummary;
-import com.muhjain.school.model.enums.VehicleType;
 import com.muhjain.school.model.entity.Route;
+import com.muhjain.school.model.enums.VehicleType;
 import com.muhjain.school.util.LoadBoardCalculator;
+
+import java.math.BigDecimal;
 
 /**
  * One row of the Routes and load screen. See {@link LoadBoardCalculator.RouteLoad} for what each number means.

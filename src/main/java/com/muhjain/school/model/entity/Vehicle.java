@@ -1,15 +1,10 @@
 package com.muhjain.school.model.entity;
 
-import java.math.BigDecimal;
-
-import com.muhjain.school.model.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Table;
 import com.muhjain.school.model.enums.OwnedBy;
 import com.muhjain.school.model.enums.VehicleType;
+import jakarta.persistence.*;
+
+import java.math.BigDecimal;
 
 /**
  * One vehicle. Example: "Van 4", "HR 23 A 1104", SMALL_VAN, 14 seats, 30300.00 a month.

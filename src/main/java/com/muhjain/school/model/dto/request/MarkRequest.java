@@ -1,11 +1,11 @@
 package com.muhjain.school.model.dto.request;
 
-import java.time.Instant;
-import java.time.LocalDate;
-
-import jakarta.validation.constraints.NotNull;
 import com.muhjain.school.model.enums.EventType;
 import com.muhjain.school.model.enums.Outcome;
+import jakarta.validation.constraints.NotNull;
+
+import java.time.Instant;
+import java.time.LocalDate;
 
 /**
  * One tap sent by the phone. Example: {@code studentId 118, BOARDED_MORNING, DONE, 2026-10-07,

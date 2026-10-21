@@ -1,8 +1,6 @@
 package com.muhjain.school.security;
 
 import com.muhjain.school.model.dto.response.ApiErrorResponse;
-import tools.jackson.databind.json.JsonMapper;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,6 +14,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Who may call which URL.

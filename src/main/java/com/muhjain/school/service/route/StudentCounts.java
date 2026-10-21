@@ -2,8 +2,6 @@ package com.muhjain.school.service.route;
 
 import java.time.LocalDate;
 import java.util.Map;
-import com.muhjain.school.model.entity.Route;
-import com.muhjain.school.service.student.StudentQueryService;
 
 /**
  * "How many children ride on this route?" Routes need the answer, but students belong to another feature.

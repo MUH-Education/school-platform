@@ -1,19 +1,10 @@
 package com.muhjain.school.model.entity;
 
+import com.muhjain.school.model.enums.*;
+import jakarta.persistence.*;
+
 import java.time.Instant;
 import java.time.LocalDate;
-
-import com.muhjain.school.model.entity.BaseEntity;
-import com.muhjain.school.model.enums.EventType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Table;
-import com.muhjain.school.model.enums.MessageChannel;
-import com.muhjain.school.model.enums.MessageProblem;
-import com.muhjain.school.model.enums.MessagePurpose;
-import com.muhjain.school.model.enums.MessageStatus;
 
 /**
  * One message to one phone. Example: BOARDING, SMS, +919811100001, Aryan, 7 Oct 2026, BOARDED_MORNING, QUEUED.

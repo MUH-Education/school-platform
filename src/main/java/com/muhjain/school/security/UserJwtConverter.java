@@ -1,12 +1,8 @@
 package com.muhjain.school.security;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
-import com.muhjain.school.model.entity.AppUser;
 import com.muhjain.school.model.dto.response.SessionCacheResult;
 import com.muhjain.school.model.dto.response.SessionPrincipal;
+import com.muhjain.school.model.entity.AppUser;
 import com.muhjain.school.model.enums.Permission;
 import com.muhjain.school.service.auth.SessionService;
 import com.muhjain.school.service.user.UserService;
@@ -18,6 +14,10 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.InvalidBearerTokenException;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * Runs on every request after the signature and the token's own (12-hour) expiry are checked.

@@ -1,15 +1,15 @@
 package com.muhjain.school.analytics;
 
-import java.util.List;
-
 import com.muhjain.school.exception.ApiException;
+import com.muhjain.school.model.dto.response.AnalyticsStudentFilter;
 import com.muhjain.school.model.enums.BusFilter;
 import com.muhjain.school.util.ClassNames;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import com.muhjain.school.model.dto.response.AnalyticsStudentFilter;
 
 class StudentFilterTest {
 

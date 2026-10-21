@@ -1,18 +1,18 @@
 package com.muhjain.school.service.audit;
 
-import java.time.Clock;
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-
+import com.muhjain.school.model.entity.AuditLog;
+import com.muhjain.school.model.enums.AuditAction;
+import com.muhjain.school.model.repository.AuditLogRepository;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.muhjain.school.model.entity.AuditLog;
-import com.muhjain.school.model.enums.AuditAction;
-import com.muhjain.school.model.repository.AuditLogRepository;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Writes one {@code audit_log} row for every create, update and login.

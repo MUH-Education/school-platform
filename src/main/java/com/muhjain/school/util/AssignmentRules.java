@@ -1,12 +1,13 @@
 package com.muhjain.school.util;
 
+import com.muhjain.school.model.entity.VehicleAssignment;
+import com.muhjain.school.model.enums.Duty;
+
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Optional;
-import com.muhjain.school.model.entity.VehicleAssignment;
-import com.muhjain.school.model.enums.Duty;
 
 /**
  * Rule 9: "Who is on the vehicle on day D? The temporary row covering D wins. Else the permanent row covering D."

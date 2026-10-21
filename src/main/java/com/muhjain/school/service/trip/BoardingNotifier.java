@@ -1,8 +1,9 @@
 package com.muhjain.school.service.trip;
 
+import com.muhjain.school.model.enums.EventType;
+
 import java.time.Instant;
 import java.time.LocalDate;
-import com.muhjain.school.model.enums.EventType;
 
 /**
  * Called when a tap becomes DONE for the first time. Phase 5 puts the parent SMS behind it.

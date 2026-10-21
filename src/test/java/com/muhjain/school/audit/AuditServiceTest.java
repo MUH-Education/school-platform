@@ -1,16 +1,16 @@
 package com.muhjain.school.audit;
 
-import java.time.Instant;
-import java.util.Map;
-
 import com.muhjain.school.AbstractIntegrationTest;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-
-import static org.assertj.core.api.Assertions.assertThat;
 import com.muhjain.school.model.entity.AuditLog;
 import com.muhjain.school.model.enums.AuditAction;
 import com.muhjain.school.service.audit.AuditService;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import java.time.Instant;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class AuditServiceTest extends AbstractIntegrationTest {
 

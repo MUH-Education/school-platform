@@ -1,18 +1,9 @@
 package com.muhjain.school.model.entity;
 
-import java.time.LocalDate;
+import com.muhjain.school.model.enums.*;
+import jakarta.persistence.*;
 
-import com.muhjain.school.model.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Table;
-import com.muhjain.school.model.enums.EnquiryLostReason;
-import com.muhjain.school.model.enums.EnquiryNextType;
-import com.muhjain.school.model.enums.EnquirySource;
-import com.muhjain.school.model.enums.EnquiryStatus;
-import com.muhjain.school.model.enums.NeedsBus;
+import java.time.LocalDate;
 
 /**
  * One parent asking about admission. Example: Ramesh Jain from Jakhal asks about Class 3, source WALK_IN, NEW.

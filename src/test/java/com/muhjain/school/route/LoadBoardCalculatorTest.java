@@ -1,13 +1,12 @@
 package com.muhjain.school.route;
 
+import com.muhjain.school.util.LoadBoardCalculator;
+import org.junit.jupiter.api.Test;
+
 import java.math.BigDecimal;
 import java.util.List;
 
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
-import com.muhjain.school.model.entity.Route;
-import com.muhjain.school.util.LoadBoardCalculator;
 
 /**
  * Rule 16 of docs/phases/phase-2-vehicles-staff-routes.md. No Spring, no database.

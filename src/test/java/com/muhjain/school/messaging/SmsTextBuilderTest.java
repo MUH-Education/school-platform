@@ -1,12 +1,12 @@
 package com.muhjain.school.messaging;
 
-import java.time.LocalTime;
-
+import com.muhjain.school.util.SmsTextBuilder;
 import org.junit.jupiter.api.Test;
+
+import java.time.LocalTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import com.muhjain.school.util.SmsTextBuilder;
 
 class SmsTextBuilderTest {
 

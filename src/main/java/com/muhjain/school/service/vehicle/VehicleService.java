@@ -1,39 +1,34 @@
 package com.muhjain.school.service.vehicle;
 
-import java.math.BigDecimal;
-import java.time.Clock;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import com.muhjain.school.model.enums.AuditAction;
-import com.muhjain.school.util.AuditChanges;
-import com.muhjain.school.service.audit.AuditService;
 import com.muhjain.school.exception.ApiException;
+import com.muhjain.school.model.dto.request.CreateVehicleRequest;
+import com.muhjain.school.model.dto.request.UpdateVehicleRequest;
+import com.muhjain.school.model.dto.request.VehicleDocumentsRequest;
+import com.muhjain.school.model.dto.response.AttentionItem;
+import com.muhjain.school.model.dto.response.DocumentResponse;
+import com.muhjain.school.model.dto.response.VehicleResponse;
+import com.muhjain.school.model.dto.response.VehicleSummary;
+import com.muhjain.school.model.entity.Vehicle;
+import com.muhjain.school.model.entity.VehicleDocument;
+import com.muhjain.school.model.enums.AuditAction;
+import com.muhjain.school.model.enums.DocType;
+import com.muhjain.school.model.enums.PaperStatus;
+import com.muhjain.school.model.repository.VehicleDocumentRepository;
+import com.muhjain.school.model.repository.VehicleRepository;
+import com.muhjain.school.service.audit.AuditService;
+import com.muhjain.school.util.AuditChanges;
 import com.muhjain.school.util.NameKeys;
 import org.springframework.core.NestedExceptionUtils;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.muhjain.school.model.dto.response.AttentionItem;
-import com.muhjain.school.model.dto.request.CreateVehicleRequest;
-import com.muhjain.school.model.dto.response.DocumentResponse;
-import com.muhjain.school.model.dto.request.UpdateVehicleRequest;
-import com.muhjain.school.model.dto.request.VehicleDocumentsRequest;
-import com.muhjain.school.model.dto.response.VehicleResponse;
-import com.muhjain.school.model.dto.response.VehicleSummary;
-import com.muhjain.school.model.entity.Vehicle;
-import com.muhjain.school.model.entity.VehicleDocument;
-import com.muhjain.school.model.enums.DocType;
-import com.muhjain.school.model.enums.PaperStatus;
-import com.muhjain.school.model.repository.VehicleDocumentRepository;
-import com.muhjain.school.model.repository.VehicleRepository;
+
+import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.LocalDate;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Vehicles and their four papers. Rules 1 to 3 of docs/phases/phase-2-vehicles-staff-routes.md.

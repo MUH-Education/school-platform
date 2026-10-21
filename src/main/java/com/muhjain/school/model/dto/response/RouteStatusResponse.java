@@ -1,10 +1,10 @@
 package com.muhjain.school.model.dto.response;
 
-import java.util.List;
-
-import com.muhjain.school.model.enums.VehicleType;
 import com.muhjain.school.model.enums.BusPhase;
 import com.muhjain.school.model.enums.RouteState;
+import com.muhjain.school.model.enums.VehicleType;
+
+import java.util.List;
 
 /**
  * One route on Bus status. See docs/06-api.md. {@code attendant} is null if nobody is on the vehicle that day.

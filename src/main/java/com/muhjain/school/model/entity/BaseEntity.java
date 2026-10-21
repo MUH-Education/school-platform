@@ -1,17 +1,12 @@
 package com.muhjain.school.model.entity;
 
-import java.time.Instant;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.EntityListeners;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.MappedSuperclass;
+import com.muhjain.school.config.JpaAuditingConfig;
+import jakarta.persistence.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-import com.muhjain.school.config.JpaAuditingConfig;
+
+import java.time.Instant;
 
 /**
  * The three standard columns of every table: {@code id}, {@code created_at}, {@code updated_at}.

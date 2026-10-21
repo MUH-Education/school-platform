@@ -1,15 +1,12 @@
 package com.muhjain.school.util;
 
+import com.muhjain.school.model.enums.FeeHead;
+import com.muhjain.school.model.enums.FeeStatus;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
-import com.muhjain.school.model.enums.FeeHead;
-import com.muhjain.school.model.enums.FeeStatus;
+import java.util.*;
 
 /**
  * The fee maths of one child (rule 15 of phase 7). Pure Java: no Spring, no database, no clock. The caller

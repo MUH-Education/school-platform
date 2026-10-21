@@ -1,17 +1,17 @@
 package com.muhjain.school.user;
 
-import java.time.Instant;
-
 import com.muhjain.school.AbstractIntegrationTest;
+import com.muhjain.school.model.entity.AppUser;
+import com.muhjain.school.model.enums.Role;
+import com.muhjain.school.model.repository.AppUserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 
+import java.time.Instant;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import com.muhjain.school.model.entity.AppUser;
-import com.muhjain.school.model.enums.Role;
-import com.muhjain.school.model.repository.AppUserRepository;
 
 class AppUserRepositoryTest extends AbstractIntegrationTest {
 

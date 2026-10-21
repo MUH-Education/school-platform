@@ -1,9 +1,9 @@
 package com.muhjain.school.model.dto.response;
 
+import com.muhjain.school.model.enums.TransportReason;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
-
-import com.muhjain.school.model.enums.TransportReason;
 
 /**
  * One line of a child's bus history. {@code toDate} null means "still going on". {@code usesBus} false is

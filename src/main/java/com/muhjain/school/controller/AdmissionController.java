@@ -1,20 +1,15 @@
 package com.muhjain.school.controller;
 
+import com.muhjain.school.model.dto.request.AdmissionRequest;
+import com.muhjain.school.model.dto.response.AdmissionResponse;
 import com.muhjain.school.security.CurrentUser;
+import com.muhjain.school.service.student.AdmissionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
-import com.muhjain.school.model.dto.request.AdmissionRequest;
-import com.muhjain.school.model.dto.response.AdmissionResponse;
-import com.muhjain.school.model.entity.Student;
-import com.muhjain.school.service.student.AdmissionService;
+import org.springframework.web.bind.annotation.*;
 
 /** The New admission screen. Needs ADMISSIONS_CREATE. */
 @Tag(name = "Admissions")

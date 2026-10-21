@@ -1,17 +1,17 @@
 package com.muhjain.school.model.repository;
 
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
-
+import com.muhjain.school.model.entity.Enquiry;
+import com.muhjain.school.model.enums.EnquirySource;
+import com.muhjain.school.model.enums.EnquiryStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import com.muhjain.school.model.entity.Enquiry;
-import com.muhjain.school.model.enums.EnquirySource;
-import com.muhjain.school.model.enums.EnquiryStatus;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
 
 public interface EnquiryRepository extends JpaRepository<Enquiry, Long> {
 

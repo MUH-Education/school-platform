@@ -1,13 +1,13 @@
 package com.muhjain.school.model.dto.request;
 
-import java.time.LocalDate;
-
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import com.muhjain.school.model.enums.EnquiryNextType;
 import com.muhjain.school.model.enums.EnquirySource;
 import com.muhjain.school.model.enums.NeedsBus;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+import java.time.LocalDate;
 
 /**
  * Add or change an enquiry. Five fields are needed: parent name, phone, village, class wanted, source. The clerk

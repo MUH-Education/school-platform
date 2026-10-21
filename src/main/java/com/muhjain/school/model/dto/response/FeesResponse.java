@@ -1,9 +1,10 @@
 package com.muhjain.school.model.dto.response;
 
+import com.muhjain.school.model.enums.FeeStatus;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
-import com.muhjain.school.model.enums.FeeStatus;
 
 /**
  * "Fees this year" of one child (screen 10).

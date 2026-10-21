@@ -1,27 +1,22 @@
 package com.muhjain.school.controller;
 
-import java.time.LocalDate;
-
-import com.muhjain.school.security.CurrentUser;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-import com.muhjain.school.model.dto.response.ManifestResponse;
 import com.muhjain.school.model.dto.request.MarksRequest;
+import com.muhjain.school.model.dto.response.ManifestResponse;
 import com.muhjain.school.model.dto.response.MarksResponse;
 import com.muhjain.school.model.dto.response.MyRouteResponse;
+import com.muhjain.school.security.CurrentUser;
 import com.muhjain.school.security.TripAccess;
 import com.muhjain.school.service.trip.ManifestService;
 import com.muhjain.school.service.trip.MarkService;
 import com.muhjain.school.service.trip.MyRouteService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
 
 /**
  * The attendant's phone app and the office correction screen. See docs/06-api.md, "Trips and bus status".

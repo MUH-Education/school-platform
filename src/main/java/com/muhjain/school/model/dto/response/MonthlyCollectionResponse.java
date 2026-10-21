@@ -1,9 +1,8 @@
 package com.muhjain.school.model.dto.response;
 
-import java.util.List;
-
 import com.muhjain.school.util.MonthlyCollectionCalculator.MonthRow;
-import com.muhjain.school.util.MonthlyCollectionCalculator;
+
+import java.util.List;
 
 /**
  * Fee collection by month, for the line or bar graph. One row for each month of the school year up to this month.

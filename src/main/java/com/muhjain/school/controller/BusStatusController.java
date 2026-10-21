@@ -1,23 +1,19 @@
 package com.muhjain.school.controller;
 
-import java.time.LocalDate;
-import java.util.List;
-
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
 import com.muhjain.school.model.dto.response.AttentionEntry;
 import com.muhjain.school.model.dto.response.BusStatusResponse;
 import com.muhjain.school.model.dto.response.RouteDetailResponse;
 import com.muhjain.school.model.enums.BusPhase;
 import com.muhjain.school.service.trip.AttentionService;
 import com.muhjain.school.service.trip.BusStatusService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.util.List;
 
 /**
  * The office screens "Bus status" and "One bus". Needs BUS_STATUS_VIEW. The web app asks again every 30 seconds.

@@ -1,12 +1,12 @@
 package com.muhjain.school.model.entity;
 
-import java.math.BigDecimal;
-import java.time.Instant;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+
+import java.math.BigDecimal;
+import java.time.Instant;
 
 /**
  * What one employee is paid in a month. Example: staff 31, ₹18,500.00, last changed by user 1.

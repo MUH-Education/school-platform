@@ -1,8 +1,8 @@
 package com.muhjain.school.exception;
 
-import java.util.Map;
-
 import org.springframework.http.HttpStatus;
+
+import java.util.Map;
 
 /**
  * Throw this from any service to stop and answer the client with a clear error.

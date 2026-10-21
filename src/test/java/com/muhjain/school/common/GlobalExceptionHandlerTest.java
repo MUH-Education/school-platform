@@ -1,5 +1,7 @@
 package com.muhjain.school.common;
 
+import com.muhjain.school.exception.ApiException;
+import com.muhjain.school.exception.GlobalExceptionHandler;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import org.junit.jupiter.api.Test;
@@ -17,8 +19,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import com.muhjain.school.exception.ApiException;
-import com.muhjain.school.exception.GlobalExceptionHandler;
 
 class GlobalExceptionHandlerTest {
 

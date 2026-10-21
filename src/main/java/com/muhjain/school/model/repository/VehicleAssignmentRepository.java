@@ -1,15 +1,15 @@
 package com.muhjain.school.model.repository;
 
-import java.time.LocalDate;
-import java.util.Collection;
-import java.util.List;
-
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import com.muhjain.school.model.entity.VehicleAssignment;
 import com.muhjain.school.model.enums.Duty;
 import com.muhjain.school.util.AssignmentRules;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.time.LocalDate;
+import java.util.Collection;
+import java.util.List;
 
 public interface VehicleAssignmentRepository extends JpaRepository<VehicleAssignment, Long> {
 

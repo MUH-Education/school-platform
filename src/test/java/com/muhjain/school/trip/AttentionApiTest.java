@@ -1,8 +1,8 @@
 package com.muhjain.school.trip;
 
-import java.time.Duration;
-
 import org.junit.jupiter.api.Test;
+
+import java.time.Duration;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;

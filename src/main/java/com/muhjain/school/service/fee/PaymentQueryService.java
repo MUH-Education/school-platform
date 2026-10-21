@@ -1,25 +1,25 @@
 package com.muhjain.school.service.fee;
 
-import java.time.Clock;
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import com.muhjain.school.exception.ApiException;
 import com.muhjain.school.model.dto.response.PageResponse;
+import com.muhjain.school.model.dto.response.PaymentListItem;
 import com.muhjain.school.model.dto.response.StudentBasics;
+import com.muhjain.school.model.entity.FeePayment;
 import com.muhjain.school.model.entity.Receipt;
+import com.muhjain.school.model.repository.FeePaymentRepository;
 import com.muhjain.school.model.repository.ReceiptRepository;
 import com.muhjain.school.service.student.StudentQueryService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.muhjain.school.model.dto.response.PaymentListItem;
-import com.muhjain.school.model.entity.FeePayment;
-import com.muhjain.school.model.repository.FeePaymentRepository;
+
+import java.time.Clock;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * The payment list (rule "GET /payments with date filter and paging"). Newest first.

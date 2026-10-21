@@ -1,11 +1,11 @@
 package com.muhjain.school.service.student;
 
-import java.time.Clock;
-import java.time.LocalDate;
-
+import com.muhjain.school.model.repository.NumberCounterRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.muhjain.school.model.repository.NumberCounterRepository;
+
+import java.time.Clock;
+import java.time.LocalDate;
 
 /**
  * Makes the admission number: {@code A-<year>-<running number>}. Rule 2 of phase 3.

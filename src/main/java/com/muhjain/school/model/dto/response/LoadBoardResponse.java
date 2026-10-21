@@ -1,8 +1,8 @@
 package com.muhjain.school.model.dto.response;
 
-import java.util.List;
-import com.muhjain.school.model.entity.Route;
 import com.muhjain.school.util.LoadBoardCalculator;
+
+import java.util.List;
 
 /**
  * The Routes and load screen: one row per active route, and the totals of the whole fleet.

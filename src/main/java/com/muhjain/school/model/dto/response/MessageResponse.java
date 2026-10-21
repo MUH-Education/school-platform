@@ -1,10 +1,10 @@
 package com.muhjain.school.model.dto.response;
 
-import java.time.OffsetDateTime;
-
 import com.muhjain.school.model.enums.EventType;
 import com.muhjain.school.model.enums.MessagePurpose;
 import com.muhjain.school.model.enums.MessageStatus;
+
+import java.time.OffsetDateTime;
 
 /**
  * One line of the Messages screen. The phone is masked: {@code +91XXXXXX4321}.

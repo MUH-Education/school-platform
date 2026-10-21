@@ -1,13 +1,13 @@
 package com.muhjain.school.model.dto.request;
 
-import java.math.BigDecimal;
-
+import com.muhjain.school.model.enums.DiscountReason;
+import com.muhjain.school.model.enums.PayFrequency;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
-import com.muhjain.school.model.enums.DiscountReason;
-import com.muhjain.school.model.enums.PayFrequency;
+
+import java.math.BigDecimal;
 
 /**
  * Create or change the fee plan of the current session. Money is in rupees, a month (the bus fee is not

@@ -1,8 +1,8 @@
 package com.muhjain.school.config;
 
-import java.time.Duration;
-
 import org.springframework.boot.context.properties.ConfigurationProperties;
+
+import java.time.Duration;
 
 /**
  * Settings for the real provider, under {@code app.messaging.provider}. Secrets come from environment variables.

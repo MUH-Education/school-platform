@@ -1,20 +1,20 @@
 package com.muhjain.school.auth;
 
-import java.time.Duration;
-import java.time.ZoneOffset;
-
 import com.muhjain.school.AbstractIntegrationTest;
 import com.muhjain.school.exception.ApiException;
+import com.muhjain.school.model.dto.response.LoginResponse;
 import com.muhjain.school.model.entity.AppUser;
 import com.muhjain.school.model.enums.Role;
+import com.muhjain.school.service.auth.OtpService;
+import com.muhjain.school.service.auth.RedisOtpStore;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.time.Duration;
+import java.time.ZoneOffset;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import com.muhjain.school.model.dto.response.LoginResponse;
-import com.muhjain.school.service.auth.OtpService;
-import com.muhjain.school.service.auth.RedisOtpStore;
 
 class OtpServiceVerifyTest extends AbstractIntegrationTest {
 

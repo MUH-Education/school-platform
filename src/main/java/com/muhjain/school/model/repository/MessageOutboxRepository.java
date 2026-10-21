@@ -1,19 +1,18 @@
 package com.muhjain.school.model.repository;
 
-import java.time.Instant;
-import java.time.LocalDate;
-import java.util.Collection;
-import java.util.List;
-
+import com.muhjain.school.model.entity.MessageOutbox;
+import com.muhjain.school.model.enums.MessageStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import com.muhjain.school.model.entity.MessageOutbox;
-import com.muhjain.school.model.enums.MessagePurpose;
-import com.muhjain.school.model.enums.MessageStatus;
+
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.Collection;
+import java.util.List;
 
 public interface MessageOutboxRepository extends JpaRepository<MessageOutbox, Long> {
 

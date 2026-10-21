@@ -1,37 +1,26 @@
 package com.muhjain.school.service.staff;
 
-import java.time.Clock;
-import java.time.LocalDate;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import com.muhjain.school.model.enums.AuditAction;
-import com.muhjain.school.service.audit.AuditService;
 import com.muhjain.school.exception.ApiException;
-import com.muhjain.school.util.DayText;
-import com.muhjain.school.model.dto.response.VehicleResponse;
-import com.muhjain.school.service.vehicle.VehicleService;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import com.muhjain.school.model.dto.response.AssignmentResponse;
 import com.muhjain.school.model.dto.request.ChangeAssignmentRequest;
-import com.muhjain.school.model.dto.response.Crew;
-import com.muhjain.school.model.dto.response.CrewMember;
-import com.muhjain.school.model.dto.response.Placement;
+import com.muhjain.school.model.dto.response.*;
 import com.muhjain.school.model.entity.Staff;
 import com.muhjain.school.model.entity.VehicleAssignment;
+import com.muhjain.school.model.enums.AuditAction;
 import com.muhjain.school.model.enums.Duty;
 import com.muhjain.school.model.repository.StaffRepository;
 import com.muhjain.school.model.repository.VehicleAssignmentRepository;
+import com.muhjain.school.service.audit.AuditService;
+import com.muhjain.school.service.vehicle.VehicleService;
 import com.muhjain.school.util.AssignmentRules;
+import com.muhjain.school.util.DayText;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Clock;
+import java.time.LocalDate;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Who works on which vehicle, and when. Rules 6 to 12 of docs/phases/phase-2-vehicles-staff-routes.md.

@@ -1,12 +1,12 @@
 package com.muhjain.school.service.messaging.impl;
 
+import com.muhjain.school.exception.SmsSendException;
+import com.muhjain.school.model.dto.response.SendResult;
+import com.muhjain.school.service.messaging.ProviderApi;
+import com.muhjain.school.service.messaging.SmsSender;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
-import com.muhjain.school.model.dto.response.SendResult;
-import com.muhjain.school.exception.SmsSendException;
-import com.muhjain.school.service.messaging.ProviderApi;
-import com.muhjain.school.service.messaging.SmsSender;
 
 /**
  * The real parent SMS sender. It is used when {@code app.messaging.sms-provider} is anything but {@code log}, and it

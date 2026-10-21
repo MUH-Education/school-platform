@@ -1,12 +1,13 @@
 package com.muhjain.school.model.dto.response;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.List;
 import com.muhjain.school.model.entity.FeeDue;
 import com.muhjain.school.model.entity.FeePlan;
 import com.muhjain.school.model.enums.DiscountReason;
 import com.muhjain.school.model.enums.PayFrequency;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
 
 /**
  * The newest slice of a fee plan, with its dues (every month from its own schedule, not just this slice).

@@ -1,12 +1,12 @@
 package com.muhjain.school.service.fee;
 
-import java.time.Clock;
-import java.time.LocalDate;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import com.muhjain.school.model.enums.ReceiptKind;
 import com.muhjain.school.model.repository.NumberCounterRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Clock;
+import java.time.LocalDate;
 
 /**
  * Makes the receipt number: {@code R-<year>-<running number>} for a payment, {@code RF-<year>-<running
