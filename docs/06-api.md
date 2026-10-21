@@ -261,9 +261,10 @@ in that one policy class (and a new permission row in `docs/05-roles-permissions
 | Method and URL | Permission | What |
 |---|---|---|
 | `GET /notification-templates?kind=` | VIEW | list with approval status |
+| `GET /notification-templates/{id}` | VIEW | one template |
 | `POST /notification-templates` | TEMPLATES | new (name, kind, language, body, smsBody, headerType, mediaKey, buttons, exampleValues) |
 | `PUT /notification-templates/{id}` | TEMPLATES | edit → new row, WAITING |
-| `PUT /notification-templates/{id}/approval` | TEMPLATES | dev/test only: APPROVED / REJECTED + reason |
+| `PUT /notification-templates/{id}/approval` | TEMPLATES | local/test only (`app.notifications.manual-approval`), else 404: APPROVED / REJECTED + reason |
 | `POST /notification-media` | TEMPLATES or SEND | multipart → `{ mediaKey, mediaType, bytes, width, height, seconds }` |
 | `POST /notifications/refine` | SEND | AI suggestion (section 7) |
 | `POST /notifications` | SEND (kind-checked) | DRAFT + counts |

@@ -72,6 +72,12 @@ class EndpointSecurityTest extends AbstractIntegrationTest {
 
 	private static final String TEMPLATE_BODY = "{\"body\":\"{name} {time}\",\"active\":true}";
 
+	private static final String NOTIFICATION_TEMPLATE_BODY = "{\"name\":\"PTM\",\"kind\":\"NOTICE\","
+			+ "\"body\":\"PTM on Saturday\"}";
+
+	private static final String NOTIFICATION_BODY = "{\"name\":\"PTM\",\"kind\":\"NOTICE\",\"templateId\":1,"
+			+ "\"audience\":{\"groups\":[\"CURRENT_PARENTS\"]}}";
+
 	/** Not JSON: {@link #call} sends a small PNG as the multipart field {@code file}. */
 	private static final String FILE_UPLOAD = "<multipart file>";
 
@@ -84,6 +90,21 @@ class EndpointSecurityTest extends AbstractIntegrationTest {
 				Arguments.of("POST", "/api/v1/notification-media", FILE_UPLOAD, Role.TRANSPORT_INCHARGE),
 				Arguments.of("POST", "/api/v1/notification-media", FILE_UPLOAD, Role.ADMISSIONS_DESK),
 				Arguments.of("POST", "/api/v1/notification-media", FILE_UPLOAD, Role.ATTENDANT),
+				Arguments.of("GET", "/api/v1/notification-templates", null, Role.OFFICE_ADMIN),
+				Arguments.of("GET", "/api/v1/notification-templates/1", null, Role.ATTENDANT),
+				Arguments.of("POST", "/api/v1/notification-templates", NOTIFICATION_TEMPLATE_BODY, Role.OFFICE_ADMIN),
+				Arguments.of("PUT", "/api/v1/notification-templates/1", NOTIFICATION_TEMPLATE_BODY,
+						Role.TRANSPORT_INCHARGE),
+				Arguments.of("PUT", "/api/v1/notification-templates/1/approval", "{\"approval\":\"APPROVED\"}",
+						Role.ADMISSIONS_DESK),
+				Arguments.of("GET", "/api/v1/notifications", null, Role.OFFICE_ADMIN),
+				Arguments.of("GET", "/api/v1/notifications/1", null, Role.TRANSPORT_INCHARGE),
+				Arguments.of("GET", "/api/v1/notifications/1/recipients", null, Role.ATTENDANT),
+				Arguments.of("POST", "/api/v1/notifications", NOTIFICATION_BODY, Role.OFFICE_ADMIN),
+				Arguments.of("PUT", "/api/v1/notifications/1", NOTIFICATION_BODY, Role.ADMISSIONS_DESK),
+				Arguments.of("POST", "/api/v1/notifications/1/test", null, Role.OFFICE_ADMIN),
+				Arguments.of("POST", "/api/v1/notifications/1/send", "{\"sendNow\":true}", Role.TRANSPORT_INCHARGE),
+				Arguments.of("DELETE", "/api/v1/notifications/1", null, Role.OFFICE_ADMIN),
 				Arguments.of("POST", "/api/v1/auth/logout", null, null),
 				Arguments.of("GET", "/api/v1/users", null, Role.OFFICE_ADMIN),
 				Arguments.of("POST", "/api/v1/users", USER_BODY, Role.OFFICE_ADMIN),

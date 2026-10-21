@@ -58,6 +58,29 @@ public class NotificationMediaService {
 				size.map(s -> s[1]).orElse(null), seconds);
 	}
 
+	/**
+	 * A key from {@link #save} that exists and holds a file of this type. Used when a template or a notification
+	 * names its file. Example: ("notifications/9b1e.mp4", VIDEO) is fine; a student photo key is refused.
+	 *
+	 * @param field the request field for the 400, example {@code mediaKey}
+	 * @return the format of the file
+	 * @throws ApiException 400 VALIDATION
+	 */
+	public MediaRules.Format requireFile(String key, MediaFileType wanted, String field) {
+		MediaRules.Format format = (key != null && key.startsWith(FOLDER + "/"))
+				? MediaRules.Format.ofKey(key).filter(f -> wanted == null || f.type() == wanted).orElse(null) : null;
+		if (format == null) {
+			throw ApiException.validation(field, "must be a " + ((wanted == null) ? "" : wanted + " ")
+					+ "file from POST /notification-media");
+		}
+		try (java.io.InputStream in = storage.open(key)) {
+			return format;
+		}
+		catch (IOException ex) {
+			throw ApiException.validation(field, "does not exist");
+		}
+	}
+
 	private static ApiException tooBig(String message) {
 		return new ApiException(HttpStatus.CONFLICT, "MEDIA_TOO_BIG", message);
 	}

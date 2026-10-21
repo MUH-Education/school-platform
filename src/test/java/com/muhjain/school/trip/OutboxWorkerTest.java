@@ -90,9 +90,11 @@ class OutboxWorkerTest extends TripTestBase {
 				guardian);
 		sendMarks(balwanToken, morning(meera, "DONE", "07:44:00"));
 		jdbc.update("delete from message_outbox");
+		// next_try_at from the app clock (7 Oct 2026), like real rows; the database default would be the real today.
 		jdbc.update("insert into message_outbox (purpose, channel, phone, student_id, service_date, event_type, "
-				+ "body, template_code) select 'BOARDING', 'SMS', '+91981110000' || g, ?, ?::date, "
-				+ "'BOARDED_MORNING', 'text', null from generate_series(1, 3) g", aryan, TODAY);
+				+ "body, template_code, next_try_at) select 'BOARDING', 'SMS', '+91981110000' || g, ?, ?::date, "
+				+ "'BOARDED_MORNING', 'text', null, ? from generate_series(1, 3) g", aryan, TODAY,
+				java.sql.Timestamp.from(clock.instant()));
 		when(smsSender.send(eq("+919811100001"), any(), any())).thenThrow(new SmsSendException("boom"));
 		when(smsSender.send(eq("+919811100002"), any(), any())).thenReturn(new SendResult("ok", false));
 		when(smsSender.send(eq("+919811100003"), any(), any())).thenReturn(new SendResult("ok", false));
@@ -124,9 +126,10 @@ class OutboxWorkerTest extends TripTestBase {
 	@Test
 	void twoWorkersNeverSendTheSameRow() throws Exception {
 		jdbc.update("delete from message_outbox");
-		jdbc.update("insert into message_outbox (purpose, channel, phone, student_id, service_date, event_type, body) "
-				+ "select 'BOARDING', 'SMS', '+9198111' || lpad(g::text, 5, '0'), ?, ?::date, 'BOARDED_MORNING', "
-				+ "'text' from generate_series(1, 40) g", aryan, TODAY);
+		jdbc.update("insert into message_outbox (purpose, channel, phone, student_id, service_date, event_type, body, "
+				+ "next_try_at) select 'BOARDING', 'SMS', '+9198111' || lpad(g::text, 5, '0'), ?, ?::date, "
+				+ "'BOARDED_MORNING', 'text', ? from generate_series(1, 40) g", aryan, TODAY,
+				java.sql.Timestamp.from(clock.instant()));
 		when(smsSender.send(any(), any(), any())).thenAnswer(inv -> {
 			Thread.sleep(20);
 			return new SendResult("ok", false);

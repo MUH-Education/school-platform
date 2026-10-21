@@ -11,6 +11,9 @@ public interface MessageTemplateButtonRepository extends JpaRepository<MessageTe
 	/** The buttons of one template, in the order WhatsApp shows them. */
 	List<MessageTemplateButton> findByTemplateIdOrderBySeqNoAsc(Long templateId);
 
+	/** Removes the buttons of a template before its new list is saved. */
+	void deleteByTemplateId(Long templateId);
+
 	/** The buttons of a page of templates, for the Templates list. */
 	List<MessageTemplateButton> findByTemplateIdInOrderByTemplateIdAscSeqNoAsc(Collection<Long> templateIds);
 

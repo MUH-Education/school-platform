@@ -27,4 +27,11 @@ public record Recipient(RecipientType type, Long personId, String phone, Message
 		values = (values == null) ? Map.of() : Map.copyOf(values);
 	}
 
+	/** A copy with these values added (a value with the same name is replaced). */
+	public Recipient withValues(Map<String, String> more) {
+		Map<String, String> merged = new java.util.LinkedHashMap<>(values);
+		merged.putAll(more);
+		return new Recipient(type, personId, phone, channel, group, studentIds, merged);
+	}
+
 }

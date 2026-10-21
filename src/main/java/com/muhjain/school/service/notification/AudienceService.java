@@ -4,20 +4,16 @@ import com.muhjain.school.model.dto.response.Audience;
 import com.muhjain.school.model.dto.response.AudienceCounts;
 import com.muhjain.school.model.dto.response.Recipient;
 import com.muhjain.school.model.dto.response.ResolvedAudience;
-import com.muhjain.school.model.entity.MessageStop;
 import com.muhjain.school.model.enums.AudienceGroup;
 import com.muhjain.school.model.enums.MessageChannel;
 import com.muhjain.school.model.enums.NotificationKind;
 import com.muhjain.school.model.enums.RecipientType;
-import com.muhjain.school.model.repository.MessageStopRepository;
-import com.muhjain.school.service.student.GuardianService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,16 +37,12 @@ public class AudienceService {
 
 	private final KindPolicies policies;
 
-	private final MessageStopRepository stops;
+	private final StopListService stopList;
 
-	private final GuardianService guardianService;
-
-	public AudienceService(List<RecipientResolver> resolvers, KindPolicies policies, MessageStopRepository stops,
-			GuardianService guardianService) {
+	public AudienceService(List<RecipientResolver> resolvers, KindPolicies policies, StopListService stopList) {
 		this.resolvers = byGroup(resolvers);
 		this.policies = policies;
-		this.stops = stops;
-		this.guardianService = guardianService;
+		this.stopList = stopList;
 	}
 
 	// Built from the Spring beans, never a switch. Every group has exactly one resolver, or the app does not start.
@@ -99,7 +91,7 @@ public class AudienceService {
 		// 4. The stop list, only for MARKETING and GREETING. Staff are never touched by it.
 		List<Recipient> recipients = new ArrayList<>();
 		List<Recipient> stopped = new ArrayList<>();
-		Set<String> stoppedPhones = policy.stopListApplies() ? stoppedPhones() : Set.of();
+		Set<String> stoppedPhones = policy.stopListApplies() ? stopList.stoppedPhones() : Set.of();
 		for (Recipient r : byPhone.values()) {
 			if (r.type() != RecipientType.STAFF && stoppedPhones.contains(r.phone())) {
 				stopped.add(r);
@@ -115,13 +107,6 @@ public class AudienceService {
 		AudienceCounts counts = new AudienceCounts(picked.size(), duplicates, stopped.size(), noPhone,
 				recipients.size(), onWhatsApp, onSms);
 		return new ResolvedAudience(List.copyOf(recipients), List.copyOf(stopped), counts);
-	}
-
-	// The phones of the families on the stop list. By phone, not by guardian id, so a stopped family that is also an
-	// open enquiry (same phone) is stopped there too. The list is small (a few dozen rows).
-	private Set<String> stoppedPhones() {
-		List<Long> guardianIds = stops.findAll().stream().map(MessageStop::getGuardianId).toList();
-		return new HashSet<>(guardianService.phones(guardianIds).values());
 	}
 
 }

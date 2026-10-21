@@ -274,6 +274,12 @@ public class EnquiryService {
 			.toList();
 	}
 
+	/** The stage of one enquiry now, or empty if the id is unknown. Example: 77 → ADMITTED. */
+	@Transactional(readOnly = true)
+	public java.util.Optional<EnquiryStatus> statusOf(Long id) {
+		return enquiries.findById(id).map(Enquiry::getStatus);
+	}
+
 	@Transactional(readOnly = true)
 	public EnquirySummaryResponse summary() {
 		Map<EnquiryStatus, Long> byStatus = new java.util.EnumMap<>(EnquiryStatus.class);

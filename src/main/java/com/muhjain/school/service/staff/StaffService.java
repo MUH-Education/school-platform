@@ -87,6 +87,12 @@ public class StaffService {
 			.toList();
 	}
 
+	/** Is this employee turned on? An unknown id is "no". */
+	@Transactional(readOnly = true)
+	public boolean isActive(Long staffId) {
+		return staff.findById(staffId).map(Staff::isActive).orElse(false);
+	}
+
 	/**
 	 * The type of a staff member, or empty if there is no such row. Used by the user feature to check that an
 	 * ATTENDANT user points at an ATTENDANT staff member.

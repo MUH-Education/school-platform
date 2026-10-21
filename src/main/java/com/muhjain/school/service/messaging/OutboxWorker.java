@@ -6,8 +6,10 @@ import com.muhjain.school.model.entity.MessageOutbox;
 import com.muhjain.school.model.entity.MessageTemplate;
 import com.muhjain.school.model.enums.MessagePurpose;
 import com.muhjain.school.model.enums.MessageStatus;
+import com.muhjain.school.model.enums.SkipReason;
 import com.muhjain.school.model.repository.MessageOutboxRepository;
 import com.muhjain.school.model.repository.MessageTemplateRepository;
+import com.muhjain.school.service.notification.GuardChain;
 import com.muhjain.school.util.PhoneNumbers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +21,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Sends the queued messages (rules 8 to 11 of the phase file). Real-life picture: the postman who empties the
@@ -30,6 +33,9 @@ import java.util.List;
  * after 3 failures FAILED.</li>
  * <li>A boarding SMS queued more than 2 hours ago is not sent: FAILED, "too old". A parent must not read "boarded at
  * 7:42" at noon.</li>
+ * <li>A row is not taken before its {@code next_try_at} (quiet hours hold a notification row until 8:00).</li>
+ * <li>A notification row passes the last-second guards first ({@link GuardChain#beforeSend}): a fee reminder to a
+ * family that has just paid becomes SKIPPED ALREADY_PAID instead of being sent.</li>
  * </ul>
  * One row that fails never stops the others.
  */
@@ -52,15 +58,18 @@ public class OutboxWorker {
 
 	private final SmsSender smsSender;
 
+	private final GuardChain guardChain;
+
 	private final TransactionTemplate transaction;
 
 	private final Clock clock;
 
 	public OutboxWorker(MessageOutboxRepository outbox, MessageTemplateRepository templates, SmsSender smsSender,
-			PlatformTransactionManager transactionManager, Clock clock) {
+			GuardChain guardChain, PlatformTransactionManager transactionManager, Clock clock) {
 		this.outbox = outbox;
 		this.templates = templates;
 		this.smsSender = smsSender;
+		this.guardChain = guardChain;
 		this.transaction = new TransactionTemplate(transactionManager);
 		this.clock = clock;
 	}
@@ -68,8 +77,8 @@ public class OutboxWorker {
 	/** One round. Returns how many rows it handled (sent, failed or marked too old). */
 	public int runOnce() {
 		Integer handled = transaction.execute(status -> {
-			List<MessageOutbox> batch = outbox.claimQueued(BATCH_SIZE);
 			Instant now = Instant.now(clock);
+			List<MessageOutbox> batch = outbox.claimQueued(now, BATCH_SIZE);
 			for (MessageOutbox message : batch) {
 				handle(message, now);
 			}
@@ -82,6 +91,12 @@ public class OutboxWorker {
 		if (message.getPurpose() == MessagePurpose.BOARDING
 				&& message.getCreatedAt().plus(MAX_AGE).isBefore(now)) {
 			message.markFailed(TOO_OLD);
+			return;
+		}
+		Optional<SkipReason> skip = guardChain.beforeSend(message);
+		if (skip.isPresent()) {
+			log.info("Message {} skipped at the last second: {}", message.getId(), skip.get());
+			message.markSkipped(skip.get());
 			return;
 		}
 		try {

@@ -230,6 +230,19 @@ public class MessageTemplate extends BaseEntity {
 		return createdBy;
 	}
 
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public void setBody(String body) {
+		this.body = body;
+	}
+
+	/** The text the provider approved. For a notification template it is the body at the moment of approval. */
+	public void setApprovedBody(String approvedBody) {
+		this.approvedBody = approvedBody;
+	}
+
 	public void setLanguage(String language) {
 		this.language = language;
 	}

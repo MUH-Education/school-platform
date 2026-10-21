@@ -151,7 +151,7 @@ class NotificationRepositoryTest extends AbstractIntegrationTest {
 		assertThat(read.getTemplateValues()).containsEntry("Parent name", "Rajesh Punia");
 		assertThat(read.getNotificationId()).isEqualTo(n.getId());
 		// The worker never picks a SKIPPED row.
-		List<MessageOutbox> claimed = new TransactionTemplate(transactionManager).execute(s -> outbox.claimQueued(50));
+		List<MessageOutbox> claimed = new TransactionTemplate(transactionManager).execute(s -> outbox.claimQueued(Instant.now(clock), 50));
 		assertThat(claimed).isEmpty();
 	}
 

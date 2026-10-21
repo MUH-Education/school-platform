@@ -109,11 +109,11 @@ rename only the Java interface.
       `EnquiryResolver` (open/lost), `FamiliesWithDuesResolver`, `StaffResolver` (all / drivers / attendants /
       teachers), `RouteCrewResolver`, `OneFamilyResolver`, `OneStaffResolver`.
       `AudienceService.resolve(kind, audience)` does union → distinct → stop list → counts.
-- [ ] 11.6b `RecipientGuard` + `SkipReason` + the 13 guard classes in `impl` (section 10), `GuardChain` sorted by
+- [x] 11.6b `RecipientGuard` + `SkipReason` + the 13 guard classes in `impl` (section 10), `GuardChain` sorted by
       `order()`, used by the dispatcher; `LastSecondGuard` wired into `OutboxWorker`. `inbound_message` gets
       `promised_until date`; `POST /inbound-messages/{id}/handle` accepts `promisedUntil`.
-- [ ] 11.7 `NotificationTemplateService` (create, edit-as-new-row, approval in dev/test, auto STOP button).
-- [ ] 11.8 `NotificationService`: create (DRAFT + counts), update, test, send (now/later), cancel, list, get,
+- [x] 11.7 `NotificationTemplateService` (create, edit-as-new-row, approval in dev/test, auto STOP button).
+- [x] 11.8 `NotificationService`: create (DRAFT + counts), update, test, send (now/later), cancel, list, get,
       recipients page.
 - [ ] 11.9 `NotificationDispatcher` (`runOnce()`; expand + close) and `NotificationDispatchScheduler`
       (every 60 s, `app.notifications.dispatcher-enabled`, off in test).

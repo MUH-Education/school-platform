@@ -1,6 +1,7 @@
 package com.muhjain.school.model.repository;
 
 import com.muhjain.school.model.entity.MessageOutbox;
+import com.muhjain.school.model.enums.MessagePurpose;
 import com.muhjain.school.model.enums.MessageStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -34,9 +35,39 @@ public interface MessageOutboxRepository extends JpaRepository<MessageOutbox, Lo
 	 * The next QUEUED rows, oldest first, locked for this transaction. Rows locked by another worker are skipped,
 	 * so two workers never send the same row.
 	 */
-	@Query(value = "select * from message_outbox where status = 'QUEUED' order by id limit :limit "
-			+ "for update skip locked", nativeQuery = true)
-	List<MessageOutbox> claimQueued(@Param("limit") int limit);
+	@Query(value = "select * from message_outbox where status = 'QUEUED' and next_try_at <= :now order by id "
+			+ "limit :limit for update skip locked", nativeQuery = true)
+	List<MessageOutbox> claimQueued(@Param("now") Instant now, @Param("limit") int limit);
+
+	/** Cancel while sending: the rows not sent yet become CANCELLED; rows already sent stay. Returns how many. */
+	@Modifying(flushAutomatically = true, clearAutomatically = true)
+	@Query("update MessageOutbox m set m.status = com.muhjain.school.model.enums.MessageStatus.CANCELLED, "
+			+ "m.updatedAt = :now where m.notificationId = :notificationId "
+			+ "and m.status = com.muhjain.school.model.enums.MessageStatus.QUEUED")
+	int cancelQueued(@Param("notificationId") Long notificationId, @Param("now") Instant now);
+
+	/** How many rows of a notification are in these statuses (the test copy not counted). */
+	@Query("select count(m) from MessageOutbox m where m.notificationId = :notificationId and m.status in :statuses "
+			+ "and m.purpose <> com.muhjain.school.model.enums.MessagePurpose.TEST")
+	long countOfNotification(@Param("notificationId") Long notificationId,
+			@Param("statuses") Collection<MessageStatus> statuses);
+
+	/** The rows of a notification, in the order they were written (the test copy not shown). */
+	@Query("select m from MessageOutbox m where m.notificationId = :notificationId "
+			+ "and m.purpose <> com.muhjain.school.model.enums.MessagePurpose.TEST order by m.id")
+	Page<MessageOutbox> pageOfNotification(@Param("notificationId") Long notificationId, Pageable pageable);
+
+	/** The phones that already have a row of this notification (the test copy not counted). */
+	@Query("select m.phone from MessageOutbox m where m.notificationId = :notificationId "
+			+ "and m.purpose <> com.muhjain.school.model.enums.MessagePurpose.TEST")
+	List<String> phonesOfNotification(@Param("notificationId") Long notificationId);
+
+	/**
+	 * How many messages of this purpose went (or will go) to this phone since a moment, from other notifications.
+	 * Example: MARKETING to +919811100001 in the last 7 days → 2 (the weekly cap).
+	 */
+	long countByPhoneAndPurposeAndStatusInAndCreatedAtGreaterThanEqualAndNotificationIdNot(String phone,
+			MessagePurpose purpose, Collection<MessageStatus> statuses, Instant since, Long notificationId);
 
 	/** The messages of a time range, newest first. Every filter is optional (null = any). */
 	@Query("select m from MessageOutbox m where m.createdAt >= :from and m.createdAt < :to "

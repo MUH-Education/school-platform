@@ -280,9 +280,10 @@ in that one policy class (and a new permission row in `docs/05-roles-permissions
 | Method and URL | Permission | What |
 |---|---|---|
 | `GET /notification-templates?kind=` | VIEW | list with approval status |
+| `GET /notification-templates/{id}` | VIEW | one template |
 | `POST /notification-templates` | TEMPLATES | new (name, kind, language, body, smsBody, headerType, mediaKey, buttons, exampleValues) |
 | `PUT /notification-templates/{id}` | TEMPLATES | edit → new row, WAITING |
-| `PUT /notification-templates/{id}/approval` | TEMPLATES | dev/test only: APPROVED / REJECTED + reason |
+| `PUT /notification-templates/{id}/approval` | TEMPLATES | local/test only (`app.notifications.manual-approval`), else 404: APPROVED / REJECTED + reason |
 | `POST /notification-media` | TEMPLATES or SEND | multipart → `{ mediaKey, mediaType, bytes, width, height, seconds }` |
 | `POST /notifications/refine` | SEND | AI suggestion (section 7) |
 | `POST /notifications` | SEND (kind-checked) | DRAFT + counts |
@@ -312,11 +313,16 @@ right before the provider call (seconds before sending). A check that fails does
 
 ```java
 public interface RecipientGuard {
+    int LAST_SECOND = 90;   // guards from here on run in OutboxWorker, the rest at expand time
     /** Lower runs first. 10 = cheap and general, 50 = per kind, 90 = last-second re-check. */
     int order();
     boolean appliesTo(NotificationKind kind);
-    Optional<SkipReason> check(Recipient r, Notification n, GuardContext ctx);   // empty = may go
+    Optional<SkipReason> check(Candidate c, Notification n, GuardContext ctx);   // empty = may go
 }
+// Candidate = the Recipient + values the guards fill (live fee numbers) + holdUntil (quiet hours).
+// GuardContext = now, today, template, policy, and a per-run cache (the stop list is read once per run).
+// GuardChain.check(recipient, notification, context) → GuardOutcome(skipReason, values, holdUntil)
+// GuardChain.beforeSend(outboxRow) → Optional<SkipReason>   (called by OutboxWorker)
 ```
 
 Guards are Spring beans, collected into a list, sorted by `order()`. **To add a check: one class.** The list, in

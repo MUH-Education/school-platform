@@ -54,7 +54,8 @@ public class CurrentParentsResolver implements RecipientResolver {
 			.activeMatching(filter.classes().isEmpty() ? null : filter.classes(), null, null, null, null, today)
 			.stream()
 			.filter(c -> filter.villages().isEmpty() || inVillages(c.village(), filter.villages()))
-			.filter(c -> filter.routeIds().isEmpty() || filter.routeIds().contains(c.routeId()))
+			// A child with no bus has no route; List.contains(null) would throw.
+			.filter(c -> filter.routeIds().isEmpty() || (c.routeId() != null && filter.routeIds().contains(c.routeId())))
 			.toList();
 		if (filter.feeStatus() != null && !children.isEmpty()) {
 			Map<Long, FeeStatus> statuses = feeStatusService.statuses(children.stream().map(StudentReportRow::id).toList());
