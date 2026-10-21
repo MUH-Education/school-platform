@@ -1,0 +1,90 @@
+flowchart LR
+    subgraph logins["Logins, history and school settings"]
+        app_user[app_user]
+        otp_code[otp_code]
+        audit_log[audit_log]
+        app_setting[app_setting]
+        academic_session[academic_session]
+    end
+    subgraph transport["Vehicles, staff and routes"]
+        vehicle[vehicle]
+        vehicle_document[vehicle_document]
+        staff[staff]
+        vehicle_assignment[vehicle_assignment]
+        route[route]
+        route_stop[route_stop]
+    end
+    subgraph students["Students, families and the bus"]
+        student[student]
+        guardian[guardian]
+        student_guardian[student_guardian]
+        transport_enrolment[transport_enrolment]
+        number_counter[number_counter]
+    end
+    subgraph documents["Documents, admission drafts and transfer certificates"]
+        upload[upload]
+        student_document[student_document]
+        student_document_note[student_document_note]
+        admission_draft[admission_draft]
+        transfer_certificate[transfer_certificate]
+    end
+    subgraph trips["Bus taps and holidays"]
+        boarding_event[boarding_event]
+        holiday[holiday]
+    end
+    subgraph messages["Messages to parents"]
+        bus_sms_rule[bus_sms_rule]
+        message_template[message_template]
+        message_outbox[message_outbox]
+    end
+    subgraph enquiries["Enquiries"]
+        enquiry[enquiry]
+        enquiry_stage[enquiry_stage]
+        enquiry_follow_up[enquiry_follow_up]
+    end
+    subgraph fees["Fees, month by month"]
+        session_fee_setting[session_fee_setting]
+        class_fee[class_fee]
+        fee_plan[fee_plan]
+        fee_due[fee_due]
+        receipt[receipt]
+        fee_payment[fee_payment]
+        family_credit_entry[family_credit_entry]
+    end
+    subgraph newyear["New school year"]
+        promotion_run[promotion_run]
+        promotion_choice[promotion_choice]
+    end
+    vehicle --> vehicle_document
+    staff --> vehicle_assignment
+    vehicle --> vehicle_assignment
+    vehicle --> route
+    route --> route_stop
+    staff --> app_user
+    student --> student_guardian
+    guardian --> student_guardian
+    student --> transport_enrolment
+    route --> transport_enrolment
+    route_stop --> transport_enrolment
+    student --> student_document
+    student --> student_document_note
+    student --> boarding_event
+    route --> boarding_event
+    student --> transfer_certificate
+    guardian --> message_outbox
+    student --> message_outbox
+    receipt --> message_outbox
+    guardian --> enquiry
+    student --> enquiry
+    enquiry --> enquiry_stage
+    enquiry --> enquiry_follow_up
+    student --> fee_plan
+    student --> fee_due
+    guardian --> receipt
+    receipt --> fee_payment
+    student --> fee_payment
+    guardian --> family_credit_entry
+    student --> family_credit_entry
+    receipt --> family_credit_entry
+    promotion_run --> promotion_choice
+    student --> promotion_choice

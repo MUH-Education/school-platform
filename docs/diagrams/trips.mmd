@@ -1,0 +1,20 @@
+erDiagram
+    boarding_event {
+        bigint id PK
+        bigint student_id FK
+        bigint route_id FK
+        date service_date
+        varchar event_type
+        varchar outcome
+        timestamptz occurred_at
+        bigint recorded_by FK
+        timestamptz recorded_at
+    }
+    holiday {
+        bigint id PK
+        date holiday_date
+        varchar name
+        bigint created_by FK
+    }
+    student ||--o{ boarding_event : student_id
+    route ||--o{ boarding_event : route_id

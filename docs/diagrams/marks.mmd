@@ -1,0 +1,46 @@
+erDiagram
+    exam {
+        bigint id PK
+        bigint session_id FK
+        varchar code
+        varchar name
+        varchar month_label
+        int max_per_subject
+        int seq_no
+    }
+    subject {
+        bigint id PK
+        varchar name
+        boolean grade_only
+        int seq_no
+    }
+    class_subject {
+        bigint id PK
+        varchar class_name
+        bigint subject_id FK
+    }
+    student_mark {
+        bigint id PK
+        bigint student_id FK
+        bigint exam_id FK
+        bigint subject_id FK
+        numeric marks
+        varchar grade
+        bigint entered_by FK
+    }
+    teacher_note {
+        bigint id PK
+        bigint student_id FK
+        bigint exam_id FK
+        varchar note
+        varchar written_by_name
+        date written_on
+        bigint created_by FK
+    }
+    academic_session ||--o{ exam : session_id
+    subject ||--o{ class_subject : subject_id
+    student ||--o{ student_mark : student_id
+    exam ||--o{ student_mark : exam_id
+    subject ||--o{ student_mark : subject_id
+    student ||--o{ teacher_note : student_id
+    exam ||--o{ teacher_note : exam_id

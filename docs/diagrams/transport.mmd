@@ -1,0 +1,64 @@
+erDiagram
+    vehicle {
+        bigint id PK
+        varchar name
+        varchar registration_no
+        varchar vehicle_type
+        int seats
+        numeric monthly_cost
+        varchar owned_by
+        boolean active
+    }
+    vehicle_document {
+        bigint id PK
+        bigint vehicle_id FK
+        varchar doc_type
+        date valid_till
+    }
+    staff {
+        bigint id PK
+        varchar name
+        varchar phone
+        varchar staff_type
+        varchar licence_no
+        date licence_valid_till
+        boolean active
+    }
+    vehicle_assignment {
+        bigint id PK
+        bigint vehicle_id FK
+        bigint staff_id FK
+        varchar duty
+        date from_date
+        date to_date
+        boolean temporary
+        varchar reason
+        bigint created_by FK
+    }
+    route {
+        bigint id PK
+        varchar name
+        bigint vehicle_id FK
+        time school_arrival_time
+        time school_leave_time
+        boolean active
+    }
+    route_stop {
+        bigint id PK
+        bigint route_id FK
+        int seq_no
+        varchar name
+        varchar name_hindi
+        time morning_time
+        time evening_time
+        boolean active
+    }
+    vehicle ||--o{ vehicle_document : vehicle_id
+    staff ||--o{ vehicle_assignment : staff_id
+    vehicle ||--o{ vehicle_assignment : vehicle_id
+    vehicle ||--o{ route : vehicle_id
+    route ||--o{ route_stop : route_id
+    staff ||--o{ app_user : staff_id
+    route ||--o{ transport_enrolment : route_id
+    route_stop ||--o{ transport_enrolment : stop_id
+    route ||--o{ boarding_event : route_id

@@ -1,0 +1,328 @@
+# Notes for each table, used by make_data_model.py to write docs/03-data-model.md.
+# The columns, types and rules are read from the database itself, so they are always right.
+# Here we only write what the database cannot say: why the table exists, examples, which APIs use it.
+
+areas:
+  - key: logins
+    title: Logins, history and school settings
+    file: V1__auth_users.sql
+    phase: 1
+    tables: [app_user, audit_log, app_setting, academic_session]
+  - key: sessions
+    title: Login sessions
+    file: V11__user_session.sql
+    phase: cross-cutting
+    tables: [user_session]
+  - key: transport
+    title: Vehicles, staff and routes
+    file: V2__vehicles_staff_routes.sql
+    phase: 2
+    tables: [vehicle, vehicle_document, staff, vehicle_assignment, route, route_stop]
+  - key: students
+    title: Students, families and the bus
+    file: V3__students.sql
+    phase: 3
+    tables: [student, guardian, student_guardian, transport_enrolment, number_counter]
+  - key: documents
+    title: Documents, admission drafts and transfer certificates
+    file: V3__students.sql
+    phase: 3
+    tables: [upload, student_document, student_document_note, admission_draft, transfer_certificate]
+  - key: trips
+    title: Bus taps and holidays
+    file: V4__trips.sql
+    phase: 4
+    tables: [boarding_event, holiday]
+  - key: messages
+    title: Messages to parents
+    file: V5__messaging.sql
+    phase: 5
+    tables: [bus_sms_rule, message_template, message_outbox]
+  - key: enquiries
+    title: Enquiries
+    file: V6__enquiries.sql
+    phase: 6
+    tables: [enquiry, enquiry_stage, enquiry_follow_up]
+  - key: fees
+    title: Fees, month by month
+    file: V7__fees.sql
+    phase: 7
+    tables: [session_fee_setting, class_fee, fee_plan, fee_due, receipt, fee_payment, family_credit_entry]
+  - key: newyear
+    title: New school year
+    file: V8__new_school_year.sql
+    phase: 7
+    tables: [promotion_run, promotion_choice]
+  - key: marks
+    title: Marks (later)
+    file: later/marks.sql
+    phase: later
+    tables: [exam, subject, class_subject, student_mark, teacher_note]
+
+tables:
+  app_user:
+    purpose: A person who can log in. The login id is the phone number; there is no password.
+    rules:
+      - An attendant login must point at a `staff` row, and one staff person has at most one login.
+      - Logout, phone change, role change and turning a user off end their sessions (`user_session`), not a version number on this row.
+      - A user is never deleted. `active = false` turns the login off; their name stays on old taps and receipts.
+    example: id in (1, 14)
+    used_by: ['/auth/*', '/users/*', 'every table''s created_by']
+  audit_log:
+    purpose: Who changed what, in one human line. Feeds "Change history". Also records every time a private document is opened.
+    example: entity_id = 118
+    used_by: ['GET /students/{id}/history', 'every write of students', 'vehicles', 'users', 'fees']
+  app_setting:
+    purpose: School-wide values, one row per key (school name, office phone, transport numbers).
+    example: key like 'transport.%'
+    used_by: ['/settings/school', '/settings/transport', 'GET /routes/load-board']
+  academic_session:
+    purpose: One school year, 1 April to 31 March. "Current" is not stored; it is the session whose dates include today.
+    rules:
+      - Two sessions can never share a day (exclusion constraint).
+      - Moved from V7 to V1, because admissions and enquiries need it before fees.
+    example: id in (3, 4)
+    used_by: ['GET /sessions', 'POST /sessions', 'every fee table']
+
+  user_session:
+    purpose: One login session, made when an OTP is checked and right. Only its HMAC is kept, never the raw session id.
+    rules:
+      - The hot path is Redis (`session:<id>`), not this table. This row is the fallback for when Redis has forgotten a session, and the only place "log out everywhere" can find every session of one user.
+      - There is no expires_at column. The 15-minute idle timeout lives only in Redis, where it slides forward on every request. This table only knows "revoked?" and "older than the 12-hour hard cap?" (worked out from created_at).
+      - Logout revokes only this one row. Turn off, role change and phone change revoke every row of that user_id at once.
+    used_by: ['POST /auth/otp/verify', 'every other request''s Authorization header', 'POST /auth/logout']
+
+  vehicle:
+    purpose: A van or bus.
+    rules:
+      - Never deleted. `active = false` when it is removed.
+    example: id in (4, 9)
+    used_by: ['/vehicles/*', 'GET /routes/load-board', 'GET /bus-status']
+  vehicle_document:
+    purpose: One paper of one vehicle (fitness, insurance, permit, pollution). 4 rows per vehicle.
+    rules:
+      - 'Status is counted, not stored: empty = MISSING, before today = ENDED, 30 days or less = ENDING_SOON, else VALID.'
+    example: vehicle_id = 4
+    used_by: ['PUT /vehicles/{id}/documents', 'GET /vehicles/attention']
+  staff:
+    purpose: A driver, attendant or helper.
+    rules:
+      - A driver must have a licence number and date.
+    example: id in (14, 20, 24)
+    used_by: ['/staff/*', 'POST /users (attendant login)']
+  vehicle_assignment:
+    purpose: Who works on which vehicle, from which day to which day.
+    rules:
+      - 'A normal row has no `to_date` while it goes on. A temporary row (a replacement for some days) needs a `to_date`.'
+      - On a day, the temporary row wins over the normal row.
+      - One normal person per vehicle and duty on any day, and one temporary person (two exclusion constraints).
+      - "\"One person on one vehicle per day\" is checked in the service, because a temporary move is allowed after the user says yes."
+    example: vehicle_id = 4
+    used_by: ['POST /vehicles/{id}/assignments', 'GET /vehicles/{id}/assignments', 'GET /trips/my-route']
+  route:
+    purpose: A route is one vehicle and its stops.
+    rules:
+      - One vehicle runs at most one active route.
+    example: id in (4, 9)
+    used_by: ['/routes/*', 'GET /bus-status']
+  route_stop:
+    purpose: A stop of a route, in the morning order. The evening goes the other way round.
+    rules:
+      - A removed stop is set `active = false`, because old bus rows still point at it.
+      - '`seq_no` does not repeat among the active stops of a route. To reorder: add 1000 to all, then write the new order.'
+    example: route_id = 4
+    used_by: ['PUT /routes/{id}/stops', 'GET /trips/manifest']
+
+  student:
+    purpose: One child.
+    rules:
+      - Never deleted. `status` is ACTIVE, LEFT (left the school) or FINISHED (finished Class 12).
+      - A child admitted for next year has `joined_on` in the future. They are ACTIVE but not counted yet.
+      - '`photo_key` is a key in private storage. A photo never has a public URL.'
+    example: id in (57, 118)
+    used_by: ['/students/*', 'POST /admissions', '/students/{id}/leave']
+  guardian:
+    purpose: A parent or relative, with their phone. One phone is one row, even for three children.
+    rules:
+      - A parent can be saved with no phone ("Mother, no number saved"), but then they get no messages.
+    example: id in (210, 211, 249)
+    used_by: ['/students/{id}/guardians/*', 'GET /guardians/search', 'fees (the family)']
+  student_guardian:
+    purpose: This parent belongs to this child, with "send bus SMS" on or off.
+    rules:
+      - The PRIMARY guardian is the family. Children with the same primary guardian are one family in Collect fees (familyId = that guardian's id).
+      - At most one primary per child (partial unique index); the service makes sure there is exactly one.
+    example: guardian_id = 210
+    used_by: ['/students/{id}/guardians/*', 'GET /fees/families/*']
+  transport_enrolment:
+    purpose: The child's bus over time, as periods that never overlap. Every change is a new row.
+    rules:
+      - '`uses_bus = true`: route, stop and bus fee a month are filled. `uses_bus = false`: a "no bus" period.'
+      - The stop must be a stop of the same route (a two-column foreign key).
+      - Two periods of one child can never share a day (exclusion constraint).
+      - 'The id of the new row is the `changeId` of the API. Undo = delete it and give the row before it its old `to_date` back.'
+    example: student_id in (57, 118, 140)
+    used_by: ['PUT /students/{id}/transport', 'GET /trips/manifest', 'GET /routes/load-board', 'fee_due (bus months)']
+  number_counter:
+    purpose: The last number used, per kind and year. Makes A-2026-131, R-2026-1189, TC-2026-014, RF-2026-0003.
+    rules:
+      - 'The service does `select ... for update`, adds 1, saves, and builds the number in the same transaction. Two clerks never get the same number.'
+      - Replaces `admission_counter` and `receipt_counter` of the old plan.
+    example: counter_key like '%2026'
+    used_by: ['POST /admissions', 'POST /fees/payments', 'POST /students/{id}/leave']
+
+  upload:
+    purpose: A file chosen on the admission form before the student exists. Gives the `uploadId`.
+    rules:
+      - Deleted by a nightly job when it is older than 24 hours and was not used.
+    used_by: ['POST /uploads', 'POST /admissions']
+  student_document:
+    purpose: One file of one child (birth certificate, TC, report card, ...).
+    rules:
+      - One shown file per type (OTHER can have many). A new file for the same type sets `removed_at` on the old one, which is kept.
+      - Only office staff (DOCUMENTS_EDIT) can open a file. Every open is written in `audit_log`.
+    example: student_id = 118
+    used_by: ['/students/{id}/documents/*', 'POST /admissions']
+  student_document_note:
+    purpose: A note on a document type, even with no file yet. Example "The old school has not given it yet".
+    example: student_id = 118
+    used_by: ['PUT /students/{id}/documents/{docType}/note']
+  admission_draft:
+    purpose: The admission form saved with "Save as draft", exactly as the React app keeps it (jsonb).
+    rules:
+      - Nothing in `form` is checked. Deleted after 60 days, or when the admission is saved.
+    example: id = 12
+    used_by: ['/admission-drafts/*']
+  transfer_certificate:
+    purpose: A transfer certificate, with its number.
+    rules:
+      - One ISSUED TC per child. "Bring back" sets the TC to CANCELLED.
+    used_by: ['/students/{id}/transfer-certificate', 'POST /students/{id}/leave']
+
+  boarding_event:
+    purpose: One tap of the attendant. One child, one school day, one of the four events.
+    rules:
+      - 'THE most important rule: `unique (student_id, service_date, event_type)`. A double tap, or a tap sent again after bad signal, hits the same row.'
+      - 'Save with an upsert; the tap with the later `occurred_at` wins. A CLEARED tap (undo) deletes the row.'
+      - NOT_TRAVELLING (went home with a parent) only for BOARDED_EVENING.
+    example: student_id in (57, 67)
+    used_by: ['POST /trips/marks', 'GET /trips/manifest', 'GET /bus-status']
+  holiday:
+    purpose: A day with no school (Sundays are always off and are not stored).
+    example: holiday_date >= '2026-10-01'
+    used_by: ['/holidays', 'GET /trips/my-route']
+
+  bus_sms_rule:
+    purpose: For a group of classes, which of the four bus events send an SMS.
+    rules:
+      - Every class in exactly one group (checked in the service when saving).
+    example: seq_no > 0
+    used_by: ['/settings/bus-sms-rules', 'POST /trips/marks']
+  message_template:
+    purpose: A message text. Bus texts have a boy row (M) and a girl row (F).
+    rules:
+      - '`body` is the text as changed on School settings. `approved_body` is the text the phone company approved (DLT). The server always sends `approved_body`.'
+      - One row per (code, gender); fee texts have gender empty (`unique nulls not distinct`).
+    example: code = 'BOARDED_MORNING'
+    used_by: ['/message-templates/*', 'the sending job']
+  message_outbox:
+    purpose: Every message to a parent, as a queue. The sending job reads QUEUED rows every 5 seconds.
+    rules:
+      - One bus event gives one SMS per phone, whatever happens (partial unique index).
+      - Login codes are never stored here.
+      - After 3 failed tries a row is FAILED. If WhatsApp fails, a new SMS row is made with `fallback_of_id`.
+    example: student_id = 57 or receipt_id is not null
+    used_by: ['GET /messages', 'POST /messages/*/retry', 'webhooks', 'receipts on WhatsApp', 'reminders']
+
+  enquiry:
+    purpose: A parent who asked about admission, and where they are now.
+    rules:
+      - LOST needs a reason, and keeps the stage before it (for "Open the enquiry again").
+      - ADMITTED is set only by POST /admissions, with the new student's id.
+      - '"Overdue" is counted: `next_follow_up_on` before today, and not ADMITTED or LOST.'
+    example: id in (77, 74)
+    used_by: ['/enquiries/*', 'POST /admissions']
+  enquiry_stage:
+    purpose: Each stage an enquiry reached, with its date. For the stage line "New 29 Sep → Contacted 2 Oct".
+    example: enquiry_id = 77
+    used_by: ['GET /enquiries/{id}', 'POST /enquiries/{id}/status']
+  enquiry_follow_up:
+    purpose: One call, visit or chat, and the next step that was promised.
+    example: enquiry_id = 77
+    used_by: ['POST /enquiries/{id}/follow-ups']
+
+  session_fee_setting:
+    purpose: The fee rules of one session. One row per session.
+    rules:
+      - '`bus_months` holds the months with a bus fee: {4,5,7,8,9,10,11,12,1,2,3} means no bus fee in June.'
+      - '`grace_until` 31 means "until the end of the month".'
+      - A new session copies the row of the year before, with `fees_set_by_owner = false`.
+    example: session_id in (3, 4)
+    used_by: ['/sessions/{id}/fee-settings', 'every fee calculation']
+  class_fee:
+    purpose: The school fee a month for one class in one session.
+    example: session_id = 3 and class_name in ('Nursery', '5', '12')
+    used_by: ['/sessions/{id}/fee-settings', 'GET /fees/quote']
+  fee_plan:
+    purpose: What one child pays a month, from a month on. A change adds a row; the newest row that started on or before a month is the plan for it.
+    rules:
+      - '`follows_class_fee = true`: a change in Fee settings also changes this child''s unpaid months. `false`: the child has their own fee.'
+      - A discount needs a reason, and is never more than the fee.
+      - The bus fee is not here; it is on `transport_enrolment`.
+    example: student_id in (57, 118)
+    used_by: ['PUT /students/{id}/fee-plan', 'POST /admissions']
+  fee_due:
+    purpose: One row per child per month = what must be paid for that month (school after discount, and bus).
+    rules:
+      - Made by the server for every month the child is in school. No row = NO_FEE.
+      - When a plan, the bus or a class fee changes, the server rewrites only the unpaid months.
+      - Late fees are not here. They are counted when the family pays, and saved as LATE lines.
+    example: student_id = 57 and month between '2026-08-01' and '2026-10-01'
+    used_by: ['GET /fees/families/{familyId}', 'POST /fees/preview', 'GET /fees/dues', 'analytics']
+  receipt:
+    purpose: One payment by a family (R-2026-1189), or one refund to a family (RF-2026-0003).
+    rules:
+      - '`amount` is the money that changed hands. The lines in `fee_payment` say which child and which month.'
+      - A changed late fee needs a reason. The reason is never printed.
+      - '`client_request_id` is unique: the same click sent twice makes one receipt.'
+      - A cancelled receipt stays, with CANCELLED and the reason. Nothing is deleted.
+    example: receipt_no in ('R-2026-0098', 'R-2026-1186')
+    used_by: ['POST /fees/payments', '/receipts/*', 'GET /fees/today']
+  fee_payment:
+    purpose: 'One line of a receipt: child, month, SCHOOL / BUS / LATE, amount.'
+    rules:
+      - 'Never updated or deleted (a trigger stops it). In Java: an `@Immutable` entity.'
+      - A cancel adds one negative line for each line, with `reversal_of_id`. A line can be reversed only once.
+    example: receipt_id = (select id from receipt where receipt_no = 'R-2026-1186')
+    used_by: ['POST /fees/payments', 'POST /receipts/{receiptNo}/cancel', 'v_fee_month']
+  family_credit_entry:
+    purpose: Money kept for a family. A plus row adds credit, a minus row uses it. The credit is the sum.
+    rules:
+      - Never updated or deleted (a trigger stops it).
+    used_by: ['POST /students/{id}/leave (KEEP)', 'POST /fees/payments']
+
+  promotion_run:
+    purpose: One new school year (2026-27 → 2027-28), its status and its undo time.
+    used_by: ['/promotion/*']
+  promotion_choice:
+    purpose: Only the children who do not simply move up one class (stay back, not coming back, other section).
+    rules:
+      - A child with no row moves up and keeps section, route and stop. Class 12 with no row becomes FINISHED.
+      - '`from_class` and `from_section` are filled at start, so Undo can put every child back.'
+    used_by: ['/promotion/not-coming-back', '/promotion/classes/*', 'POST /promotion/start']
+
+  exam:
+    purpose: The 4 exams of a session (later).
+    used_by: ['GET /students/{id}/marks']
+  subject:
+    purpose: A subject, and whether it gets a grade instead of marks (later).
+    used_by: ['GET /students/{id}/marks']
+  class_subject:
+    purpose: Which subjects a class has (later).
+    used_by: ['PUT /students/{id}/marks/{examCode}']
+  student_mark:
+    purpose: One mark or grade of one child, one exam, one subject (later).
+    used_by: ['/students/{id}/marks/*']
+  teacher_note:
+    purpose: The class teacher's note for one child after one exam (later).
+    used_by: ['GET /students/{id}/marks']

@@ -1,0 +1,105 @@
+erDiagram
+    session_fee_setting {
+        bigint id PK
+        bigint session_id FK
+        numeric bus_fee_per_month
+        int_list bus_months
+        int due_day
+        int grace_until
+        varchar late_fee_kind
+        numeric late_fee_per_month
+        numeric late_fee_per_day
+        numeric late_fee_max_per_month
+        varchar_list late_fee_change_roles
+        boolean fees_set_by_owner
+        bigint updated_by FK
+    }
+    class_fee {
+        bigint id PK
+        bigint session_id FK
+        varchar class_name
+        numeric per_month
+    }
+    fee_plan {
+        bigint id PK
+        bigint student_id FK
+        bigint session_id FK
+        date from_month
+        numeric school_fee_per_month
+        boolean follows_class_fee
+        numeric discount_per_month
+        varchar discount_reason
+        varchar pay_frequency
+        varchar note
+        bigint created_by FK
+    }
+    fee_due {
+        bigint id PK
+        bigint student_id FK
+        bigint session_id FK
+        date month
+        numeric school_amount
+        numeric discount_amount
+        numeric bus_amount
+    }
+    receipt {
+        bigint id PK
+        varchar receipt_no
+        varchar kind
+        varchar source
+        bigint session_id FK
+        bigint family_guardian_id FK
+        date paid_on
+        timestamptz paid_at
+        varchar mode
+        varchar reference
+        numeric amount
+        numeric credit_used
+        numeric late_fee_normal
+        numeric late_fee_final
+        varchar late_fee_reason
+        varchar late_fee_note
+        bigint late_fee_changed_by FK
+        varchar client_request_id
+        varchar status
+        timestamptz cancelled_at
+        bigint cancelled_by FK
+        varchar cancel_reason
+        varchar cancel_note
+        bigint taken_by FK
+    }
+    fee_payment {
+        bigint id PK
+        bigint receipt_id FK
+        bigint student_id FK
+        bigint session_id FK
+        date month
+        varchar fee_head
+        numeric amount
+        bigint reversal_of_id FK
+    }
+    family_credit_entry {
+        bigint id PK
+        bigint guardian_id FK
+        numeric amount
+        varchar reason
+        bigint student_id FK
+        bigint receipt_id FK
+        varchar note
+        bigint created_by FK
+    }
+    academic_session ||--o{ class_fee : session_id
+    academic_session ||--o{ fee_plan : session_id
+    receipt ||--o{ message_outbox : receipt_id
+    academic_session ||--o{ session_fee_setting : session_id
+    student ||--o{ fee_plan : student_id
+    student ||--o{ fee_due : student_id
+    academic_session ||--o{ fee_due : session_id
+    academic_session ||--o{ receipt : session_id
+    guardian ||--o{ receipt : family_guardian_id
+    receipt ||--o{ fee_payment : receipt_id
+    student ||--o{ fee_payment : student_id
+    academic_session ||--o{ fee_payment : session_id
+    guardian ||--o{ family_credit_entry : guardian_id
+    student ||--o{ family_credit_entry : student_id
+    receipt ||--o{ family_credit_entry : receipt_id

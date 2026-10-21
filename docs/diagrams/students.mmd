@@ -1,0 +1,78 @@
+erDiagram
+    student {
+        bigint id PK
+        varchar admission_no
+        varchar name
+        varchar name_hindi
+        date dob
+        varchar gender
+        varchar class_name
+        varchar section
+        varchar village
+        varchar address
+        varchar father_occupation
+        varchar status
+        bigint admission_session_id FK
+        date joined_on
+        date left_on
+        varchar left_reason
+        varchar left_note
+        varchar new_school
+        varchar photo_key
+        timestamptz photo_updated_at
+        bigint created_by FK
+    }
+    guardian {
+        bigint id PK
+        varchar name
+        varchar phone
+        varchar preferred_language
+    }
+    student_guardian {
+        bigint id PK
+        bigint student_id FK
+        bigint guardian_id FK
+        varchar relation
+        boolean sms_enabled
+        boolean is_primary
+    }
+    transport_enrolment {
+        bigint id PK
+        bigint student_id FK
+        boolean uses_bus
+        bigint route_id FK
+        bigint stop_id FK
+        date from_date
+        date to_date
+        numeric bus_fee_per_month
+        varchar reason
+        varchar note
+        bigint created_by FK
+    }
+    number_counter {
+        varchar counter_key PK
+        int last_no
+    }
+    academic_session ||--o{ student : admission_session_id
+    student ||--o{ student_guardian : student_id
+    guardian ||--o{ student_guardian : guardian_id
+    student ||--o{ transport_enrolment : student_id
+    route ||--o{ transport_enrolment : route_id
+    route_stop ||--o{ transport_enrolment : stop_id
+    student ||--o{ student_document : student_id
+    student ||--o{ student_document_note : student_id
+    student ||--o{ boarding_event : student_id
+    student ||--o{ transfer_certificate : student_id
+    guardian ||--o{ message_outbox : guardian_id
+    student ||--o{ message_outbox : student_id
+    guardian ||--o{ enquiry : referred_by_guardian_id
+    student ||--o{ enquiry : admitted_student_id
+    student ||--o{ fee_plan : student_id
+    student ||--o{ fee_due : student_id
+    guardian ||--o{ receipt : family_guardian_id
+    student ||--o{ fee_payment : student_id
+    guardian ||--o{ family_credit_entry : guardian_id
+    student ||--o{ family_credit_entry : student_id
+    student ||--o{ promotion_choice : student_id
+    student ||--o{ student_mark : student_id
+    student ||--o{ teacher_note : student_id

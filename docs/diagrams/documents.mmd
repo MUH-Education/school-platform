@@ -1,0 +1,59 @@
+erDiagram
+    upload {
+        bigint id PK
+        varchar public_id
+        varchar file_key
+        varchar file_name
+        varchar content_type
+        int size_bytes
+        bigint uploaded_by FK
+        timestamptz expires_at
+        timestamptz used_at
+    }
+    student_document {
+        bigint id PK
+        bigint student_id FK
+        varchar doc_type
+        varchar title
+        varchar file_key
+        varchar file_name
+        varchar content_type
+        int size_bytes
+        boolean original_kept
+        date original_returned_on
+        bigint added_by FK
+        timestamptz removed_at
+        bigint removed_by FK
+        varchar removed_reason
+    }
+    student_document_note {
+        bigint id PK
+        bigint student_id FK
+        varchar doc_type
+        varchar note
+    }
+    admission_draft {
+        bigint id PK
+        varchar title
+        bigint session_id FK
+        jsonb form
+        bigint created_by FK
+        bigint updated_by FK
+    }
+    transfer_certificate {
+        bigint id PK
+        varchar tc_no
+        bigint student_id FK
+        date issued_on
+        varchar conduct
+        varchar class_passed
+        varchar remarks
+        varchar status
+        bigint made_by FK
+        timestamptz cancelled_at
+        bigint cancelled_by FK
+    }
+    student ||--o{ student_document : student_id
+    student ||--o{ student_document_note : student_id
+    academic_session ||--o{ admission_draft : session_id
+    student ||--o{ transfer_certificate : student_id

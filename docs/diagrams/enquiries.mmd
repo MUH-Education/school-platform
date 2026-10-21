@@ -1,0 +1,49 @@
+erDiagram
+    enquiry {
+        bigint id PK
+        bigint session_id FK
+        varchar parent_name
+        varchar phone
+        varchar relation
+        varchar village
+        varchar child_name
+        varchar class_sought
+        varchar child_age
+        varchar current_school
+        varchar source
+        varchar referred_by
+        bigint referred_by_guardian_id FK
+        varchar needs_bus
+        varchar needs_bus_from
+        varchar status
+        varchar status_before_lost
+        varchar lost_reason
+        varchar lost_note
+        date next_follow_up_on
+        varchar next_follow_up_type
+        varchar note
+        bigint admitted_student_id FK
+        bigint created_by FK
+    }
+    enquiry_stage {
+        bigint id PK
+        bigint enquiry_id FK
+        varchar status
+        date reached_on
+        bigint created_by FK
+    }
+    enquiry_follow_up {
+        bigint id PK
+        bigint enquiry_id FK
+        date happened_on
+        varchar follow_type
+        varchar note
+        varchar next_type
+        date next_on
+        bigint created_by FK
+    }
+    academic_session ||--o{ enquiry : session_id
+    guardian ||--o{ enquiry : referred_by_guardian_id
+    student ||--o{ enquiry : admitted_student_id
+    enquiry ||--o{ enquiry_stage : enquiry_id
+    enquiry ||--o{ enquiry_follow_up : enquiry_id

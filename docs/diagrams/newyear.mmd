@@ -1,0 +1,32 @@
+erDiagram
+    promotion_run {
+        bigint id PK
+        bigint from_session_id FK
+        bigint to_session_id FK
+        varchar status
+        int steps_done
+        timestamptz started_at
+        bigint started_by FK
+        timestamptz undo_until
+        timestamptz undone_at
+        bigint undone_by FK
+        bigint created_by FK
+    }
+    promotion_choice {
+        bigint id PK
+        bigint run_id FK
+        bigint student_id FK
+        varchar choice
+        varchar to_class
+        varchar to_section
+        varchar reason
+        varchar note
+        varchar from_class
+        varchar from_section
+        bigint marked_by FK
+        timestamptz marked_at
+    }
+    academic_session ||--o{ promotion_run : from_session_id
+    academic_session ||--o{ promotion_run : to_session_id
+    promotion_run ||--o{ promotion_choice : run_id
+    student ||--o{ promotion_choice : student_id

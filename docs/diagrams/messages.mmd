@@ -1,0 +1,53 @@
+erDiagram
+    bus_sms_rule {
+        bigint id PK
+        int seq_no
+        varchar name
+        varchar from_class
+        varchar to_class
+        boolean boarded_morning
+        boolean reached_school
+        boolean boarded_evening
+        boolean reached_home
+        bigint updated_by FK
+    }
+    message_template {
+        bigint id PK
+        varchar code
+        varchar gender
+        varchar name
+        varchar channel
+        varchar language
+        varchar body
+        varchar approved_body
+        varchar provider_template_id
+        varchar approval
+        boolean active
+        bigint updated_by FK
+    }
+    message_outbox {
+        bigint id PK
+        varchar purpose
+        varchar channel
+        varchar phone
+        bigint guardian_id FK
+        bigint student_id FK
+        bigint receipt_id FK
+        date service_date
+        varchar event_type
+        varchar template_code
+        varchar body
+        varchar status
+        int attempts
+        timestamptz next_try_at
+        varchar provider_ref
+        varchar problem
+        varchar error
+        timestamptz sent_at
+        timestamptz delivered_at
+        bigint fallback_of_id FK
+        bigint created_by FK
+    }
+    guardian ||--o{ message_outbox : guardian_id
+    student ||--o{ message_outbox : student_id
+    receipt ||--o{ message_outbox : receipt_id
