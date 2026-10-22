@@ -109,7 +109,7 @@ create table notification_rule_run (
 - [x] 12.5 `RuleEvents` (`ApplicationEventPublisher`) + listeners; the three publish lines in Admission, Trip,
       Payment services; `running-late` endpoint.
 - [x] 12.6 Resolvers `BirthdayTodayResolver`, `BusChildrenWithoutTapTodayResolver`.
-- [ ] 12.7 Endpoints + audit + docs + dev data + Postman.
+- [x] 12.7 Endpoints + audit + docs + dev data + Postman.
 
 ## Tests that must pass
 
