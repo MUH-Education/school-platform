@@ -28,7 +28,7 @@ create table notification_rule (
     code            varchar(40)  not null unique,          -- 'FEE_REMINDER_10TH', 'BIRTHDAY', 'BUS_LATE', 'WELCOME'
     name            varchar(80)  not null,
     kind            varchar(20)  not null,                 -- same check as notification.kind
-    template_id     bigint       not null references message_template (id),
+    template_id     bigint       references message_template (id),   -- empty in the seed rows; needed to turn on
     audience        jsonb        not null,                 -- same shape as notification.audience
     trigger_type    varchar(10)  not null check (trigger_type in ('CRON', 'EVENT')),
     cron            varchar(60),                           -- Spring cron, zone Asia/Kolkata: '0 0 10 10,20 * *'
@@ -40,11 +40,12 @@ create table notification_rule (
     updated_by      bigint       references app_user (id),
     created_at      timestamptz  not null default now(),
     updated_at      timestamptz  not null default now(),
-    constraint notification_rule_trigger check ((trigger_type = 'CRON') = (cron is not null) and (trigger_type = 'EVENT') = (event is not null))
+    constraint notification_rule_trigger check ((trigger_type = 'CRON') = (cron is not null) and (trigger_type = 'EVENT') = (event is not null)),
+    constraint notification_rule_enabled_template check (not enabled or template_id is not null)
 );
 create table notification_rule_run (
     rule_id     bigint      not null references notification_rule (id),
-    run_key     varchar(60) not null,                      -- CRON: '2026-10-10'; EVENT: 'student:129'; BIRTHDAY: '2026:student:129'
+    run_key     varchar(60) not null,                      -- CRON (BIRTHDAY too): '2026-10-10'; EVENT: 'student:129'
     notification_id bigint  references notification (id),
     ran_at      timestamptz not null default now(),
     primary key (rule_id, run_key)                          -- the same run never happens twice, even after a restart
@@ -61,7 +62,8 @@ create table notification_rule_run (
    exactly like a manual one.
 2. **One run per key.** `notification_rule_run (rule_id, run_key)` is the primary key. `FEE_REMINDER_10TH` on
    10 Oct has key `2026-10-10`. If the app restarts at 10:00:30 and the scheduler fires again, the insert fails
-   and nothing is created twice. Birthday key is `2026:student:129`, so a child gets one wish a year.
+   and nothing is created twice. Birthday is one notification a day for all children born that day (key
+   `2026-10-23`), so a child gets one wish a year (owner's choice, 23 Oct 2026).
 3. **CRON rules** are checked by `RuleScheduler` every minute: for each enabled CRON rule, compute the last fire
    time of its cron (Spring `CronExpression`) in `Asia/Kolkata`; if it is within the last 2 minutes and the run
    key is not used, fire. A server that was down at 10:00 and comes back at 10:01 still fires; at 10:05 it does
@@ -99,14 +101,14 @@ create table notification_rule_run (
 
 ## Tasks
 
-- [ ] 12.1 `V15__notification_rules.sql` + seed rows (all `enabled = false`): FEE_REMINDER_10TH, FEE_REMINDER_20TH,
+- [x] 12.1 `V15__notification_rules.sql` + seed rows (all `enabled = false`): FEE_REMINDER_10TH, FEE_REMINDER_20TH,
       BIRTHDAY, FESTIVAL, WELCOME, BUS_LATE, NO_MORNING_TAP, DOCUMENTS_MISSING_MONDAY.
-- [ ] 12.2 Entities, repositories, `RuleRunRepository.tryInsert` (insert … on conflict do nothing → boolean).
-- [ ] 12.3 `RuleService.fire(...)`, `NotificationService.createFromRule(...)`.
-- [ ] 12.4 `RuleScheduler` (every minute, `app.notifications.rules-enabled`, off in test, `runOnce(now)`).
-- [ ] 12.5 `RuleEvents` (`ApplicationEventPublisher`) + listeners; the three publish lines in Admission, Trip,
+- [x] 12.2 Entities, repositories, `RuleRunRepository.tryInsert` (insert … on conflict do nothing → boolean).
+- [x] 12.3 `RuleService.fire(...)`, `NotificationService.createFromRule(...)`.
+- [x] 12.4 `RuleScheduler` (every minute, `app.notifications.rules-enabled`, off in test, `runOnce(now)`).
+- [x] 12.5 `RuleEvents` (`ApplicationEventPublisher`) + listeners; the three publish lines in Admission, Trip,
       Payment services; `running-late` endpoint.
-- [ ] 12.6 Resolvers `BirthdayTodayResolver`, `BusChildrenWithoutTapTodayResolver`.
+- [x] 12.6 Resolvers `BirthdayTodayResolver`, `BusChildrenWithoutTapTodayResolver`.
 - [ ] 12.7 Endpoints + audit + docs + dev data + Postman.
 
 ## Tests that must pass

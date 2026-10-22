@@ -18,7 +18,7 @@ public class GreetingPolicy implements KindPolicy {
 
 	private static final Set<AudienceGroup> AUDIENCES = Set.of(AudienceGroup.CURRENT_PARENTS,
 			AudienceGroup.ENQUIRY_OPEN, AudienceGroup.ENQUIRY_LOST, AudienceGroup.STAFF_ALL, AudienceGroup.DRIVERS,
-			AudienceGroup.ATTENDANTS, AudienceGroup.TEACHERS);
+			AudienceGroup.ATTENDANTS, AudienceGroup.TEACHERS, AudienceGroup.BIRTHDAY_TODAY);
 
 	@Override
 	public NotificationKind kind() {

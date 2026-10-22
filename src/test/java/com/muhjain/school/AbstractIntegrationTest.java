@@ -149,6 +149,33 @@ public abstract class AbstractIntegrationTest {
 		return code.getValue();
 	}
 
+	private void resetRules() {
+		jdbc.execute("create table if not exists test_rule_seed (code varchar(40) primary key, name varchar(80), "
+				+ "kind varchar(20), audience jsonb, trigger_type varchar(10), cron varchar(60), event varchar(30), "
+				+ "fixed_values jsonb)");
+		if (jdbc.queryForObject("select count(*) from test_rule_seed", Integer.class) == 0) {
+			jdbc.execute(v15RuleInsert().replace("insert into notification_rule ", "insert into test_rule_seed "));
+		}
+		jdbc.update("delete from notification_rule where code not in (select code from test_rule_seed)");
+		jdbc.update("update notification_rule r set name = s.name, kind = s.kind, template_id = null, "
+				+ "audience = s.audience, trigger_type = s.trigger_type, cron = s.cron, event = s.event, "
+				+ "fixed_values = s.fixed_values, delay_minutes = null, enabled = false, last_run_at = null, "
+				+ "updated_by = null from test_rule_seed s where s.code = r.code");
+	}
+
+	// The "insert into notification_rule ... ;" of V15, as written in the migration.
+	private static String v15RuleInsert() {
+		try (var in = AbstractIntegrationTest.class
+			.getResourceAsStream("/db/migration/V15__notification_rules.sql")) {
+			String sql = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+			int start = sql.indexOf("insert into notification_rule ");
+			return sql.substring(start, sql.indexOf(';', start));
+		}
+		catch (java.io.IOException e) {
+			throw new IllegalStateException("V15 cannot be read", e);
+		}
+	}
+
 	/** A valid token for this user, with a real session behind it, made directly. */
 	protected String tokenFor(AppUser user) {
 		return sessionService.create(user, "10.0.0.1").token();
@@ -200,7 +227,14 @@ public abstract class AbstractIntegrationTest {
 		jdbc.update("delete from inbound_message");
 		jdbc.update("delete from message_stop");
 		jdbc.update("delete from message_outbox");
+		// Rules (V15): runs point at notifications, notifications at rules, rules at templates. The eight
+		// seeded rules are reference data and nothing re-inserts them, so they are not deleted: every cleanup
+		// puts them back as V15 made them (off, no template), from test_rule_seed, a test-only copy made from
+		// the V15 file itself (not from the live rows: the local profile's dev data changes them at start-up,
+		// before the first cleanup). A rule a test added is deleted.
+		jdbc.update("delete from notification_rule_run");
 		jdbc.update("delete from notification");
+		resetRules();
 		jdbc.update("delete from message_template_button");
 		jdbc.update("update message_template set replaces_id = null where replaces_id is not null");
 		jdbc.update("delete from message_template where kind <> 'SYSTEM'");

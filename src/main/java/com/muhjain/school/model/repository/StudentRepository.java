@@ -24,4 +24,15 @@ public interface StudentRepository extends JpaRepository<Student, Long>, JpaSpec
 	boolean existsSameChild(@Param("name") String lowerName, @Param("dob") LocalDate dob,
 			@Param("phone") String phone);
 
+	/**
+	 * The ACTIVE children born on this month and day, any year, by name. {@code leapDayToo} adds the children born
+	 * on 29 February (used on 28 February of a year without a 29th, so they get one wish a year).
+	 */
+	@Query(value = "select * from student where status = 'ACTIVE' and dob is not null "
+			+ "and ((extract(month from dob) = :month and extract(day from dob) = :day) "
+			+ "or (:leapDayToo and extract(month from dob) = 2 and extract(day from dob) = 29)) order by name, id",
+			nativeQuery = true)
+	List<Student> activeBornOn(@Param("month") int month, @Param("day") int day,
+			@Param("leapDayToo") boolean leapDayToo);
+
 }

@@ -17,6 +17,7 @@ import com.muhjain.school.model.repository.FeePaymentRepository;
 import com.muhjain.school.model.repository.FeePlanRepository;
 import com.muhjain.school.model.repository.ReceiptRepository;
 import com.muhjain.school.service.audit.AuditService;
+import com.muhjain.school.service.notification.RuleEvents;
 import com.muhjain.school.service.student.GuardianService;
 import com.muhjain.school.service.student.StudentQueryService;
 import com.muhjain.school.util.MoneyText;
@@ -68,6 +69,8 @@ public class PaymentService {
 
 	private final AuditService audit;
 
+	private final RuleEvents ruleEvents;
+
 	private final Clock clock;
 
 	private final EntityManager entityManager;
@@ -75,7 +78,8 @@ public class PaymentService {
 	public PaymentService(FeePlanRepository plans, FeeMonthViewRepository months, FeeDueGenerator dueGenerator,
 			FeePaymentRepository payments, ReceiptRepository receipts, AcademicSessionService sessions,
 			ReceiptNumberService receiptNumbers, StudentQueryService students, GuardianService guardianService,
-			AuditService audit, Clock clock, EntityManager entityManager) {
+			AuditService audit, RuleEvents ruleEvents, Clock clock, EntityManager entityManager) {
+		this.ruleEvents = ruleEvents;
 		this.plans = plans;
 		this.months = months;
 		this.dueGenerator = dueGenerator;
@@ -147,6 +151,8 @@ public class PaymentService {
 			auditPayment(row, "Payment " + receiptNo + ": " + row.getFeeHead() + " " + MoneyText.of(row.getAmount())
 					+ " for " + row.getMonth() + " by " + request.mode() + ".", AuditAction.CREATED);
 		}
+		// Phase 12: the family's waiting fee reminders are skipped, once this transaction has committed.
+		ruleEvents.paymentSaved(studentId, familyGuardianId);
 		return receiptOf(receipt, saved, studentId, session);
 	}
 

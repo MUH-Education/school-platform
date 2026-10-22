@@ -19,7 +19,7 @@ erDiagram
         int recipient_count
         varchar note
         varchar source
-        bigint rule_id
+        bigint rule_id FK
         bigint created_by FK
     }
     message_template_button {
@@ -62,3 +62,5 @@ erDiagram
     guardian ||--o{ inbound_message : guardian_id
     guardian ||--o{ message_stop : guardian_id
     notification ||--o{ message_stop : notification_id
+    notification ||--o{ notification_rule_run : notification_id
+    notification_rule ||--o{ notification : rule_id

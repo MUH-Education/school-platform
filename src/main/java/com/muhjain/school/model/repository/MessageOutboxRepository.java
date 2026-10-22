@@ -47,6 +47,16 @@ public interface MessageOutboxRepository extends JpaRepository<MessageOutbox, Lo
 			+ "and m.status = com.muhjain.school.model.enums.MessageStatus.QUEUED")
 	int cancelQueued(@Param("notificationId") Long notificationId, @Param("now") Instant now);
 
+	/**
+	 * A family has just paid: its fee-reminder rows that are still waiting become SKIPPED ALREADY_PAID at once, not
+	 * only when the worker reaches them (Phase 12, rule 4). Only notification rows; nothing else is touched.
+	 */
+	@Modifying(flushAutomatically = true, clearAutomatically = true)
+	@Query(value = "update message_outbox set status = 'SKIPPED', skip_reason = 'ALREADY_PAID', updated_at = :now "
+			+ "where guardian_id = :guardianId and status = 'QUEUED' and purpose = 'FEE_REMINDER' "
+			+ "and notification_id is not null", nativeQuery = true)
+	int skipQueuedFeeReminders(@Param("guardianId") Long guardianId, @Param("now") Instant now);
+
 	/** How many rows of a notification are in these statuses (the test copy not counted). */
 	@Query("select count(m) from MessageOutbox m where m.notificationId = :notificationId and m.status in :statuses "
 			+ "and m.purpose <> com.muhjain.school.model.enums.MessagePurpose.TEST")

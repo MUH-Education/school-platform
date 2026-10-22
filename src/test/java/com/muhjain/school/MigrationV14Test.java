@@ -137,7 +137,8 @@ class MigrationV14Test extends AbstractIntegrationTest {
 		jdbc.update("update notification set media_key = 'notifications/a.jpg', media_type = 'IMAGE' where id = ?", id);
 		// rule_id only for a notification made by a rule (Phase 12).
 		refused(() -> jdbc.update("update notification set rule_id = 1 where id = ?", id));
-		jdbc.update("update notification set source = 'RULE', rule_id = 1 where id = ?", id);
+		jdbc.update("update notification set source = 'RULE', "
+				+ "rule_id = (select id from notification_rule where code = 'BIRTHDAY') where id = ?", id);
 	}
 
 	@Test

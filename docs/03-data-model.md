@@ -1,6 +1,6 @@
 # 3. Data model
 
-**45 tables and 1 view** in PostgreSQL for the first release, plus 5 tables for marks later.
+**47 tables and 1 view** in PostgreSQL for the first release, plus 5 tables for marks later.
 Think of each table as one register in the school office. One row is one line in that register.
 
 This page is made by `tools/make_data_model.py` from the real database, so the columns below are always the same as the Flyway files.
@@ -56,6 +56,7 @@ The exclusion constraints need the `btree_gist` extension. V1 creates it (`creat
 | `V4__trips.sql` | 4 | `boarding_event`, `holiday` |
 | `V5__messaging.sql` | 5 | `bus_sms_rule`, `message_template`, `message_outbox` |
 | `V14__notifications.sql` | 11 | `notification`, `message_template_button`, `message_stop`, `inbound_message` |
+| `V15__notification_rules.sql` | 12 | `notification_rule`, `notification_rule_run` |
 | `V6__enquiries.sql` | 6 | `enquiry`, `enquiry_stage`, `enquiry_follow_up` |
 | `V7__fees.sql` | 7 | `session_fee_setting`, `class_fee`, `fee_plan`, `fee_due`, `receipt`, `fee_payment`, `family_credit_entry` |
 | `V8__new_school_year.sql` | 7 | `promotion_run`, `promotion_choice` |
@@ -132,6 +133,10 @@ flowchart LR
         message_stop[message_stop]
         inbound_message[inbound_message]
     end
+    subgraph rules["Automatic messages (rules)"]
+        notification_rule[notification_rule]
+        notification_rule_run[notification_rule_run]
+    end
     subgraph enquiries["Enquiries"]
         enquiry[enquiry]
         enquiry_stage[enquiry_stage]
@@ -198,6 +203,10 @@ flowchart LR
     guardian --> inbound_message
     guardian --> message_stop
     notification --> message_stop
+    message_template --> notification_rule
+    notification_rule --> notification_rule_run
+    notification --> notification_rule_run
+    notification_rule --> notification
 ```
 
 Also as a picture: `docs/diagrams/overview.svg`.
@@ -1456,8 +1465,8 @@ Plus `created_at` and `updated_at`.
 
 **Example rows** (from the sample data)
 
-- `id` 6 · `student_id` 57 · `route_id` 4 · `service_date` 2026-10-07 · `event_type` BOARDED_MORNING · `outcome` DONE · `occurred_at` 2026-10-07 02:12 · `recorded_by` 14 · `recorded_at` 2026-10-21 14:55
-- `id` 12 · `student_id` 67 · `route_id` 4 · `service_date` 2026-10-07 · `event_type` BOARDED_MORNING · `outcome` ABSENT · `occurred_at` 2026-10-07 02:13 · `recorded_by` 14 · `recorded_at` 2026-10-21 14:55
+- `id` 6 · `student_id` 57 · `route_id` 4 · `service_date` 2026-10-07 · `event_type` BOARDED_MORNING · `outcome` DONE · `occurred_at` 2026-10-07 02:12 · `recorded_by` 14 · `recorded_at` 2026-10-22 19:36
+- `id` 12 · `student_id` 67 · `route_id` 4 · `service_date` 2026-10-07 · `event_type` BOARDED_MORNING · `outcome` ABSENT · `occurred_at` 2026-10-07 02:13 · `recorded_by` 14 · `recorded_at` 2026-10-22 19:36
 
 **Used by:** `POST /trips/marks`, `GET /trips/manifest`, `GET /bus-status`
 
@@ -1573,6 +1582,7 @@ erDiagram
     notification ||--o{ message_outbox : notification_id
     staff ||--o{ message_outbox : staff_id
     enquiry ||--o{ message_outbox : enquiry_id
+    message_template ||--o{ notification_rule : template_id
 ```
 
 ### `bus_sms_rule`
@@ -1735,10 +1745,10 @@ Plus `created_at` and `updated_at`.
 
 **Example rows** (from the sample data)
 
-- `id` 3 · `purpose` BOARDING · `channel` SMS · `phone` +919400000871 · `guardian_id` 210 · `student_id` 57 · `service_date` 2026-10-07 · `event_type` BOARDED_MORNING · `template_code` BOARDED_MORNING · `body` आर्यन सुबह 7:42 बजे बस में चढ़ गया। – MUH Jain School · `status` DELIVERED · `attempts` 1 · `next_try_at` 2026-10-21 14:55 · `provider_ref` msg-8f2c-7741 · `sent_at` 2026-10-07 02:12 · `delivered_at` 2026-10-07 02:12 · `template_values` {}
-- `id` 4 · `purpose` BOARDING · `channel` SMS · `phone` +919800000512 · `guardian_id` 211 · `student_id` 57 · `service_date` 2026-10-07 · `event_type` BOARDED_MORNING · `template_code` BOARDED_MORNING · `body` आर्यन सुबह 7:42 बजे बस में चढ़ गया। – MUH Jain School · `status` DELIVERED · `attempts` 1 · `next_try_at` 2026-10-21 14:55 · `provider_ref` msg-8f2c-7742 · `sent_at` 2026-10-07 02:12 · `delivered_at` 2026-10-07 02:12 · `template_values` {}
-- `id` 7 · `purpose` FEE_RECEIPT · `channel` WHATSAPP · `phone` +919700000209 · `guardian_id` 240 · `receipt_id` 30 · `template_code` FEE_RECEIPT · `body` फ़ीस ₹3300 मिल गई है। रसीद नंबर R-2026-1187 साथ में भेजी है। धन्यवा... · `status` DELIVERED · `attempts` 1 · `next_try_at` 2026-10-21 14:55 · `sent_at` 2026-10-07 05:13 · `delivered_at` 2026-10-07 05:13 · `created_by` 2 · `template_values` {}
-- `id` 8 · `purpose` FEE_RECEIPT · `channel` WHATSAPP · `phone` +919800000665 · `guardian_id` 241 · `receipt_id` 29 · `template_code` FEE_RECEIPT · `body` फ़ीस ₹8000 मिल गई है। रसीद नंबर R-2026-1186 साथ में भेजी है। धन्यवा... · `status` DELIVERED · `attempts` 1 · `next_try_at` 2026-10-21 14:55 · `sent_at` 2026-10-07 04:46 · `delivered_at` 2026-10-07 04:46 · `created_by` 2 · `template_values` {}
+- `id` 3 · `purpose` BOARDING · `channel` SMS · `phone` +919400000871 · `guardian_id` 210 · `student_id` 57 · `service_date` 2026-10-07 · `event_type` BOARDED_MORNING · `template_code` BOARDED_MORNING · `body` आर्यन सुबह 7:42 बजे बस में चढ़ गया। – MUH Jain School · `status` DELIVERED · `attempts` 1 · `next_try_at` 2026-10-22 19:36 · `provider_ref` msg-8f2c-7741 · `sent_at` 2026-10-07 02:12 · `delivered_at` 2026-10-07 02:12 · `template_values` {}
+- `id` 4 · `purpose` BOARDING · `channel` SMS · `phone` +919800000512 · `guardian_id` 211 · `student_id` 57 · `service_date` 2026-10-07 · `event_type` BOARDED_MORNING · `template_code` BOARDED_MORNING · `body` आर्यन सुबह 7:42 बजे बस में चढ़ गया। – MUH Jain School · `status` DELIVERED · `attempts` 1 · `next_try_at` 2026-10-22 19:36 · `provider_ref` msg-8f2c-7742 · `sent_at` 2026-10-07 02:12 · `delivered_at` 2026-10-07 02:12 · `template_values` {}
+- `id` 7 · `purpose` FEE_RECEIPT · `channel` WHATSAPP · `phone` +919700000209 · `guardian_id` 240 · `receipt_id` 30 · `template_code` FEE_RECEIPT · `body` फ़ीस ₹3300 मिल गई है। रसीद नंबर R-2026-1187 साथ में भेजी है। धन्यवा... · `status` DELIVERED · `attempts` 1 · `next_try_at` 2026-10-22 19:36 · `sent_at` 2026-10-07 05:13 · `delivered_at` 2026-10-07 05:13 · `created_by` 2 · `template_values` {}
+- `id` 8 · `purpose` FEE_RECEIPT · `channel` WHATSAPP · `phone` +919800000665 · `guardian_id` 241 · `receipt_id` 29 · `template_code` FEE_RECEIPT · `body` फ़ीस ₹8000 मिल गई है। रसीद नंबर R-2026-1186 साथ में भेजी है। धन्यवा... · `status` DELIVERED · `attempts` 1 · `next_try_at` 2026-10-22 19:36 · `sent_at` 2026-10-07 04:46 · `delivered_at` 2026-10-07 04:46 · `created_by` 2 · `template_values` {}
 
 **Used by:** `GET /messages`, `POST /messages/*/retry`, `webhooks`, `receipts on WhatsApp`, `reminders`
 
@@ -1771,7 +1781,7 @@ erDiagram
         int recipient_count
         varchar note
         varchar source
-        bigint rule_id
+        bigint rule_id FK
         bigint created_by FK
     }
     message_template_button {
@@ -1814,6 +1824,8 @@ erDiagram
     guardian ||--o{ inbound_message : guardian_id
     guardian ||--o{ message_stop : guardian_id
     notification ||--o{ message_stop : notification_id
+    notification ||--o{ notification_rule_run : notification_id
+    notification_rule ||--o{ notification : rule_id
 ```
 
 ### `notification`
@@ -1841,7 +1853,7 @@ One send by the office (notice, urgent, marketing, greeting, fee reminder, one f
 | `recipient_count` | int | yes | `>= 0` | counted at expand time |
 | `note` | varchar(300) | yes |  | "Cancelled while sending: 112 sent, 134 not sent" |
 | `source` | varchar(10) |  | `MANUAL`, `RULE` · default `MANUAL` |  |
-| `rule_id` | bigint | yes |  | Phase 12: notification_rule (foreign key added there) |
+| `rule_id` | bigint | yes |  | → `notification_rule`. Phase 12: notification_rule (foreign key added there) |
 | `created_by` | bigint |  |  | → `app_user` |
 
 Plus `created_at` and `updated_at`.
@@ -1862,6 +1874,7 @@ Plus `created_at` and `updated_at`.
 - `notification_open_idx`: `CREATE INDEX notification_open_idx ON notification (status) WHERE ((status)::text = 'SENDING'::text)`
 - `notification_list_idx`: `CREATE INDEX notification_list_idx ON notification (created_at DESC)`
 - `notification_template_idx`: `CREATE INDEX notification_template_idx ON notification (template_id)`
+- `notification_rule_idx`: `CREATE INDEX notification_rule_idx ON notification (rule_id) WHERE (rule_id IS NOT NULL)`
 
 </details>
 
@@ -1966,6 +1979,118 @@ Plus `created_at` and `updated_at`.
 </details>
 
 **Used by:** `GET /inbound-messages`, `webhooks/inbound`
+
+
+---
+
+## Automatic messages (rules)
+
+Flyway file: `V15__notification_rules.sql` · Phase 12
+
+```mermaid
+erDiagram
+    notification_rule {
+        bigint id PK
+        varchar code
+        varchar name
+        varchar kind
+        bigint template_id FK
+        jsonb audience
+        varchar trigger_type
+        varchar cron
+        varchar event
+        jsonb fixed_values
+        int delay_minutes
+        boolean enabled
+        timestamptz last_run_at
+        bigint updated_by FK
+    }
+    notification_rule_run {
+        bigint rule_id FK
+        varchar run_key
+        bigint notification_id FK
+        timestamptz ran_at
+    }
+    message_template ||--o{ notification_rule : template_id
+    notification_rule ||--o{ notification_rule_run : rule_id
+    notification ||--o{ notification_rule_run : notification_id
+    notification_rule ||--o{ notification : rule_id
+```
+
+### `notification_rule`
+
+One automatic message, a line of the Settings screen's "Automatic messages" table. At the right moment it makes a normal notification (source RULE); it never sends anything itself.
+
+| Column | Type | Can be empty | Values or limits | Note |
+|---|---|---|---|---|
+| `id` | bigint |  |  | identity |
+| `code` | varchar(40) |  |  | 'FEE_REMINDER_10TH', 'BIRTHDAY', 'BUS_LATE', 'WELCOME' |
+| `name` | varchar(80) |  |  | the sender on Home: "Automatic · Fee reminder 10th" |
+| `kind` | varchar(20) |  | `NOTICE`, `URGENT`, `MARKETING`, `GREETING`, `FEE_REMINDER`, `ONE_FAMILY`, `STAFF` |  |
+| `template_id` | bigint | yes |  | → `message_template` |
+| `audience` | jsonb |  |  | same shape as notification.audience |
+| `trigger_type` | varchar(10) |  | `CRON`, `EVENT` |  |
+| `cron` | varchar(60) | yes |  | Spring cron, zone Asia/Kolkata: '0 0 10 10 * *' |
+| `event` | varchar(30) | yes | `ADMISSION_SAVED`, `BUS_LATE`, `NO_MORNING_TAP`, `PAYMENT_SAVED` |  |
+| `fixed_values` | jsonb |  | default `{}` | FESTIVAL: {"dates": ["2027-03-04"], "Festival": {"2027-03-04": "होली"}} |
+| `delay_minutes` | int | yes | `>= 0` | send later, not at once |
+| `enabled` | boolean |  | default `false` |  |
+| `last_run_at` | timestamptz | yes |  |  |
+| `updated_by` | bigint | yes |  | → `app_user` |
+
+Plus `created_at` and `updated_at`.
+
+**Rules**
+
+- The 8 rows come from V15 (all off, no template) and are never added or deleted from the API.
+- A rule can be on only with a template (database check); the server also wants it approved and an audience with a group.
+- CRON rules have a cron (built by the server from DAILY / WEEKLY / MONTHLY choices, school time); EVENT rules have an event. Never both.
+- FESTIVAL keeps its dates and names in `fixed_values` and fires only on those dates.
+- `updated_by` is the user who last turned it on or changed it: the "made by" of its notifications.
+
+<details><summary>Constraints and indexes in the database</summary>
+
+- `notification_rule_trigger`: `CHECK (((((trigger_type)::text = 'CRON'::text) = (cron IS NOT NULL)) AND (((trigger_type)::text = 'EVENT'::text) = (event IS NOT NULL))))`
+- `notification_rule_enabled_template`: `CHECK (((NOT enabled) OR (template_id IS NOT NULL)))`
+- `notification_rule_code_key`: `UNIQUE (code)`
+- `notification_rule_template_idx`: `CREATE INDEX notification_rule_template_idx ON notification_rule (template_id)`
+
+</details>
+
+**Example rows** (from the sample data)
+
+- `id` 1 · `code` FEE_REMINDER_10TH · `name` Fee reminder 10th · `kind` FEE_REMINDER · `audience` {"filter": {"skipPromised": true}, "groups": ["FAMILIES_WITH_DUES"]} · `trigger_type` CRON · `cron` 0 0 10 10 * * · `fixed_values` {}
+- `id` 4 · `code` FESTIVAL · `name` Festival greeting · `kind` GREETING · `audience` {"filter": {}, "groups": ["CURRENT_PARENTS", "STAFF_ALL"]} · `trigger_type` CRON · `cron` 0 0 9 * * * · `fixed_values` {"dates": [], "Festival": {}}
+- `id` 5 · `code` WELCOME · `name` Welcome after admission · `kind` ONE_FAMILY · `audience` {"filter": {}, "groups": ["ONE_FAMILY"]} · `trigger_type` EVENT · `event` ADMISSION_SAVED · `fixed_values` {}
+
+**Used by:** `GET /notification-rules`, `PUT /notification-rules/{id}`, `POST /notification-rules/{id}/run-now`, `RuleScheduler`, `RuleEventListener`
+
+### `notification_rule_run`
+
+One run of a rule. The primary key (rule, run key) stops the same run from happening twice, even after a restart.
+
+| Column | Type | Can be empty | Values or limits | Note |
+|---|---|---|---|---|
+| `rule_id` | bigint |  |  | → `notification_rule` |
+| `run_key` | varchar(60) |  |  |  |
+| `notification_id` | bigint | yes |  | → `notification`. null when the run found nobody to send to |
+| `ran_at` | timestamptz |  | default `now()` |  |
+
+Plus `created_at` and `updated_at`.
+
+**Rules**
+
+- Run keys: timed rules (birthday too) the school day `2026-10-10`; WELCOME `student:129`; BUS_LATE `bus-late:4:2026-10-07:morning`; Run now `manual:<time>`.
+- `notification_id` is empty when the run found nobody to send to.
+- Written only with insert ... on conflict do nothing, in the same transaction as the notification.
+
+<details><summary>Constraints and indexes in the database</summary>
+
+- `notification_rule_run_notification_idx`: `CREATE INDEX notification_rule_run_notification_idx ON notification_rule_run (notification_id)`
+
+</details>
+
+**Used by:** `RuleService.fire`
 
 
 ---

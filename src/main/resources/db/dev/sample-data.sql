@@ -21,6 +21,8 @@ begin;
 create temp table keep_setting  as select key, value from app_setting;
 create temp table keep_rule     as select seq_no, name, from_class, to_class, boarded_morning, reached_school, boarded_evening, reached_home from bus_sms_rule;
 create temp table keep_template as select kind, code, gender, name, channel, language, body, approved_body, provider_template_id, approval, active from message_template where kind = 'SYSTEM';
+-- The automatic messages of V15 (Phase 12). They point at message_template, so the truncate below empties them too.
+create temp table keep_notification_rule as select id, code, name, kind, audience, trigger_type, cron, event, fixed_values, delay_minutes from notification_rule;
 
 truncate app_setting, bus_sms_rule, message_template, academic_session, app_user, user_session, audit_log, vehicle, vehicle_document, staff,
          vehicle_assignment, route, route_stop, number_counter, student, guardian, student_guardian,
@@ -35,6 +37,8 @@ insert into bus_sms_rule (seq_no, name, from_class, to_class, boarded_morning, r
     select * from keep_rule order by seq_no;
 insert into message_template (kind, code, gender, name, channel, language, body, approved_body, provider_template_id, approval, active)
     select * from keep_template;
+insert into notification_rule (code, name, kind, audience, trigger_type, cron, event, fixed_values, delay_minutes)
+    select code, name, kind, audience, trigger_type, cron, event, fixed_values, delay_minutes from keep_notification_rule order by id;
 -- In this sample, the bus texts are approved and the school details are filled.
 update message_template set approval = 'APPROVED', provider_template_id = '11071612345000' || id where channel = 'SMS';
 update app_setting set value = 'Mrs. Kiran Jain' where key = 'school.principal_name';

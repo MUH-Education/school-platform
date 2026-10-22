@@ -67,6 +67,8 @@ app:
   notifications:
     manual-approval: false         # true only in local and test: the owner approves templates by hand (no provider yet)
     dispatcher-enabled: true       # NotificationDispatcher runs every 60 seconds. Tests turn it off and call runOnce().
+    rules-enabled: true            # RuleScheduler looks at the automatic rules every minute. Tests turn it off.
+    events-async: true             # WELCOME / BUS_LATE are made on their own thread after the commit (RuleEventRunner)
   storage:                         # student photos and notification files (FileStorage)
     type: local                    # local = a folder on this machine. prod: S3FileStorage comes in Phase 9.
     folder: ./data/photos          # the folder is in .gitignore. Same folder as before the rename.
@@ -105,3 +107,5 @@ app:
   notifications:
     manual-approval: true          # tests approve templates by hand
     dispatcher-enabled: false      # tests call NotificationDispatcher.runOnce() by hand
+    rules-enabled: false           # tests call RuleScheduler.runOnce(now) by hand
+    events-async: false            # WELCOME / BUS_LATE are made at once on the same thread, so a test can check them

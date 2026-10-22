@@ -1,11 +1,14 @@
 package com.muhjain.school.controller;
 
 import com.muhjain.school.model.dto.request.MarksRequest;
+import com.muhjain.school.model.dto.request.RunningLateRequest;
 import com.muhjain.school.model.dto.response.ManifestResponse;
 import com.muhjain.school.model.dto.response.MarksResponse;
 import com.muhjain.school.model.dto.response.MyRouteResponse;
+import com.muhjain.school.model.dto.response.RunningLateResponse;
 import com.muhjain.school.security.CurrentUser;
 import com.muhjain.school.security.TripAccess;
+import com.muhjain.school.service.trip.BusLateService;
 import com.muhjain.school.service.trip.ManifestService;
 import com.muhjain.school.service.trip.MarkService;
 import com.muhjain.school.service.trip.MyRouteService;
@@ -36,8 +39,11 @@ public class TripController {
 
 	private final CurrentUser currentUser;
 
+	private final BusLateService busLateService;
+
 	public TripController(MarkService markService, ManifestService manifestService, MyRouteService myRouteService,
-			CurrentUser currentUser) {
+			BusLateService busLateService, CurrentUser currentUser) {
+		this.busLateService = busLateService;
 		this.myRouteService = myRouteService;
 		this.markService = markService;
 		this.manifestService = manifestService;
@@ -70,6 +76,17 @@ public class TripController {
 	public ManifestResponse manifest(@RequestParam(required = false) Long routeId,
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
 		return manifestService.manifest(currentUser.id(), routeId, date);
+	}
+
+	/**
+	 * The attendant's "running late" button: the families on their route today get an URGENT message (when the
+	 * BUS_LATE rule is on). Only the attendant's own route today; another routeId → 403 NOT_YOUR_ROUTE.
+	 */
+	@Operation(summary = "Tell the families the bus is running late")
+	@PostMapping("/{routeId}/running-late")
+	@PreAuthorize("hasAuthority('TRIPS_RECORD')")
+	public RunningLateResponse runningLate(@PathVariable Long routeId, @Valid @RequestBody RunningLateRequest request) {
+		return busLateService.report(currentUser.id(), routeId, request.minutes());
 	}
 
 }

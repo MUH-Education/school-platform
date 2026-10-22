@@ -20,7 +20,7 @@ Change the Status column as you go: **Not started** → **In progress** → **Do
 | 9 | [Go live](phase-9-go-live.md) | Running on a server in India with backups | M | In progress |
 | 10 | [Employees and teachers](phase-10-staff-and-teachers.md) | `staff` holds every employee. Teachers, basic details, salary for the owner only. | S | In progress |
 | 11 | [Notification module](phase-11-notifications.md) | One `notification` row per send (notice, urgent, marketing, greeting, fee reminder, one family, staff), expanded into `message_outbox` rows by a poller. Templates, media, AI refine, guard chain, report, stop list. | M | In progress |
-| 12 | [Automatic messages (rules)](phase-12-automatic-rules.md) | A rule creates a normal notification at the right time (fee reminder on the 10th, birthday, bus late). Needs Phase 11. | S | Not started |
+| 12 | [Automatic messages (rules)](phase-12-automatic-rules.md) | A rule creates a normal notification at the right time (fee reminder on the 10th, birthday, bus late). Needs Phase 11. | S | In progress |
 
 **Two phases are open at the same time right now.** The owner asked for the Phase 10 code on 9 Oct 2026, before Phase 9 was finished. All Phase 10 tasks are ticked and `./gradlew test` is green, but the "Done when" list of Phase 10 has not been checked on the running app yet. Phase 9 (go live) is still the work that matters first.
 

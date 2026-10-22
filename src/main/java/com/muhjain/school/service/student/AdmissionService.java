@@ -13,6 +13,7 @@ import com.muhjain.school.service.enquiry.EnquiryService;
 import com.muhjain.school.service.fee.AcademicSessionService;
 import com.muhjain.school.service.fee.FeePlanService;
 import com.muhjain.school.service.fee.PaymentService;
+import com.muhjain.school.service.notification.RuleEvents;
 import com.muhjain.school.util.ClassNames;
 import com.muhjain.school.util.NameKeys;
 import org.springframework.stereotype.Service;
@@ -52,12 +53,15 @@ public class AdmissionService {
 
 	private final AcademicSessionService sessionService;
 
+	private final RuleEvents ruleEvents;
+
 	private final Clock clock;
 
 	public AdmissionService(StudentRepository students, AdmissionNumberService numbers,
 			GuardianService guardianService, TransportEnrolmentService transportService, AuditService auditService,
 			EnquiryService enquiryService, FeePlanService feePlanService, PaymentService paymentService,
-			AcademicSessionService sessionService, Clock clock) {
+			AcademicSessionService sessionService, RuleEvents ruleEvents, Clock clock) {
+		this.ruleEvents = ruleEvents;
 		this.feePlanService = feePlanService;
 		this.paymentService = paymentService;
 		this.enquiryService = enquiryService;
@@ -152,6 +156,8 @@ public class AdmissionService {
 		}
 
 		auditAdmission(student, request.siblingStudentId(), linked.size(), request.bus() != null);
+		// Phase 12: WELCOME, handled only once this transaction has committed.
+		ruleEvents.admissionSaved(student.getId(), guardianService.primaryGuardianId(student.getId()));
 		return new AdmissionResponse(student.getId(), admissionNo, student.getName(), warning, receiptNo,
 				stillToPay);
 	}

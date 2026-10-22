@@ -8,17 +8,20 @@ import com.muhjain.school.model.dto.response.NotificationRecipientResponse;
 import com.muhjain.school.model.dto.response.NotificationResponse;
 import com.muhjain.school.model.dto.response.PageResponse;
 import com.muhjain.school.model.dto.response.Recipient;
+import com.muhjain.school.model.dto.response.RuleNotification;
 import com.muhjain.school.model.dto.response.TestSendResponse;
 import com.muhjain.school.model.entity.AppUser;
 import com.muhjain.school.model.entity.MessageOutbox;
 import com.muhjain.school.model.entity.MessageTemplate;
 import com.muhjain.school.model.entity.Notification;
+import com.muhjain.school.model.entity.NotificationRule;
 import com.muhjain.school.model.enums.AuditAction;
 import com.muhjain.school.model.enums.HeaderType;
 import com.muhjain.school.model.enums.MediaFileType;
 import com.muhjain.school.model.enums.MessageChannel;
 import com.muhjain.school.model.enums.MessagePurpose;
 import com.muhjain.school.model.enums.MessageStatus;
+import com.muhjain.school.model.enums.NotificationSource;
 import com.muhjain.school.model.enums.NotificationKind;
 import com.muhjain.school.model.enums.NotificationStatus;
 import com.muhjain.school.model.enums.Permission;
@@ -28,6 +31,7 @@ import com.muhjain.school.model.enums.TemplateKind;
 import com.muhjain.school.model.repository.MessageOutboxRepository;
 import com.muhjain.school.model.repository.MessageTemplateRepository;
 import com.muhjain.school.model.repository.NotificationRepository;
+import com.muhjain.school.model.repository.NotificationRuleRepository;
 import com.muhjain.school.service.audit.AuditService;
 import com.muhjain.school.service.notification.impl.QuietHoursGuard;
 import com.muhjain.school.service.setting.SettingService;
@@ -52,6 +56,8 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -94,12 +100,15 @@ public class NotificationService {
 
 	private final AuditService auditService;
 
+	private final NotificationRuleRepository rules;
+
 	private final Clock clock;
 
 	public NotificationService(NotificationRepository notifications, MessageTemplateRepository templates,
 			MessageOutboxRepository outbox, KindPolicies policies, AudienceService audienceService,
 			NotificationMediaService mediaService, SettingService settings, UserService userService,
-			AuditService auditService, Clock clock) {
+			AuditService auditService, NotificationRuleRepository rules, Clock clock) {
+		this.rules = rules;
 		this.notifications = notifications;
 		this.templates = templates;
 		this.outbox = outbox;
@@ -149,6 +158,77 @@ public class NotificationService {
 		auditService.record(ENTITY, id, AuditAction.UPDATED, "Notification \"" + n.getName() + "\" changed.",
 				Map.of());
 		return toResponse(n, true);
+	}
+
+	/**
+	 * A notification made by an automatic rule (Phase 12): source RULE, straight to SENDING (or SCHEDULED for
+	 * {@code scheduledAt}), so the dispatcher, the guard chain and the report treat it like any other. No permission
+	 * check here: the owner allowed it by turning the rule on. The template, the audience and the {box} values are
+	 * checked like a manual one. Nobody in the audience now → nothing is made.
+	 * Example: the fee reminder rule on 10 Oct → "Fee reminder 10th, 10 Oct 2026", SENDING, 14 families.
+	 *
+	 * @return the new notification's id, or empty when nobody would get it
+	 * @throws ApiException 409 TEMPLATE_NOT_FOR_KIND, 409 TEMPLATE_NOT_APPROVED, 409 AUDIENCE_NOT_ALLOWED,
+	 * 400 VALIDATION (a {box} without a value)
+	 */
+	@Transactional
+	public Optional<Long> createFromRule(RuleNotification rule) {
+		NotificationKind kind = rule.kind();
+		KindPolicy policy = policies.forKind(kind);
+		policies.checkAudience(kind, rule.audience());
+		MessageTemplate template = templates.findById(rule.templateId())
+			.filter(t -> t.getKind() == TemplateKind.of(kind) && t.isActive())
+			.orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "TEMPLATE_NOT_FOR_KIND",
+					"Pick a " + kind.name().toLowerCase().replace('_', ' ') + " template that is in use."));
+		if (template.getApproval() != TemplateApproval.APPROVED && !policy.freeTextInsideWindow()) {
+			throw new ApiException(HttpStatus.CONFLICT, "TEMPLATE_NOT_APPROVED",
+					"WhatsApp has not approved this template yet.");
+		}
+		AudienceCounts counts = audienceService.resolve(kind, rule.audience()).counts();
+		if (counts.total() == 0) {
+			return Optional.empty();
+		}
+
+		String body = template.textToSend();
+		String sms = template.getSmsBody();
+		Notification n = new Notification();
+		n.setCreatedBy(rule.createdBy());
+		n.setKind(kind);
+		n.setName(cut(rule.name(), 80));
+		n.setTemplateId(template.getId());
+		n.setBody(body);
+		n.setSmsBody(sms);
+		n.setFixedValues(fixedValues(rule.fixedValues(), body, sms));
+		setMedia(n, null, template);
+		n.setAudience(rule.audience());
+		n.setSource(NotificationSource.RULE);
+		n.setRuleId(rule.ruleId());
+		boolean later = rule.scheduledAt() != null && rule.scheduledAt().isAfter(Instant.now(clock));
+		n.setStatus(later ? NotificationStatus.SCHEDULED : NotificationStatus.SENDING);
+		n.setScheduledAt(later ? rule.scheduledAt() : null);
+		notifications.saveAndFlush(n);
+		auditService.record(ENTITY, n.getId(), AuditAction.CREATED,
+				"Notification \"" + n.getName() + "\" made by an automatic rule, " + (later ? "scheduled" : "sent")
+						+ " to " + counts.total() + " people.",
+				Map.of("kind", kind.name(), "ruleId", rule.ruleId(), "status", n.getStatus().name()));
+		return Optional.of(n.getId());
+	}
+
+	/**
+	 * A family has just paid (Phase 12, PAYMENT_SAVED): its waiting fee reminders are SKIPPED ALREADY_PAID now, the
+	 * same answer the guard chain gives for "a receipt for this family today". Called inside the payment's own
+	 * transaction (just before it commits), so a payment that rolls back skips nothing.
+	 * Example: the 10:00 reminder is still QUEUED for the Sharma family; Anil Sharma pays at 10:02 → SKIPPED at 10:02.
+	 *
+	 * @return how many rows were skipped
+	 */
+	@Transactional
+	public int skipQueuedFeeReminders(Long guardianId) {
+		return (guardianId == null) ? 0 : outbox.skipQueuedFeeReminders(guardianId, Instant.now(clock));
+	}
+
+	private static String cut(String text, int max) {
+		return (text.length() <= max) ? text : text.substring(0, max);
 	}
 
 	// Every check of a draft, then the fields. Used by create and update.
@@ -380,8 +460,11 @@ public class NotificationService {
 			.forEach(t -> templateNames.put(t.getId(), t.getName()));
 		Map<Long, String> userNames = userService
 			.displayNames(found.getContent().stream().map(Notification::getCreatedBy).distinct().toList());
+		Map<Long, String> ruleNames = new java.util.HashMap<>();
+		rules.findAllById(found.getContent().stream().map(Notification::getRuleId).filter(Objects::nonNull).distinct()
+			.toList()).forEach(r -> ruleNames.put(r.getId(), r.getName()));
 		return PageResponse.of(found.map(n -> toResponse(n, null, templateNames.get(n.getTemplateId()),
-				userNames.get(n.getCreatedBy()))));
+				userNames.get(n.getCreatedBy()), ruleNames.get(n.getRuleId()))));
 	}
 
 	/**
@@ -453,16 +536,18 @@ public class NotificationService {
 		String templateName = templates.findById(n.getTemplateId()).map(MessageTemplate::getName).orElse(null);
 		String userName = userService.displayNames(List.of(n.getCreatedBy())).get(n.getCreatedBy());
 		AudienceCounts counts = withCounts ? audienceService.resolve(n.getKind(), n.getAudience()).counts() : null;
-		return toResponse(n, counts, templateName, userName);
+		String ruleName = (n.getRuleId() == null) ? null
+				: rules.findById(n.getRuleId()).map(NotificationRule::getName).orElse(null);
+		return toResponse(n, counts, templateName, userName, ruleName);
 	}
 
 	private NotificationResponse toResponse(Notification n, AudienceCounts counts, String templateName,
-			String userName) {
+			String userName, String ruleName) {
 		return new NotificationResponse(n.getId(), n.getKind(), n.getName(), n.getTemplateId(), templateName,
 				n.getBody(), n.getSmsBody(), n.getFixedValues(), n.getMediaKey(), n.getMediaType(), n.getAudience(),
 				n.getStatus(), at(n.getScheduledAt()), at(n.getExpandedAt()), at(n.getFinishedAt()),
-				n.getRecipientCount(), n.getNote(), n.getSource(), n.getCreatedBy(), userName, at(n.getCreatedAt()),
-				counts);
+				n.getRecipientCount(), n.getNote(), n.getSource(), n.getRuleId(), ruleName, n.getCreatedBy(), userName,
+				at(n.getCreatedAt()), counts);
 	}
 
 	private OffsetDateTime at(Instant instant) {

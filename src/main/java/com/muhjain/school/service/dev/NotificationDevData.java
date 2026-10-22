@@ -24,6 +24,10 @@ import com.muhjain.school.service.notification.StopListService;
 import com.muhjain.school.service.storage.FileStorage;
 import com.muhjain.school.service.student.GuardianService;
 import com.muhjain.school.service.student.StudentQueryService;
+import com.muhjain.school.model.dto.request.NotificationRuleRequest;
+import com.muhjain.school.model.dto.response.FestivalDay;
+import com.muhjain.school.model.dto.response.NotificationRuleResponse;
+import com.muhjain.school.service.notification.NotificationRuleService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -51,17 +55,21 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Phase 11 dev data (task 11.17), called at the end of {@link DevDataLoader}. Loaded once, when there is no
- * notification template yet. Uses services only, as the office would:
+ * Phase 11 and 12 dev data (tasks 11.17, 12.7), called at the end of {@link DevDataLoader}. Loaded once, when there
+ * is no notification template yet. Uses services only, as the office would:
  * <ul>
- * <li>12 templates: 3 NOTICE, 1 URGENT, 3 MARKETING (open day with a poster, approved; admissions WAITING; summer
- * camp REJECTED with a reason), 1 GREETING with a video, 3 FEE_REMINDER tones (gentle, firm, final), 1 STAFF.</li>
+ * <li>15 templates: 3 NOTICE, 2 URGENT (bus late, did not board), 3 MARKETING (open day with a poster, approved;
+ * admissions WAITING; summer camp REJECTED with a reason), 2 GREETING (Diwali with a video, birthday), 3 FEE_REMINDER
+ * tones (gentle, firm, final), 1 ONE_FAMILY (welcome), 1 STAFF.</li>
  * <li>3 families on the stop list (2 by the button, 1 by a "STOP" reply).</li>
  * <li>"Open day" (MARKETING) sent to every parent: one row per family, in mixed states — read, delivered, test
  * mode, failed (phone off), not on WhatsApp (with its SMS copy), and the stopped families SKIPPED.</li>
  * <li>4 replies: STOP, "will pay by Friday" (handled, promised), "Is the bus late?" (waiting), "Book a visit" tap
  * on the open-day message (waiting).</li>
  * <li>A NOTICE scheduled for the next school day at 10:00 and a FEE_REMINDER draft.</li>
+ * <li>Automatic messages: every rule but DOCUMENTS_MISSING_MONDAY gets a template; FEE_REMINDER_10TH, BIRTHDAY and
+ * BUS_LATE are on; WELCOME is off (else every sample child would get one); FESTIVAL has Holi (4 Mar 2027), off. "Run now" once on FEE_REMINDER_10TH, so
+ * Home shows "Automatic · Fee reminder 10th".</li>
  * </ul>
  * Started inside quiet hours (21:00 to 08:00), the open-day rows wait for the morning and stay QUEUED.
  * The poster is a real PNG; the "video" is a tiny MP4 header only (enough for the screens, not for a player).
@@ -92,6 +100,8 @@ public class NotificationDevData {
 
 	private final FileStorage storage;
 
+	private final NotificationRuleService rules;
+
 	private final Clock clock;
 
 	// The office user of this load (the owner), the author of every template.
@@ -100,7 +110,8 @@ public class NotificationDevData {
 	public NotificationDevData(NotificationTemplateService templates, NotificationService notifications,
 			NotificationDispatcher dispatcher, OutboxWorker worker, DeliveryStatusService deliveryStatus,
 			InboundMessageService inbound, StopListService stopList, StudentQueryService studentQuery,
-			GuardianService guardianService, FileStorage storage, Clock clock) {
+			GuardianService guardianService, FileStorage storage, NotificationRuleService rules, Clock clock) {
+		this.rules = rules;
 		this.templates = templates;
 		this.notifications = notifications;
 		this.dispatcher = dispatcher;
@@ -147,7 +158,7 @@ public class NotificationDevData {
 		approved(template("Exam timetable", NotificationKind.NOTICE,
 				"{Child name} की परीक्षा {Date} से शुरू होगी। समय-सारणी डायरी में है। — MUH Jain School", null,
 				HeaderType.NONE, null, List.of(), Map.of("Child name", "Aryan", "Date", "2 नवंबर")), userId);
-		approved(template("Bus late", NotificationKind.URGENT,
+		long busLate = approved(template("Bus late", NotificationKind.URGENT,
 				"{Route} की बस आज लगभग {Minutes} मिनट देर से आएगी। — MUH Jain School",
 				"{Route} बस {Minutes} मिनट देर। MUH Jain School", HeaderType.NONE, null, List.of(),
 				Map.of("Route", "Route 4", "Minutes", "20")), userId);
@@ -165,7 +176,7 @@ public class NotificationDevData {
 				Map.of(), userId);
 		templates.decide(camp, new TemplateApprovalRequest(TemplateApproval.REJECTED,
 				"Too promotional for this category; send it as MARKETING with an opt-out."), userId);
-		approved(template("Diwali wishes", NotificationKind.GREETING,
+		long diwali = approved(template("Diwali wishes", NotificationKind.GREETING,
 				"{Parent name} जी, आपको और आपके परिवार को दीपावली की शुभकामनाएँ। — MUH Jain Global School", null,
 				HeaderType.VIDEO, video, List.of(), Map.of("Parent name", "Rajesh Punia")), userId);
 		Map<String, String> feeExamples = Map.of("Parent name", "Rajesh Punia", "Child name", "Aryan", "Months",
@@ -174,7 +185,7 @@ public class NotificationDevData {
 				"नमस्ते {Parent name} जी, {Child name} की {Months} की फ़ीस {Amount due} बाकी है। सुविधा अनुसार जमा करें। धन्यवाद।",
 				"{Child name} की फ़ीस {Amount due} बाकी। MUH Jain School", HeaderType.NONE, null, List.of(), feeExamples),
 				userId);
-		approved(template("Fee reminder, firm", NotificationKind.FEE_REMINDER,
+		long firm = approved(template("Fee reminder, firm", NotificationKind.FEE_REMINDER,
 				"{Parent name} जी, {Child name} की {Months} की फ़ीस {Amount due} अभी भी बाकी है। कृपया इस हफ़्ते जमा करें।",
 				"फ़ीस {Amount due} बाकी, इस हफ़्ते जमा करें। MUH Jain School", HeaderType.NONE, null, List.of(),
 				feeExamples), userId);
@@ -185,6 +196,20 @@ public class NotificationDevData {
 		approved(template("Staff meeting", NotificationKind.STAFF,
 				"{Staff name} जी, staff meeting {Date} को दोपहर 3 बजे staff room में है।", null, HeaderType.NONE, null,
 				List.of(), Map.of("Staff name", "Sunita", "Date", "शनिवार")), userId);
+
+		// Phase 12: the texts of the automatic messages.
+		long birthday = approved(template("Birthday wish", NotificationKind.GREETING,
+				"{Child name} को जन्मदिन की बहुत-बहुत शुभकामनाएँ! — MUH Jain Global School परिवार", null, HeaderType.NONE,
+				null, List.of(), Map.of("Child name", "Aryan")), userId);
+		long welcome = approved(template("Welcome", NotificationKind.ONE_FAMILY,
+				"नमस्ते {Parent name} जी, MUH Jain Global School में {Child name} का स्वागत है। कोई भी सवाल हो तो office "
+						+ "को फ़ोन करें।",
+				"MUH Jain School में {Child name} का स्वागत है।", HeaderType.NONE, null, List.of(),
+				Map.of("Parent name", "Rajesh Punia", "Child name", "Aryan")), userId);
+		long notBoarded = approved(template("Did not board", NotificationKind.URGENT,
+				"{Child name} आज सुबह {Route} की बस में नहीं चढ़ा/चढ़ी। सब ठीक है तो कृपया office को बताएँ।",
+				"{Child name} आज बस में नहीं चढ़ा/चढ़ी। MUH Jain School", HeaderType.NONE, null, List.of(),
+				Map.of("Child name", "Aryan", "Route", "Route 4")), userId);
 
 		// ---------------------------------------------------------------- stop list
 		stopList.add(families.get(0).guardianId(), StopReason.TAPPED_BUTTON, null);
@@ -232,8 +257,33 @@ public class NotificationDevData {
 		notifications.create(new NotificationRequest("Fee reminder, October", NotificationKind.FEE_REMINDER, gentle,
 				null, null, Map.of(), null, new Audience(List.of(AudienceGroup.FAMILIES_WITH_DUES), null)), owner,
 				userId);
-		log.info("Dev data: notifications loaded (12 templates, 3 stops, open day sent to {} families, 4 replies)",
-				rows.size());
+
+		// ---------------------------------------------------------------- automatic messages (Phase 12)
+		rule("FEE_REMINDER_10TH", new NotificationRuleRequest(true, gentle, null, null, null, null));
+		rule("FEE_REMINDER_20TH", new NotificationRuleRequest(false, firm, null, null, null, null));
+		rule("BIRTHDAY", new NotificationRuleRequest(true, birthday, null, null, null, null));
+		rule("FESTIVAL", new NotificationRuleRequest(false, diwali, null, null, null,
+				List.of(new FestivalDay(LocalDate.of(2027, 3, 4), "होली"))));
+		// Off: the whole dev load is one transaction, so every sample admission's event is handled at its very end,
+		// when the rule would already be on (one welcome per sample child).
+		rule("WELCOME", new NotificationRuleRequest(false, welcome, null, null, null, null));
+		rule("BUS_LATE", new NotificationRuleRequest(true, busLate, null, null, null, null));
+		rule("NO_MORNING_TAP", new NotificationRuleRequest(false, notBoarded, null, null, null, null));
+		// "Run now" once, so Home has a line "Automatic · Fee reminder 10th".
+		ruleId("FEE_REMINDER_10TH").ifPresent(id -> rules.runNow(id, userId));
+		dispatcher.runOnce();
+		worker.runOnce();
+		dispatcher.runOnce();
+		log.info("Dev data: notifications loaded (15 templates, 3 stops, open day sent to {} families, 4 replies, "
+				+ "3 automatic messages on)", rows.size());
+	}
+
+	private void rule(String code, NotificationRuleRequest change) {
+		ruleId(code).ifPresent(id -> rules.update(id, change, actor));
+	}
+
+	private java.util.Optional<Long> ruleId(String code) {
+		return rules.list().stream().filter(r -> r.code().equals(code)).map(NotificationRuleResponse::id).findFirst();
 	}
 
 	// Read, delivered, failed (phone off), not on WhatsApp, the rest as sent in test mode.

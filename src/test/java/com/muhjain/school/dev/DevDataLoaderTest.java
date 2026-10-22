@@ -148,15 +148,17 @@ class DevDataLoaderTest extends AbstractIntegrationTest {
 
 	@Test
 	void loadsTheNotificationData() {
-		// 12 templates: 3 notices, 1 urgent, 3 marketing (approved / waiting / rejected), greeting, 3 fee tones, staff.
+		// 15 templates: 3 notices, 2 urgent, 3 marketing (approved / waiting / rejected), 2 greetings, 3 fee tones,
+		// welcome (one family), staff.
 		assertThat(jdbc.queryForList("select approval || ' ' || kind from message_template where kind <> 'SYSTEM'",
-				String.class)).hasSize(12)
-			.contains("WAITING MARKETING", "REJECTED MARKETING", "APPROVED GREETING", "APPROVED STAFF", "APPROVED URGENT");
+				String.class)).hasSize(15)
+			.contains("WAITING MARKETING", "REJECTED MARKETING", "APPROVED GREETING", "APPROVED STAFF", "APPROVED URGENT",
+					"APPROVED ONE_FAMILY");
 		assertThat(jdbc.queryForObject("select count(*) from message_template where kind = 'FEE_REMINDER' "
 				+ "and approval = 'APPROVED'", Integer.class)).isEqualTo(3);
 		assertThat(jdbc.queryForObject("select rejection_reason from message_template where approval = 'REJECTED'",
 				String.class)).isNotBlank();
-		assertThat(jdbc.queryForObject("select header_type from message_template where kind = 'GREETING'",
+		assertThat(jdbc.queryForObject("select header_type from message_template where name = 'Diwali wishes'",
 				String.class)).isEqualTo("VIDEO");
 		assertThat(jdbc.queryForObject("select count(*) from message_template where provider_template_name is null "
 				+ "and kind <> 'SYSTEM'", Integer.class)).isZero();
@@ -182,14 +184,21 @@ class DevDataLoaderTest extends AbstractIntegrationTest {
 				+ "and read_at is not null", Integer.class, openDay)).isPositive();
 		assertThat(jdbc.queryForObject("select count(*) from message_outbox where button_action = 'BOOK_VISIT'",
 				Integer.class)).isEqualTo(1);
-		// One scheduled notice, one fee reminder draft.
-		assertThat(jdbc.queryForList("select status || ' ' || kind from notification where id <> ? order by id",
-				String.class, openDay)).containsExactly("SCHEDULED NOTICE", "DRAFT FEE_REMINDER");
+		// One scheduled notice, one fee reminder draft (made by hand).
+		assertThat(jdbc.queryForList("select status || ' ' || kind from notification where id <> ? and source = 'MANUAL' "
+				+ "order by id", String.class, openDay)).containsExactly("SCHEDULED NOTICE", "DRAFT FEE_REMINDER");
+		// Automatic messages: three on, every rule but the documents one has a template, one run by hand.
+		assertThat(jdbc.queryForList("select code from notification_rule where enabled order by id", String.class))
+			.containsExactly("FEE_REMINDER_10TH", "BIRTHDAY", "BUS_LATE");
+		assertThat(jdbc.queryForList("select code from notification_rule where template_id is null", String.class))
+			.containsExactly("DOCUMENTS_MISSING_MONDAY");
+		assertThat(jdbc.queryForList("select r.code from notification n join notification_rule r on r.id = n.rule_id",
+				String.class)).containsExactly("FEE_REMINDER_10TH");
 		// Loading again adds nothing.
 		loader.run(null);
-		assertThat(jdbc.queryForObject("select count(*) from notification", Integer.class)).isEqualTo(3);
+		assertThat(jdbc.queryForObject("select count(*) from notification", Integer.class)).isEqualTo(4);
 		assertThat(jdbc.queryForObject("select count(*) from message_template where kind <> 'SYSTEM'", Integer.class))
-			.isEqualTo(12);
+			.isEqualTo(15);
 	}
 
 }

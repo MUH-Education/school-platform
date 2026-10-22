@@ -196,4 +196,18 @@ public class StudentQueryService {
 			.toList();
 	}
 
+	/**
+	 * The ACTIVE children whose birthday is on this day. A child born on 29 February is wished on 28 February when the
+	 * year has no 29th. Example: 23 Oct → the children born on 23 October of any year.
+	 */
+	@Transactional(readOnly = true)
+	public List<StudentReportRow> activeWithBirthday(LocalDate day) {
+		boolean leapDayToo = day.getMonthValue() == 2 && day.getDayOfMonth() == 28 && !day.isLeapYear();
+		return students.activeBornOn(day.getMonthValue(), day.getDayOfMonth(), leapDayToo)
+			.stream()
+			.map(s -> new StudentReportRow(s.getId(), s.getName(), s.getClassName(), s.getSection(), s.getVillage(),
+					s.getFatherOccupation(), null))
+			.toList();
+	}
+
 }

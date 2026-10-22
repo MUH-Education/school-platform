@@ -1,0 +1,27 @@
+erDiagram
+    notification_rule {
+        bigint id PK
+        varchar code
+        varchar name
+        varchar kind
+        bigint template_id FK
+        jsonb audience
+        varchar trigger_type
+        varchar cron
+        varchar event
+        jsonb fixed_values
+        int delay_minutes
+        boolean enabled
+        timestamptz last_run_at
+        bigint updated_by FK
+    }
+    notification_rule_run {
+        bigint rule_id FK
+        varchar run_key
+        bigint notification_id FK
+        timestamptz ran_at
+    }
+    message_template ||--o{ notification_rule : template_id
+    notification_rule ||--o{ notification_rule_run : rule_id
+    notification ||--o{ notification_rule_run : notification_id
+    notification_rule ||--o{ notification : rule_id

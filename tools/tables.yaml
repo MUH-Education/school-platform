@@ -53,6 +53,11 @@ areas:
     file: V14__notifications.sql
     phase: 11
     tables: [notification, message_template_button, message_stop, inbound_message]
+  - key: rules
+    title: Automatic messages (rules)
+    file: V15__notification_rules.sql
+    phase: 12
+    tables: [notification_rule, notification_rule_run]
   - key: enquiries
     title: Enquiries
     file: V6__enquiries.sql
@@ -305,6 +310,24 @@ tables:
       - '`promised_until` set → no fee reminder to this family until that day.'
     example: handled = false
     used_by: ['GET /inbound-messages', 'webhooks/inbound']
+
+  notification_rule:
+    purpose: One automatic message, a line of the Settings screen's "Automatic messages" table. At the right moment it makes a normal notification (source RULE); it never sends anything itself.
+    rules:
+      - The 8 rows come from V15 (all off, no template) and are never added or deleted from the API.
+      - A rule can be on only with a template (database check); the server also wants it approved and an audience with a group.
+      - CRON rules have a cron (built by the server from DAILY / WEEKLY / MONTHLY choices, school time); EVENT rules have an event. Never both.
+      - FESTIVAL keeps its dates and names in `fixed_values` and fires only on those dates.
+      - '`updated_by` is the user who last turned it on or changed it: the "made by" of its notifications.'
+    example: code in ('FEE_REMINDER_10TH', 'WELCOME', 'FESTIVAL')
+    used_by: ['GET /notification-rules', 'PUT /notification-rules/{id}', 'POST /notification-rules/{id}/run-now', 'RuleScheduler', 'RuleEventListener']
+  notification_rule_run:
+    purpose: One run of a rule. The primary key (rule, run key) stops the same run from happening twice, even after a restart.
+    rules:
+      - 'Run keys: timed rules (birthday too) the school day `2026-10-10`; WELCOME `student:129`; BUS_LATE `bus-late:4:2026-10-07:morning`; Run now `manual:<time>`.'
+      - '`notification_id` is empty when the run found nobody to send to.'
+      - Written only with insert ... on conflict do nothing, in the same transaction as the notification.
+    used_by: ['RuleService.fire']
 
   enquiry:
     purpose: A parent who asked about admission, and where they are now.

@@ -192,6 +192,7 @@ The answer includes a warning when the route is over its seats. It is a warning,
 | `GET /trips/my-route` | `TRIPS_RECORD` | The attendant's route today and the progress of the four jobs |
 | `GET /trips/manifest?routeId=&date=` | `TRIPS_RECORD` or `TRIPS_RECORD_ANY` | Stops in order, children at each stop, taps so far |
 | `POST /trips/marks` | `TRIPS_RECORD` or `TRIPS_RECORD_ANY` | Save one or many taps |
+| `POST /trips/{routeId}/running-late` | `TRIPS_RECORD` | Phase 12: `{minutes: 5..180}` → the families on the attendant's own route today get an URGENT message (BUS_LATE rule, once per route per morning and per evening). Answer `{routeId, minutes, willNotify, alreadySent}` |
 | `GET /bus-status?date=` | `BUS_STATUS_VIEW` | Every route: where the bus is, counts, state |
 | `GET /bus-status/routes/{routeId}?date=` | `BUS_STATUS_VIEW` | One route: every child with the four events |
 | `GET /bus-status/attention?date=` | `BUS_STATUS_VIEW` | Buses with no taps, late buses, children missing in the evening |
@@ -299,6 +300,50 @@ not know). The provider is not chosen yet (C1): these are **our own** bodies; th
 | `POST /webhooks/{provider}/status` | `{"providerRef":"wamid.1","status":"DELIVERED\|READ\|FAILED","at":"2026-10-07T10:02:11+05:30","problem":"NOT_ON_WHATSAPP"}` | the outbox row with that `provider_ref` gets `delivered_at` / `read_at` / FAILED + problem; never backwards; NOT_ON_WHATSAPP on a WhatsApp notification row → its SMS copy, once |
 | `POST /webhooks/{provider}/inbound` | `{"providerRef":"wamid.IN1","phone":"919811100003","text":"STOP","buttonAction":"STOP_MESSAGES","inReplyTo":"wamid.1","receivedAt":"..."}` | one `inbound_message` row (same `providerRef` twice = one row), linked to parent / staff / enquiry by phone; STOP ("stop", "बंद", or the button) → stop list; a button tap is saved on the answered message |
 | `POST /webhooks/{provider}/template-status` | `{"templateName":"open_day_oct","status":"APPROVED\|REJECTED","reason":"..."}` | the template in use with that provider name gets the approval (same as the manual approval) |
+
+## Automatic messages — Phase 12
+
+Design: `docs/phases/phase-12-automatic-rules.md`. A rule only **makes a normal notification** (`source: RULE`) at the
+right moment; sending, the guard chain and the report are Phase 11. The 8 rules are made by `V15` (all off, no
+template) and are never added or deleted from the API.
+
+| Method and URL | Permission | What |
+|---|---|---|
+| `GET /notification-rules` | `MARKETING_VIEW` | the Settings table: every rule with template, audience, time, last run, last 30 days' counts |
+| `PUT /notification-rules/{id}` | `SETTINGS_EDIT` | change what is sent (null = keep): `enabled`, `templateId`, `audience` (timed rules), `schedule` (timed rules), `delayMinutes` (event rules), `festivals` (FESTIVAL) |
+| `POST /notification-rules/{id}/run-now` | `SETTINGS_EDIT` | fire a timed rule once now, even when off → `{status: CREATED\|NOBODY, notificationId}` |
+
+The time is a **choice**, never cron text; the server builds the cron:
+
+```json
+PUT /api/v1/notification-rules/1
+{ "templateId": 41, "enabled": true,
+  "schedule": { "type": "MONTHLY", "time": "10:00", "daysOfMonth": [10] } }
+```
+
+`type` is `DAILY` (no days), `WEEKLY` (`daysOfWeek`: `["MONDAY", ...]`) or `MONTHLY` (`daysOfMonth` 1 to 28).
+FESTIVAL: `"festivals": [{"date": "2027-03-04", "name": "होली"}]` (the whole list; `{Festival}` = that day's name).
+
+One line of `GET /notification-rules`:
+
+```json
+{ "id": 1, "code": "FEE_REMINDER_10TH", "name": "Fee reminder 10th", "kind": "FEE_REMINDER",
+  "templateId": 41, "templateName": "Fee tone 1",
+  "audience": { "groups": ["FAMILIES_WITH_DUES"], "filter": { "skipPromised": true } },
+  "triggerType": "CRON", "cron": "0 0 10 10 * *",
+  "schedule": { "type": "MONTHLY", "time": "10:00", "daysOfMonth": [10], "daysOfWeek": [] },
+  "event": null, "festivals": null, "delayMinutes": null, "enabled": true,
+  "lastRunAt": "2026-10-10T10:00:00+05:30", "updatedBy": 1, "updatedByName": "Owner",
+  "lastMonthNotifications": 1, "lastMonthRecipients": 14 }
+```
+
+A rule can be **on** only with an approved template of its kind and somebody to send to. A notification made by a
+rule has `source: "RULE"`, `ruleId` and `ruleName` in `GET /notifications` and `GET /notifications/{id}`, so Home
+shows "Automatic · Fee reminder 10th".
+
+Errors (409 unless said): `RULE_NEEDS_TEMPLATE`, `TEMPLATE_NOT_FOR_KIND`, `TEMPLATE_NOT_APPROVED`,
+`RULE_NEEDS_AUDIENCE`, `AUDIENCE_NOT_ALLOWED`, `RULE_NEEDS_EVENT` (Run now on WELCOME or BUS_LATE), 400 `VALIDATION`
+(a field this rule does not have, a day 29 to 31, a week with no day), 404 `NOT_FOUND`.
 
 ## Enquiries — Phase 6
 

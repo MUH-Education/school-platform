@@ -18,7 +18,7 @@ public class UrgentPolicy implements KindPolicy {
 
 	private static final Set<AudienceGroup> AUDIENCES = Set.of(AudienceGroup.CURRENT_PARENTS, AudienceGroup.ROUTE,
 			AudienceGroup.STAFF_ALL, AudienceGroup.DRIVERS, AudienceGroup.ATTENDANTS, AudienceGroup.TEACHERS,
-			AudienceGroup.ROUTE_CREW);
+			AudienceGroup.ROUTE_CREW, AudienceGroup.BUS_CHILDREN_WITHOUT_TAP_TODAY);
 
 	@Override
 	public NotificationKind kind() {

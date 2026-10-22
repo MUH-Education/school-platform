@@ -75,12 +75,15 @@ class KindPoliciesTest extends AbstractIntegrationTest {
 		Set<AudienceGroup> staff = EnumSet.of(STAFF_ALL, DRIVERS, ATTENDANTS, TEACHERS);
 		assertThat(policy(NOTICE).allowedAudiences()).containsExactlyInAnyOrder(CURRENT_PARENTS, AudienceGroup.ONE_FAMILY);
 		assertThat(policy(URGENT).allowedAudiences()).containsAll(staff)
-			.contains(CURRENT_PARENTS, ROUTE, ROUTE_CREW)
-			.hasSize(7);
+			.contains(CURRENT_PARENTS, ROUTE, ROUTE_CREW, BUS_CHILDREN_WITHOUT_TAP_TODAY)
+			.hasSize(8);
 		assertThat(policy(MARKETING).allowedAudiences()).containsAll(staff)
 			.contains(CURRENT_PARENTS, ENQUIRY_OPEN, ENQUIRY_LOST)
 			.hasSize(7);
-		assertThat(policy(GREETING).allowedAudiences()).isEqualTo(policy(MARKETING).allowedAudiences());
+		// A greeting reaches the same people as marketing, plus the birthday rule's children (Phase 12).
+		assertThat(policy(GREETING).allowedAudiences()).containsAll(policy(MARKETING).allowedAudiences())
+			.contains(BIRTHDAY_TODAY)
+			.hasSize(8);
 		assertThat(policy(FEE_REMINDER).allowedAudiences()).containsExactly(FAMILIES_WITH_DUES);
 		assertThat(policy(NotificationKind.ONE_FAMILY).allowedAudiences()).containsExactly(AudienceGroup.ONE_FAMILY);
 		assertThat(policy(NotificationKind.STAFF).allowedAudiences()).containsAll(staff)

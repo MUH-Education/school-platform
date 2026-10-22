@@ -64,4 +64,12 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 			+ "and m.purpose <> 'TEST') order by n.id limit :limit for update skip locked", nativeQuery = true)
 	List<Notification> claimFinished(@Param("limit") int limit);
 
+	/**
+	 * Per rule: how many notifications it made since {@code from}, and to how many people (counted at send time).
+	 * Rows are {@code [ruleId, notifications, recipients]}. Feeds the Settings table.
+	 */
+	@Query("select n.ruleId, count(n), coalesce(sum(n.recipientCount), 0) from Notification n "
+			+ "where n.ruleId is not null and n.createdAt >= :from group by n.ruleId")
+	List<Object[]> countByRuleSince(@Param("from") Instant from);
+
 }

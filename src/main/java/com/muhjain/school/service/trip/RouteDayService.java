@@ -3,6 +3,7 @@ package com.muhjain.school.service.trip;
 import com.muhjain.school.model.dto.response.RouteChild;
 import com.muhjain.school.model.dto.response.RouteDay;
 import com.muhjain.school.model.dto.response.RouteSummary;
+import com.muhjain.school.model.dto.response.UntappedChild;
 import com.muhjain.school.model.entity.BoardingEvent;
 import com.muhjain.school.model.enums.EventType;
 import com.muhjain.school.model.repository.BoardingEventRepository;
@@ -44,6 +45,31 @@ public class RouteDayService {
 	@Transactional(readOnly = true)
 	List<RouteDay> loadAllActive(LocalDate date) {
 		return routeService.activeSummaries().stream().map(route -> load(route, date)).toList();
+	}
+
+	/**
+	 * The children on a bus on this day with no BOARDED_MORNING tap (DONE or ABSENT), only on routes where the
+	 * attendant has tapped at least one child that morning. A route with no tap at all is left out: its bus may not
+	 * have run, or the attendant's phone may be off, and then every family would be told "did not board" by mistake.
+	 * Example: Route 4 has 19 children, 17 tapped → the other 2. Route 9 has no tap yet → nobody from Route 9.
+	 */
+	@Transactional(readOnly = true)
+	public List<UntappedChild> withoutMorningTap(LocalDate date) {
+		List<UntappedChild> found = new ArrayList<>();
+		for (RouteDay day : loadAllActive(date)) {
+			boolean anyTap = day.children().stream()
+				.anyMatch(c -> day.tap(c.studentId(), EventType.BOARDED_MORNING) != null);
+			if (!anyTap) {
+				continue;
+			}
+			for (RouteChild child : day.children()) {
+				if (day.tap(child.studentId(), EventType.BOARDED_MORNING) == null) {
+					found.add(new UntappedChild(child.studentId(), child.name(), child.className(), day.routeId(),
+							day.routeName()));
+				}
+			}
+		}
+		return found;
 	}
 
 	private RouteDay load(RouteSummary route, LocalDate date) {

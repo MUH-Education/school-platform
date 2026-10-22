@@ -52,6 +52,10 @@ flowchart LR
         message_stop[message_stop]
         inbound_message[inbound_message]
     end
+    subgraph rules["Automatic messages (rules)"]
+        notification_rule[notification_rule]
+        notification_rule_run[notification_rule_run]
+    end
     subgraph enquiries["Enquiries"]
         enquiry[enquiry]
         enquiry_stage[enquiry_stage]
@@ -118,3 +122,7 @@ flowchart LR
     guardian --> inbound_message
     guardian --> message_stop
     notification --> message_stop
+    message_template --> notification_rule
+    notification_rule --> notification_rule_run
+    notification --> notification_rule_run
+    notification_rule --> notification

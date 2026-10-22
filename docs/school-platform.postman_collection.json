@@ -15,6 +15,8 @@
     { "key": "mediaKey", "value": "" },
     { "key": "guardianId", "value": "" },
     { "key": "inboundId", "value": "" },
+    { "key": "ruleId", "value": "1" },
+    { "key": "routeId", "value": "1" },
     { "key": "webhookSecret", "value": "local-only-webhook-secret-not-for-production-01" }
   ],
   "auth": {
@@ -1140,6 +1142,208 @@
               ]
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "Automatic messages (Phase 12)",
+      "description": "docs/phases/phase-12-automatic-rules.md. A rule only makes a normal notification (source RULE); Phase 11 sends it. List needs MARKETING_VIEW, change and Run now need SETTINGS_EDIT (owner). Order: list → pick a template → turn on → Run now.",
+      "item": [
+        {
+          "name": "List automatic messages",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/notification-rules",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "notification-rules"
+              ]
+            },
+            "description": "MARKETING_VIEW. The Settings table: every rule with template, audience, time (schedule), last run and the last 30 days' counts. Saves the first rule's id as ruleId."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200 && pm.response.json().length > 0) {",
+                  "  pm.collectionVariables.set('ruleId', pm.response.json()[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pick a template and turn on",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{apiBase}}/notification-rules/{{ruleId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "notification-rules",
+                "{{ruleId}}"
+              ]
+            },
+            "description": "SETTINGS_EDIT. Only what is sent changes. On needs an approved template of the rule's kind (409 RULE_NEEDS_TEMPLATE / TEMPLATE_NOT_FOR_KIND / TEMPLATE_NOT_APPROVED).",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"templateId\": {{templateId}},\n  \"enabled\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Turn off",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{apiBase}}/notification-rules/{{ruleId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "notification-rules",
+                "{{ruleId}}"
+              ]
+            },
+            "description": "SETTINGS_EDIT. The switch on the Settings screen.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enabled\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "Change the time",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{apiBase}}/notification-rules/{{ruleId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "notification-rules",
+                "{{ruleId}}"
+              ]
+            },
+            "description": "SETTINGS_EDIT. Timed rules only. DAILY (no days), WEEKLY (daysOfWeek), MONTHLY (daysOfMonth 1 to 28). The server builds the cron.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"schedule\": { \"type\": \"MONTHLY\", \"time\": \"10:00\", \"daysOfMonth\": [10] }\n}"
+            }
+          }
+        },
+        {
+          "name": "Festival dates",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{apiBase}}/notification-rules/{{ruleId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "notification-rules",
+                "{{ruleId}}"
+              ]
+            },
+            "description": "SETTINGS_EDIT. FESTIVAL only (use its id as ruleId): the whole list of dates and names for {Festival}.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"festivals\": [ { \"date\": \"2027-03-04\", \"name\": \"होली\" } ]\n}"
+            }
+          }
+        },
+        {
+          "name": "Run now",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{apiBase}}/notification-rules/{{ruleId}}/run-now",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "notification-rules",
+                "{{ruleId}}",
+                "run-now"
+              ]
+            },
+            "description": "SETTINGS_EDIT. Timed rules only (409 RULE_NEEDS_EVENT for WELCOME and BUS_LATE). Fires once now, even when off. Answers {status: CREATED|NOBODY, notificationId}; saves notificationId."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200 && pm.response.json().notificationId) {",
+                  "  pm.collectionVariables.set('notificationId', pm.response.json().notificationId);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bus running late (attendant)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{apiBase}}/trips/{{routeId}}/running-late",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "trips",
+                "{{routeId}}",
+                "running-late"
+              ]
+            },
+            "description": "TRIPS_RECORD (log in as the attendant). Own route today only, else 403 NOT_YOUR_ROUTE. The families on that route get an URGENT message when the BUS_LATE rule is on; once per route per morning and per evening. Answers {routeId, minutes, willNotify, alreadySent}.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"minutes\": 20\n}"
+            }
+          }
         }
       ]
     },
