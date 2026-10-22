@@ -139,8 +139,8 @@ public class RuleService {
 	// The rule's own text values (a FESTIVAL date list is not one), then the values of this run on top.
 	private static Map<String, String> fixedValues(NotificationRule rule, RuleFiring firing) {
 		Map<String, String> values = new LinkedHashMap<>();
-		rule.getFixedValues().forEach((box, value) -> {
-			if (value instanceof String text) {
+		rule.getFixedValues().forEach((box, value1) -> {
+			if (value1 instanceof String text) {
 				values.put(box, text);
 			}
 		});
