@@ -146,4 +146,50 @@ class DevDataLoaderTest extends AbstractIntegrationTest {
 		assertThat(profile.value()).containsExactly("local");
 	}
 
+	@Test
+	void loadsTheNotificationData() {
+		// 12 templates: 3 notices, 1 urgent, 3 marketing (approved / waiting / rejected), greeting, 3 fee tones, staff.
+		assertThat(jdbc.queryForList("select approval || ' ' || kind from message_template where kind <> 'SYSTEM'",
+				String.class)).hasSize(12)
+			.contains("WAITING MARKETING", "REJECTED MARKETING", "APPROVED GREETING", "APPROVED STAFF", "APPROVED URGENT");
+		assertThat(jdbc.queryForObject("select count(*) from message_template where kind = 'FEE_REMINDER' "
+				+ "and approval = 'APPROVED'", Integer.class)).isEqualTo(3);
+		assertThat(jdbc.queryForObject("select rejection_reason from message_template where approval = 'REJECTED'",
+				String.class)).isNotBlank();
+		assertThat(jdbc.queryForObject("select header_type from message_template where kind = 'GREETING'",
+				String.class)).isEqualTo("VIDEO");
+		assertThat(jdbc.queryForObject("select count(*) from message_template where provider_template_name is null "
+				+ "and kind <> 'SYSTEM'", Integer.class)).isZero();
+		// 3 families on the stop list, 4 replies (2 still waiting for a person).
+		assertThat(jdbc.queryForObject("select count(*) from message_stop", Integer.class)).isEqualTo(3);
+		assertThat(jdbc.queryForObject("select count(*) from inbound_message", Integer.class)).isEqualTo(4);
+		assertThat(jdbc.queryForObject("select count(*) from inbound_message where not handled", Integer.class))
+			.isEqualTo(2);
+		assertThat(jdbc.queryForObject("select count(*) from inbound_message where promised_until is not null",
+				Integer.class)).isEqualTo(1);
+		// "Open day" was sent: one row per family, in mixed states; the stopped families are SKIPPED.
+		long openDay = jdbc.queryForObject("select id from notification where kind = 'MARKETING'", Long.class);
+		assertThat(jdbc.queryForObject("select status from notification where id = ?", String.class, openDay))
+			.isEqualTo("SENT");
+		List<String> states = jdbc.queryForList("select distinct status from message_outbox where notification_id = ?",
+				String.class, openDay);
+		assertThat(states).contains("DELIVERED", "TEST_ONLY", "FAILED", "SKIPPED");
+		assertThat(jdbc.queryForObject("select count(*) from message_outbox where notification_id = ? "
+				+ "and skip_reason = 'STOPPED'", Integer.class, openDay)).isEqualTo(3);
+		assertThat(jdbc.queryForObject("select count(*) from message_outbox where notification_id = ? "
+				+ "and fallback_of_id is not null", Integer.class, openDay)).isEqualTo(1);
+		assertThat(jdbc.queryForObject("select count(*) from message_outbox where notification_id = ? "
+				+ "and read_at is not null", Integer.class, openDay)).isPositive();
+		assertThat(jdbc.queryForObject("select count(*) from message_outbox where button_action = 'BOOK_VISIT'",
+				Integer.class)).isEqualTo(1);
+		// One scheduled notice, one fee reminder draft.
+		assertThat(jdbc.queryForList("select status || ' ' || kind from notification where id <> ? order by id",
+				String.class, openDay)).containsExactly("SCHEDULED NOTICE", "DRAFT FEE_REMINDER");
+		// Loading again adds nothing.
+		loader.run(null);
+		assertThat(jdbc.queryForObject("select count(*) from notification", Integer.class)).isEqualTo(3);
+		assertThat(jdbc.queryForObject("select count(*) from message_template where kind <> 'SYSTEM'", Integer.class))
+			.isEqualTo(12);
+	}
+
 }

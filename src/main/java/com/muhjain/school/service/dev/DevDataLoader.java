@@ -77,6 +77,8 @@ import java.util.*;
  * real students) and 4 LOST, 5 of them overdue (the CONTACTED ones with a past date). So the enquiry screens have numbers: 29 enquiries, 14% admitted.
  * Phase 7 adds the standard class fees and a fee plan for every active child (half on time, a quarter delayed, a
  * quarter defaulted), with the payments that make those states, when today is inside the current session.
+ * Phase 11 adds the notification data ({@link NotificationDevData}): templates, a sent "Open day" in mixed states,
+ * stop rows and replies.
  * The fleet, the students, the fees, the taps and the enquiries are loaded separately. Each part does nothing if its data is already there.
  * <b>Only the {@code local} profile.</b> It never runs in {@code test} or {@code prod}.
  * Phone numbers are made up. It uses services only.
@@ -133,6 +135,8 @@ public class DevDataLoader implements ApplicationRunner {
 
 	private final AcademicSessionService sessionService;
 
+	private final NotificationDevData notificationDevData;
+
 	private final ClassFeeService classFeeService;
 
 	private final FeePlanService feePlanService;
@@ -146,7 +150,8 @@ public class DevDataLoader implements ApplicationRunner {
 			GuardianService guardianService, StudentService studentService, StudentQueryService studentQuery,
 			MarkService markService, UserService userService, OtpService otpService, EnquiryService enquiryService,
 			AcademicSessionService sessionService, ClassFeeService classFeeService, FeePlanService feePlanService,
-			PaymentService paymentService, Clock clock) {
+			PaymentService paymentService, NotificationDevData notificationDevData, Clock clock) {
+		this.notificationDevData = notificationDevData;
 		this.sessionService = sessionService;
 		this.classFeeService = classFeeService;
 		this.feePlanService = feePlanService;
@@ -191,6 +196,8 @@ public class DevDataLoader implements ApplicationRunner {
 		else {
 			log.info("Dev data: there are enquiries already, enquiries not loaded");
 		}
+		// Phase 11: templates, a sent notification, stops and replies (needs the families above).
+		notificationDevData.load(systemUserId());
 	}
 
 	private void loadFleet() {

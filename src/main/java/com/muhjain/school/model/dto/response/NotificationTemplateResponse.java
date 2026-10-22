@@ -11,10 +11,11 @@ import java.util.Map;
 /**
  * A notification template as the Templates screen shows it. The office calls it a "saved text"; the approval is
  * WhatsApp's answer. {@code replacesId} = the approved template this one is a new version of.
+ * {@code providerTemplateName}: the name to register it under at the provider, set by the server ({@code open_day_31}).
  * Example: 31, "Open day", MARKETING, hi, WAITING, buttons [Call school, Stop messages].
  */
 public record NotificationTemplateResponse(Long id, String name, TemplateKind kind, String language, String body,
 		String smsBody, HeaderType headerType, String mediaKey, List<TemplateButtonResponse> buttons,
 		Map<String, String> exampleValues, TemplateApproval approval, String rejectionReason, Long replacesId,
-		boolean active, OffsetDateTime updatedAt) {
+		boolean active, String providerTemplateName, OffsetDateTime updatedAt) {
 }

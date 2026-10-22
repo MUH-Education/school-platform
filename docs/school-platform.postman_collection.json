@@ -9,7 +9,13 @@
     { "key": "apiBase", "value": "{{baseUrl}}/api/v1" },
     { "key": "token", "value": "" },
     { "key": "phone", "value": "+919999999999" },
-    { "key": "otpCode", "value": "123456" }
+    { "key": "otpCode", "value": "123456" },
+    { "key": "templateId", "value": "" },
+    { "key": "notificationId", "value": "" },
+    { "key": "mediaKey", "value": "" },
+    { "key": "guardianId", "value": "" },
+    { "key": "inboundId", "value": "" },
+    { "key": "webhookSecret", "value": "local-only-webhook-secret-not-for-production-01" }
   ],
   "auth": {
     "type": "bearer",
@@ -393,6 +399,747 @@
             "url": { "raw": "{{apiBase}}/message-templates/BOARDED_MORNING", "host": ["{{apiBase}}"], "path": ["message-templates", "BOARDED_MORNING"] },
             "description": "SETTINGS_EDIT"
           }
+        }
+      ]
+    },
+    {
+      "name": "Notifications (Phase 11)",
+      "description": "docs/10-notifications.md. Owner only for now (MARKETING_VIEW / MARKETING_EDIT / MARKETING_SEND). Order: template → approve → draft → test → send → report.",
+      "item": [
+        {
+          "name": "Upload a poster, video or PDF",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{apiBase}}/notification-media",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "notification-media"
+              ]
+            },
+            "description": "MARKETING_EDIT or MARKETING_SEND (owner for now). Multipart field `file`: JPEG/PNG 5 MB, MP4 16 MB, PDF 5 MB, audio 16 MB. Answers {mediaKey, mediaType, bytes, width, height, seconds}.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('mediaKey', pm.response.json().mediaKey);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List templates",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/notification-templates?kind=",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "notification-templates"
+              ],
+              "query": [
+                {
+                  "key": "kind",
+                  "value": "",
+                  "description": "optional"
+                }
+              ]
+            },
+            "description": "MARKETING_VIEW. Optional ?kind=NOTICE|URGENT|MARKETING|GREETING|FEE_REMINDER|ONE_FAMILY|STAFF."
+          }
+        },
+        {
+          "name": "Make a template",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{apiBase}}/notification-templates",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "notification-templates"
+              ]
+            },
+            "description": "MARKETING_EDIT. Waits for approval. MARKETING/GREETING get the \"Stop messages\" button last. Every {box} needs an example.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"PTM\",\n  \"kind\": \"NOTICE\",\n  \"language\": \"hi\",\n  \"body\": \"नमस्ते {Parent name} जी, {Child name} की PTM {Date} को सुबह 10 बजे है। — MUH Jain School\",\n  \"smsBody\": \"{Child name}: PTM {Date} 10 बजे। MUH Jain School\",\n  \"headerType\": \"NONE\",\n  \"buttons\": [],\n  \"exampleValues\": {\n    \"Parent name\": \"Rajesh Punia\",\n    \"Child name\": \"Aryan\",\n    \"Date\": \"10 अक्टूबर\"\n  }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('templateId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "One template",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/notification-templates/{{templateId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "notification-templates",
+                "{{templateId}}"
+              ]
+            },
+            "description": "MARKETING_VIEW."
+          }
+        },
+        {
+          "name": "Change a template",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{apiBase}}/notification-templates/{{templateId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "notification-templates",
+                "{{templateId}}"
+              ]
+            },
+            "description": "MARKETING_EDIT. An APPROVED one becomes a new version (new id, WAITING); the old one is turned off.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"PTM\",\n  \"kind\": \"NOTICE\",\n  \"language\": \"hi\",\n  \"body\": \"नमस्ते {Parent name} जी, {Child name} की PTM {Date} को सुबह 11 बजे है। — MUH Jain School\",\n  \"exampleValues\": {\n    \"Parent name\": \"Rajesh Punia\",\n    \"Child name\": \"Aryan\",\n    \"Date\": \"10 अक्टूबर\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "Approve a template (local/test only)",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{apiBase}}/notification-templates/{{templateId}}/approval",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "notification-templates",
+                "{{templateId}}",
+                "approval"
+              ]
+            },
+            "description": "MARKETING_EDIT. Only with app.notifications.manual-approval=true (local, test); 404 in prod. REJECTED needs a reason.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"approval\": \"APPROVED\"\n}"
+            }
+          }
+        },
+        {
+          "name": "AI: suggest a better text",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{apiBase}}/notifications/refine",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "notifications",
+                "refine"
+              ]
+            },
+            "description": "MARKETING_SEND. A suggestion only, nothing saved. Every {box} must survive (409 REFINE_LOST_PLACEHOLDER). 409 REFINE_NOT_CONFIGURED without APP_AI_API_KEY.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"नमस्ते {Parent name} जी, {Child name} की PTM इस शनिवार सुबह 10 बजे स्कूल में होगी। कृपया समय पर आएँ।\",\n  \"action\": \"SHORTER\",\n  \"language\": \"hi\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Make a notification (draft)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{apiBase}}/notifications",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "notifications"
+              ]
+            },
+            "description": "MARKETING_SEND (kind checked in the service). Answers the counts of who gets it now. Nothing is sent.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"PTM Class 10\",\n  \"kind\": \"NOTICE\",\n  \"templateId\": \"{{templateId}}\",\n  \"fixedValues\": {\n    \"Date\": \"10 अक्टूबर\"\n  },\n  \"audience\": {\n    \"groups\": [\n      \"CURRENT_PARENTS\"\n    ],\n    \"filter\": {\n      \"classes\": [\n        \"10\"\n      ]\n    }\n  }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('notificationId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List notifications",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/notifications?kind=&status=&from=&to=&page=0&size=25",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "notifications"
+              ],
+              "query": [
+                {
+                  "key": "kind",
+                  "value": "",
+                  "description": "optional"
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "DRAFT|SCHEDULED|SENDING|SENT|CANCELLED|FAILED"
+                },
+                {
+                  "key": "from",
+                  "value": "",
+                  "description": "school day, 2026-10-01"
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "description": "school day"
+                },
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": ""
+                },
+                {
+                  "key": "size",
+                  "value": "25",
+                  "description": "1 to 100"
+                }
+              ]
+            },
+            "description": "MARKETING_VIEW. Newest first. Every filter optional."
+          }
+        },
+        {
+          "name": "One notification",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/notifications/{{notificationId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "notifications",
+                "{{notificationId}}"
+              ]
+            },
+            "description": "MARKETING_VIEW. A draft or scheduled one has the counts of now."
+          }
+        },
+        {
+          "name": "Change a draft",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{apiBase}}/notifications/{{notificationId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "notifications",
+                "{{notificationId}}"
+              ]
+            },
+            "description": "MARKETING_SEND. Only DRAFT or SCHEDULED (409 NOTIFICATION_NOT_EDITABLE).",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"PTM Class 10 and 12\",\n  \"kind\": \"NOTICE\",\n  \"templateId\": \"{{templateId}}\",\n  \"fixedValues\": {\n    \"Date\": \"10 अक्टूबर\"\n  },\n  \"audience\": {\n    \"groups\": [\n      \"CURRENT_PARENTS\"\n    ],\n    \"filter\": {\n      \"classes\": [\n        \"10\",\n        \"12\"\n      ]\n    }\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "Who gets it",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/notifications/{{notificationId}}/recipients?page=0&size=25",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "notifications",
+                "{{notificationId}}",
+                "recipients"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": ""
+                },
+                {
+                  "key": "size",
+                  "value": "25",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "MARKETING_VIEW. Before sending: who would get it now. After: each row with status and skip reason. Phones masked."
+          }
+        },
+        {
+          "name": "Send a test to my phone",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{apiBase}}/notifications/{{notificationId}}/test",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "notifications",
+                "{{notificationId}}",
+                "test"
+              ]
+            },
+            "description": "MARKETING_SEND. One TEST copy with the example values, not counted."
+          }
+        },
+        {
+          "name": "Send now",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{apiBase}}/notifications/{{notificationId}}/send",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "notifications",
+                "{{notificationId}}",
+                "send"
+              ]
+            },
+            "description": "MARKETING_SEND. Only sets SENDING: the dispatcher writes the rows within a minute.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sendNow\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Send later",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{apiBase}}/notifications/{{notificationId}}/send",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "notifications",
+                "{{notificationId}}",
+                "send"
+              ]
+            },
+            "description": "MARKETING_SEND. 409 SCHEDULE_IN_PAST, 409 SCHEDULE_IN_QUIET_HOURS (21:00-08:00, not URGENT).",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduledAt\": \"2026-10-10T10:00:00+05:30\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Report",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/notifications/{{notificationId}}/report",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "notifications",
+                "{{notificationId}}",
+                "report"
+              ]
+            },
+            "description": "MARKETING_VIEW. Counts by status, channel, skip reason, failure reason, button; reads per hour. Never stored."
+          }
+        },
+        {
+          "name": "Resend failed",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{apiBase}}/notifications/{{notificationId}}/resend-failed",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "notifications",
+                "{{notificationId}}",
+                "resend-failed"
+              ]
+            },
+            "description": "MARKETING_SEND. The FAILED rows worth a second try go back to the queue (same rows)."
+          }
+        },
+        {
+          "name": "Cancel",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{apiBase}}/notifications/{{notificationId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "notifications",
+                "{{notificationId}}"
+              ]
+            },
+            "description": "MARKETING_SEND. DRAFT/SCHEDULED: nothing sent. SENDING: the rows not sent yet are cancelled."
+          }
+        },
+        {
+          "name": "Stop list",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/message-stops?page=0&size=25",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "message-stops"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": ""
+                },
+                {
+                  "key": "size",
+                  "value": "25",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "MARKETING_VIEW. Families who said stop to marketing and greetings. Phones masked."
+          }
+        },
+        {
+          "name": "Take a family off the stop list",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{apiBase}}/message-stops/{{guardianId}}",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "message-stops",
+                "{{guardianId}}"
+              ]
+            },
+            "description": "MARKETING_SEND. 204; 404 when not on the list."
+          }
+        },
+        {
+          "name": "Replies waiting for a person",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{apiBase}}/inbound-messages?handled=false&page=0&size=25",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "inbound-messages"
+              ],
+              "query": [
+                {
+                  "key": "handled",
+                  "value": "false",
+                  "description": "optional"
+                },
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": ""
+                },
+                {
+                  "key": "size",
+                  "value": "25",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "MARKETING_VIEW. Newest first. Full phone (to call back)."
+          }
+        },
+        {
+          "name": "Mark a reply as done",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{apiBase}}/inbound-messages/{{inboundId}}/handle",
+              "host": [
+                "{{apiBase}}"
+              ],
+              "path": [
+                "inbound-messages",
+                "{{inboundId}}",
+                "handle"
+              ]
+            },
+            "description": "MARKETING_SEND. promisedUntil (today to 90 days) stops fee reminders until that day. makeEnquiry also needs ENQUIRIES_EDIT.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"Called back: will pay on Friday.\",\n  \"promisedUntil\": \"2026-10-09\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Provider callbacks (signed, no token)",
+          "description": "No token. Each request is signed by its pre-request script with {{webhookSecret}} (local: the value in application-local.properties). Do not use {{variables}} inside these bodies: the signature is made on the raw text.",
+          "item": [
+            {
+              "name": "Delivered / read / failed",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{apiBase}}/webhooks/log/status",
+                  "host": [
+                    "{{apiBase}}"
+                  ],
+                  "path": [
+                    "webhooks",
+                    "log",
+                    "status"
+                  ]
+                },
+                "description": "status: DELIVERED | READ | FAILED. In local the log sender's message ids are log-<outbox row id>.",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"providerRef\": \"log-1\",\n  \"status\": \"READ\",\n  \"at\": \"2026-10-07T10:02:11+05:30\"\n}"
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// The provider signs the raw body with the shared secret (HMAC-SHA256, hex).",
+                      "const body = pm.request.body.raw;",
+                      "const signature = CryptoJS.HmacSHA256(body, pm.collectionVariables.get('webhookSecret')).toString();",
+                      "pm.request.headers.upsert({ key: 'X-Signature', value: signature });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "A reply (STOP)",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{apiBase}}/webhooks/log/inbound",
+                  "host": [
+                    "{{apiBase}}"
+                  ],
+                  "path": [
+                    "webhooks",
+                    "log",
+                    "inbound"
+                  ]
+                },
+                "description": "A text or a buttonAction. \"stop\" / \"बंद\" / STOP_MESSAGES puts the family on the stop list.",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"providerRef\": \"wamid.postman.1\",\n  \"phone\": \"919811100003\",\n  \"text\": \"STOP\",\n  \"receivedAt\": \"2026-10-07T18:29:00+05:30\"\n}"
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// The provider signs the raw body with the shared secret (HMAC-SHA256, hex).",
+                      "const body = pm.request.body.raw;",
+                      "const signature = CryptoJS.HmacSHA256(body, pm.collectionVariables.get('webhookSecret')).toString();",
+                      "pm.request.headers.upsert({ key: 'X-Signature', value: signature });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Template approved / rejected",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{apiBase}}/webhooks/log/template-status",
+                  "host": [
+                    "{{apiBase}}"
+                  ],
+                  "path": [
+                    "webhooks",
+                    "log",
+                    "template-status"
+                  ]
+                },
+                "description": "templateName = the template's providerTemplateName (example open_day_31).",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"templateName\": \"open_day_31\",\n  \"status\": \"APPROVED\"\n}"
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// The provider signs the raw body with the shared secret (HMAC-SHA256, hex).",
+                      "const body = pm.request.body.raw;",
+                      "const signature = CryptoJS.HmacSHA256(body, pm.collectionVariables.get('webhookSecret')).toString();",
+                      "pm.request.headers.upsert({ key: 'X-Signature', value: signature });"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
         }
       ]
     },

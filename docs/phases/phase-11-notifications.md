@@ -131,10 +131,10 @@ rename only the Java interface.
       `resend-failed`.
 - [x] 11.15 Stop list endpoints, inbound list + handle.
 - [x] 11.16 Audit rows, `docs/06-api.md` Notifications section, `docs/03-data-model.md` regenerated.
-- [ ] 11.17 Dev data (`DevDataLoader`): 3 NOTICE templates, 1 MARKETING approved with a poster, 1 WAITING,
+- [x] 11.17 Dev data (`DevDataLoader`): 3 NOTICE templates, 1 MARKETING approved with a poster, 1 WAITING,
       1 REJECTED with a reason, 1 GREETING with a video key, 1 FEE_REMINDER per tone, 1 STAFF; one SENT
       notification with 20 outbox rows in mixed statuses; 3 stop rows; 4 inbound rows.
-- [ ] 11.18 Postman collection updated.
+- [x] 11.18 Postman collection updated.
 
 ## Tests that must pass
 

@@ -34,7 +34,8 @@ public class LogWhatsAppChannelSender implements ChannelSender {
 				+ context.language() + ")";
 		log.info("WhatsApp to {}: {}, {} values, media {}", PhoneNumbers.mask(row.getPhone()), what,
 				context.params().size(), (context.mediaId() == null) ? "no" : "yes");
-		return new SendResult(null, true);
+		// A made-up message id, so the delivered / read / reply callbacks can be tried locally with curl.
+		return new SendResult("log-" + row.getId(), true);
 	}
 
 }

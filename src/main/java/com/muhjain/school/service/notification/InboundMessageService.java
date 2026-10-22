@@ -148,6 +148,12 @@ public class InboundMessageService {
 		return true;
 	}
 
+	/** The id of the reply the provider calls this. Example: "wamid.IN1" → 12. */
+	@Transactional(readOnly = true)
+	public Optional<Long> idByProviderRef(String providerRef) {
+		return inbound.findByProviderRef(providerRef).map(InboundMessage::getId);
+	}
+
 	/** The replies, newest first. {@code handled} null = all; false = the ones waiting for a person. */
 	@Transactional(readOnly = true)
 	public PageResponse<InboundMessageResponse> list(Boolean handled, int page, int size) {

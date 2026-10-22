@@ -110,6 +110,7 @@ public class NotificationTemplateService {
 				request.body().strip(), userId);
 		fill(template, request, checked);
 		templates.save(template);
+		template.setProviderTemplateName(providerName(template));
 		List<MessageTemplateButton> saved = saveButtons(template.getId(), checked.buttons());
 		auditService.record(ENTITY, template.getId(), AuditAction.CREATED,
 				"Template \"" + template.getName() + "\" made (" + request.kind() + "), waiting for approval.",
@@ -140,6 +141,7 @@ public class NotificationTemplateService {
 			fill(next, request, checked);
 			next.setReplacesId(current.getId());
 			templates.save(next);
+			next.setProviderTemplateName(providerName(next));
 			List<MessageTemplateButton> saved = saveButtons(next.getId(), checked.buttons());
 			auditService.record(ENTITY, next.getId(), AuditAction.CREATED, "Template \"" + next.getName()
 					+ "\" changed: new version " + next.getId() + " of " + current.getId() + ", waiting for approval.",
@@ -359,6 +361,20 @@ public class NotificationTemplateService {
 		return b;
 	}
 
+	/**
+	 * The name the template gets at the provider: the name in lower-case letters, digits and "_", then the id, at
+	 * most 60 letters. Example: "Open day, Oct" (id 31) → {@code open_day_oct_31}; a Hindi name → {@code t_31}.
+	 * Set by the server, never typed: an approved WhatsApp template cannot be changed, so a new version (new id) gets
+	 * a new name, exactly like the provider wants.
+	 */
+	static String providerName(MessageTemplate template) {
+		String slug = template.getName().toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9]+", "_")
+			.replaceAll("^_+|_+$", "");
+		String suffix = "_" + template.getId();
+		slug = slug.isEmpty() ? "t" : slug.substring(0, Math.min(slug.length(), 60 - suffix.length()));
+		return slug + suffix;
+	}
+
 	private static String stopText(String language) {
 		return "en".equals(language) ? "Stop messages" : "मैसेज बंद करें";
 	}
@@ -370,7 +386,7 @@ public class NotificationTemplateService {
 			.toList();
 		return new NotificationTemplateResponse(t.getId(), t.getName(), t.getKind(), t.getLanguage(), t.getBody(),
 				t.getSmsBody(), t.getHeaderType(), t.getMediaKey(), buttonList, t.getExampleValues(), t.getApproval(),
-				t.getRejectionReason(), t.getReplacesId(), t.isActive(),
+				t.getRejectionReason(), t.getReplacesId(), t.isActive(), t.getProviderTemplateName(),
 				(t.getUpdatedAt() == null) ? null : t.getUpdatedAt().atZone(clock.getZone()).toOffsetDateTime());
 	}
 

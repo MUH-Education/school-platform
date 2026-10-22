@@ -399,7 +399,8 @@ public class NotificationService {
 			List<NotificationRecipientResponse> items = all.subList(from, to)
 				.stream()
 				.map(r -> new NotificationRecipientResponse(r.type(), r.personId(), r.values().get("Name"),
-						r.values().get("Child name"), PhoneNumbers.mask(r.phone()), r.channel(), r.group(), null, null))
+						r.values().get("Child name"), PhoneNumbers.mask(r.phone()), r.channel(), r.group(), null, null,
+						null))
 				.toList();
 			int pages = (int) Math.ceil(all.size() / (double) request.getPageSize());
 			return new PageResponse<>(items, request.getPageNumber(), request.getPageSize(), all.size(), pages);
@@ -416,7 +417,7 @@ public class NotificationService {
 				: (row.getStaffId() != null) ? row.getStaffId() : row.getEnquiryId();
 		return new NotificationRecipientResponse(type, personId, row.getTemplateValues().get("Name"),
 				row.getTemplateValues().get("Child name"), PhoneNumbers.mask(row.getPhone()), row.getChannel(), null,
-				row.getStatus(), row.getSkipReason());
+				row.getStatus(), row.getSkipReason(), row.getId());
 	}
 
 	// ---------------------------------------------------------------- helpers
